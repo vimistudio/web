@@ -3,12 +3,14 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { WordRotator } from "@/components/word-rotator";
 import { statements } from "@/lib/word-bank";
 
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -100,14 +102,43 @@ export default function Home() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             animate={{
-              scale: [1, 1.05, 1],
+              scale: isTransitioning ? 0.95 : [1, 1.05, 1],
               transition: {
                 duration: 1.5,
                 repeat: Number.POSITIVE_INFINITY,
                 repeatType: "reverse",
               },
             }}
-            onClick={() => router.push("/how-it-works")}
+            onClick={async () => {
+              setIsTransitioning(true);
+              
+              // Wait for button press animation
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              // Add a sweep overlay
+              const overlay = document.createElement('div');
+              overlay.style.position = 'fixed';
+              overlay.style.top = '0';
+              overlay.style.left = '0';
+              overlay.style.width = '100%';
+              overlay.style.height = '100%';
+              overlay.style.backgroundColor = '#7076CF';
+              overlay.style.transform = 'translateX(-100%)';
+              overlay.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
+              overlay.style.zIndex = '100';
+              document.body.appendChild(overlay);
+
+              // Trigger the sweep animation
+              requestAnimationFrame(() => {
+                overlay.style.transform = 'translateX(0%)';
+              });
+
+              // Wait for animation to complete
+              await new Promise(resolve => setTimeout(resolve, 600));
+
+              // Navigate to the next page
+              router.push("/how-it-works");
+            }}
           >
             <motion.div
               className="py-2 sm:py-3 pl-4 sm:pl-6 pr-6 sm:pr-8 flex items-center"
