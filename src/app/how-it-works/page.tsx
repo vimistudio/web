@@ -74,6 +74,7 @@ export default function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [showBanner, setShowBanner] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -129,6 +130,7 @@ export default function HowItWorks() {
           // Trigger confetti on the last step
           setTimeout(() => {
             triggerConfetti();
+            setShowFAQ(true); // Show FAQ after confetti
           }, 500); // Small delay to allow the last step to animate
         }
         return prev + 1;
@@ -276,11 +278,19 @@ export default function HowItWorks() {
           )}
         </AnimatePresence>
         
-        <div className="container mx-auto px-4 py-16">
-          <h2 className="text-4xl font-bold mb-12 text-center">
-            YOUR QUESTIONS, <span className="text-gray-500">ANSWERED.</span>
-          </h2>
-          <div className="max-w-4xl mx-auto space-y-4">
+        <AnimatePresence>
+          {showFAQ && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ duration: 0.5 }}
+              className="container mx-auto px-4 py-16"
+            >
+              <h2 className="text-4xl font-bold mb-12 text-center">
+                YOUR QUESTIONS, <span className="text-gray-500">ANSWERED.</span>
+              </h2>
+              <div className="max-w-4xl mx-auto space-y-4">
             {faqItems.map((item, index) => (
               <motion.div
                 key={index}
@@ -323,8 +333,10 @@ export default function HowItWorks() {
                 </motion.div>
               </motion.div>
             ))}
-          </div>
-        </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.main>
   );
