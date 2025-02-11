@@ -41,7 +41,7 @@ export default function HowItWorks() {
 
   const triggerConfetti = () => {
     const colors = [
-      "#777EF0",
+      "hsl(var(--primary-accent))",
       "#9099F2",
       "#5A62EE",
       "#3D46EB",
@@ -104,6 +104,7 @@ export default function HowItWorks() {
     <motion.main
       key="how-it-works"
       className="flex-1 flex items-center"
+      role="main"
       initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}
@@ -117,7 +118,7 @@ export default function HowItWorks() {
           {/* Timeline line for mobile - moved before the steps */}
           <div className="absolute left-6 top-6 bottom-0 w-0.5 bg-gray-200 md:hidden">
             <motion.div
-              className="absolute top-0 left-0 w-full bg-[#777EF0]"
+              className="absolute top-0 left-0 w-full bg-[hsl(var(--primary-accent))]"
               style={{ 
                 originY: 0,
                 height: `${((activeStep + 1) * 20)}%`,
@@ -131,7 +132,7 @@ export default function HowItWorks() {
           {/* Timeline line for desktop - moved before the steps */}
           <div className="hidden md:block absolute top-5 left-[10%] right-[10%] h-0.5 bg-gray-200">
             <motion.div
-              className="absolute top-0 left-0 h-full bg-[#777EF0]"
+              className="absolute top-0 left-0 h-full bg-[#5046c0]"
               style={{ 
                 originX: 0,
                 width: `${(activeStep / (processSteps.length - 1)) * 100}%`,
@@ -152,14 +153,14 @@ export default function HowItWorks() {
             >
               <div
                 className={`rounded-full p-3 mr-4 md:mr-0 md:mb-4 md:self-center flex-shrink-0 w-12 h-12 flex items-center justify-center transition-colors duration-300 ${
-                  index <= activeStep ? "bg-[#777EF0]" : "bg-gray-200"
+                  index <= activeStep ? "bg-[hsl(var(--primary-accent))]" : "bg-gray-200"
                 }`}
               >
                 <step.icon className="w-6 h-6 text-white" />
               </div>
               <div className="md:text-center flex-grow">
                 <h3 className={`text-xl font-semibold mb-2 transition-colors duration-300 ${
-                  index <= activeStep ? "text-[#777EF0]" : "text-gray-400"
+                  index <= activeStep ? "text-[hsl(var(--primary-accent))]" : "text-gray-400"
                 }`}>
                   {step.title}
                 </h3>
@@ -182,7 +183,7 @@ export default function HowItWorks() {
             Back to Home
           </Button>
           <Button
-            className="bg-[#777EF0] text-white hover:bg-[#111111] transition-colors rounded-full px-6 py-3 text-lg"
+            className="bg-[hsl(var(--primary-accent))] text-white hover:bg-[#111111] transition-colors rounded-full px-6 py-3 text-lg"
             onClick={() => router.push("/what-we-do")}
           >
             What We Do

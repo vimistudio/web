@@ -49,6 +49,7 @@ export default function Home() {
     <motion.main
       key="home"
       className="flex-1 flex items-center"
+      role="main"
       initial={{ opacity: 0, x: -100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -100 }}
@@ -136,7 +137,7 @@ export default function Home() {
             </motion.div>
             <div className="pr-2 sm:pr-3">
               <motion.div
-                className="bg-white text-black rounded-full w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center transition-colors group-hover:bg-[#777EF0] group-hover:text-white"
+                className="bg-white text-black rounded-full w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center transition-colors group-hover:bg-[hsl(var(--primary-accent))] group-hover:text-white"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.3 }}
               >

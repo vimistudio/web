@@ -1,9 +1,19 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import Template from "./_components/template"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({ subsets: ["latin"] })
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "hsl(var(--primary-accent))",
+  // Ensure zooming/scaling is enabled for accessibility
+  minimumScale: 1,
+  maximumScale: 5
+}
 
 export const metadata: Metadata = {
   title: {
@@ -35,13 +45,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Vimi Studio"
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1
-  },
-  themeColor: "#777ef0"
+  }
 }
 
 export default function RootLayout({
@@ -53,6 +57,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Template>{children}</Template>
+        <SpeedInsights />
       </body>
     </html>
   )

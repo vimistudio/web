@@ -31,26 +31,26 @@ export function Header() {
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
             Home
           </Link>
           <Link
             href="/how-it-works"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
             How it works
           </Link>
           <Link
             href="/what-we-do"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
             What we do
           </Link>
         </div>
 
         <Button
-          className="bg-[#111111] text-white hover:bg-[#777EF0] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
+          className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
           onClick={() => router.push("/start-project")}
         >
           Start A Project
