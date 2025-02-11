@@ -75,6 +75,7 @@ export default function HowItWorks() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -144,9 +145,9 @@ export default function HowItWorks() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setShowBanner(true);
+          setHasScrolledToBottom(true);
         } else {
-          setShowBanner(false);
+          setHasScrolledToBottom(false);
         }
       },
       {
@@ -166,6 +167,11 @@ export default function HowItWorks() {
       }
     };
   }, []);
+
+  // Add a useEffect to control banner visibility based on both conditions
+  useEffect(() => {
+    setShowBanner(showFAQ && hasScrolledToBottom);
+  }, [showFAQ, hasScrolledToBottom]);
 
   return (
     <motion.main
