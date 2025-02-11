@@ -50,7 +50,7 @@ export function Header() {
         </div>
 
         <Button
-          className="bg-[#111111] text-white hover:bg-[#777EF0] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
+          className="bg-[#111111] text-white hover:bg-[#403696] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
           onClick={() => router.push("/start-project")}
         >
           Start A Project
