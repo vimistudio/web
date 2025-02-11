@@ -135,7 +135,7 @@ export default function WhatWeDo() {
                   >
                     <Button
                       variant="outline"
-                      className="rounded-full border border-dashed hover:border-solid hover:bg-[#777EF0] hover:text-white transition-all"
+                      className="rounded-full border border-dashed hover:border-solid hover:bg-[hsl(var(--primary-accent))] hover:text-white transition-all"
                     >
                       {industry}
                     </Button>
@@ -197,7 +197,7 @@ export default function WhatWeDo() {
                   >
                     <Button
                       variant="secondary"
-                      className="rounded-full bg-white/10 hover:bg-[#777EF0] border-none"
+                      className="rounded-full bg-white/10 hover:bg-[hsl(var(--primary-accent))] border-none"
                     >
                       {service}
                     </Button>
@@ -240,7 +240,7 @@ export default function WhatWeDo() {
       <AnimatePresence>
         {showBanner && (
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#403696] to-[#2d2869] p-4 flex justify-center items-center"
+            className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[hsl(var(--primary-accent))] to-[#2d2869] p-4 flex justify-center items-center"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}

@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#403696",
+  themeColor: "hsl(var(--primary-accent))",
   // Ensure zooming/scaling is enabled for accessibility
   minimumScale: 1,
   maximumScale: 5

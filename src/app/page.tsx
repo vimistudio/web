@@ -137,7 +137,7 @@ export default function Home() {
             </motion.div>
             <div className="pr-2 sm:pr-3">
               <motion.div
-                className="bg-white text-black rounded-full w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center transition-colors group-hover:bg-[#403696] group-hover:text-white"
+                className="bg-white text-black rounded-full w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center transition-colors group-hover:bg-[hsl(var(--primary-accent))] group-hover:text-white"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.3 }}
               >
