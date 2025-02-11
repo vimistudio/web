@@ -10,7 +10,33 @@ export const metadata: Metadata = {
     default: "Vimi Studio - Innovative Design Agency for Digital Products",
     template: "%s | Vimi Studio"
   },
-  description: "Created with v0"
+  description: "Created with v0",
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+      },
+    ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/safari-pinned-tab.svg",
+        color: "#777EF0",
+      },
+    ],
+  },
+  manifest: "/site.webmanifest",
 }
 
 export default function RootLayout({
