@@ -1,0 +1,27 @@
+export const statements = {
+  small: [
+    "dreamers",
+    "creators",
+    "thinkers",
+    "builders",
+    "leaders",
+    "makers",
+    "doers",
+    "shapers",
+    "visionaries",
+  ],
+  large: [
+    "innovators",
+    "entrepreneurs",
+    "visionaries",
+    "pioneers",
+    "dreamers",
+    "creators",
+    "thinkers",
+    "builders",
+    "leaders",
+    "makers",
+    "doers",
+    "shapers",
+  ],
+};
