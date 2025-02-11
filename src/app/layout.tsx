@@ -10,33 +10,38 @@ export const metadata: Metadata = {
     default: "Vimi Studio - Innovative Design Agency for Digital Products",
     template: "%s | Vimi Studio"
   },
-  description: "Created with v0",
+  description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
   icons: {
     icon: [
-      {
-        url: "/favicon.ico",
-        sizes: "any",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      {
-        url: "/apple-touch-icon.png",
-        sizes: "180x180",
-      },
+      { url: "/apple-touch-icon.png" }
     ],
     other: [
       {
         rel: "mask-icon",
         url: "/safari-pinned-tab.svg",
-        color: "#777EF0",
-      },
-    ],
+        color: "#777ef0"
+      }
+    ]
   },
   manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Vimi Studio"
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1
+  },
+  themeColor: "#777ef0"
 }
 
 export default function RootLayout({
