@@ -115,22 +115,32 @@ export default function Home() {
               // Wait for button press animation
               await new Promise(resolve => setTimeout(resolve, 200));
               
-              // Add a sweep overlay
-              const overlay = document.createElement('div');
-              overlay.style.position = 'fixed';
-              overlay.style.top = '0';
-              overlay.style.right = '0';
-              overlay.style.width = '100%';
-              overlay.style.height = '100%';
-              overlay.style.backgroundColor = '#fbfafa';
-              overlay.style.transform = 'translateX(100%)';
-              overlay.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
-              overlay.style.zIndex = '100';
-              document.body.appendChild(overlay);
+              // Create a container for the sliding effect
+              const container = document.createElement('div');
+              container.style.position = 'fixed';
+              container.style.top = '0';
+              container.style.left = '0';
+              container.style.width = '100%';
+              container.style.height = '100%';
+              container.style.pointerEvents = 'none';
+              container.style.zIndex = '100';
+              document.body.appendChild(container);
 
-              // Trigger the sweep animation
+              // Create the sliding element
+              const slider = document.createElement('div');
+              slider.style.position = 'absolute';
+              slider.style.top = '0';
+              slider.style.right = '0';
+              slider.style.width = '100%';
+              slider.style.height = '100%';
+              slider.style.backgroundColor = '#fbfafa';
+              slider.style.transform = 'translateX(100%)';
+              slider.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
+              container.appendChild(slider);
+
+              // Trigger the slide animation
               requestAnimationFrame(() => {
-                overlay.style.transform = 'translateX(0%)';
+                slider.style.transform = 'translateX(0%)';
               });
 
               // Wait for animation to complete
@@ -139,9 +149,9 @@ export default function Home() {
               // Navigate to the next page
               router.push("/how-it-works");
 
-              // Remove the overlay after navigation
+              // Clean up the animation elements
               setTimeout(() => {
-                overlay.remove();
+                container.remove();
               }, 100);
             }}
           >
