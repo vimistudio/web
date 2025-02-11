@@ -144,8 +144,11 @@ export default function HowItWorks() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Update banner visibility based on intersection
-        setShowBanner(entry.isIntersecting && showFAQ);
+        if (entry.isIntersecting) {
+          setShowBanner(true);
+        } else {
+          setShowBanner(false);
+        }
       },
       {
         root: null,
@@ -163,7 +166,7 @@ export default function HowItWorks() {
         observer.unobserve(bottomRef.current);
       }
     };
-  }, [showFAQ]); // Keep showFAQ in dependencies
+  }, []); // Remove showFAQ from dependencies since we handle FAQ visibility separately
 
   return (
     <motion.main
@@ -250,7 +253,7 @@ export default function HowItWorks() {
         <div ref={bottomRef} className="h-1 w-full" />
 
         <AnimatePresence>
-          {showBanner && (
+          {showBanner && showFAQ && (
             <motion.div
               className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
               initial={{ y: 100, opacity: 0 }}
