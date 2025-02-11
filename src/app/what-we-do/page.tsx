@@ -222,7 +222,7 @@ export default function WhatWeDo() {
                   >
                     <Button
                       variant="secondary"
-                      className="rounded-full bg-white/10 hover:bg-[#777EF0] border-none flex-grow text-left justify-start"
+                      className="rounded-full bg-white/10 hover:bg-[hsl(var(--primary-accent))] border-none flex-grow text-left justify-start"
                     >
                       {service}: {duration}
                     </Button>
