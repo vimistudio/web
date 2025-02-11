@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Phone, Users, Palette, Zap, Package, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -73,7 +73,9 @@ const processSteps = [
 export default function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [showBanner, setShowBanner] = useState(false);
   const router = useRouter();
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const triggerConfetti = () => {
     const colors = [
@@ -135,6 +137,33 @@ export default function HowItWorks() {
 
     return () => clearInterval(timer);
   }, [triggerConfetti]); // Added triggerConfetti to dependencies
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShowBanner(true);
+        } else {
+          setShowBanner(false);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.1,
+      }
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => {
+      if (bottomRef.current) {
+        observer.unobserve(bottomRef.current);
+      }
+    };
+  }, []);
 
   return (
     <motion.main
@@ -217,28 +246,35 @@ export default function HowItWorks() {
             </motion.div>
           ))}
         </div>
-        <motion.div
-          className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className="text-white text-center pb-safe">
-            <p className="text-lg font-semibold mb-2">
-              Ready to explore what we can do for you?
-            </p>
-            <motion.button
-              className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
-              onClick={() => router.push("/what-we-do")}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        {/* Invisible div to trigger the banner */}
+        <div ref={bottomRef} className="h-1 w-full" />
+
+        <AnimatePresence>
+          {showBanner && (
+            <motion.div
+              className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              What We Do
-              <ArrowRight size={20} />
-            </motion.button>
-          </div>
-        </motion.div>
+              <div className="text-white text-center pb-safe">
+                <p className="text-lg font-semibold mb-2">
+                  Ready to explore what we can do for you?
+                </p>
+                <motion.button
+                  className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
+                  onClick={() => router.push("/what-we-do")}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  What We Do
+                  <ArrowRight size={20} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         <div className="container mx-auto px-4 py-16">
           <h2 className="text-4xl font-bold mb-12 text-center">
