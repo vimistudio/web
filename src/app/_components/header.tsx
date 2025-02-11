@@ -31,19 +31,19 @@ export function Header() {
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[#403696] transition-colors"
           >
             Home
           </Link>
           <Link
             href="/how-it-works"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[#403696] transition-colors"
           >
             How it works
           </Link>
           <Link
             href="/what-we-do"
-            className="text-[#111111] hover:text-[#777EF0] transition-colors"
+            className="text-[#111111] hover:text-[#403696] transition-colors"
           >
             What we do
           </Link>
