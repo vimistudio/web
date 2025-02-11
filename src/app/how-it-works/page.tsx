@@ -288,14 +288,8 @@ export default function HowItWorks() {
           )}
         </AnimatePresence>
 
-        {/* Add wrapper div for proper positioning */}
-        <div className="relative w-full">
-          <div 
-            ref={bottomRef} 
-            className="absolute bottom-0 left-0 w-full h-1"
-            style={{ marginBottom: '100px' }}
-          />
-        </div>
+        {/* Bottom ref div */}
+        <div className="w-full h-1" ref={bottomRef} />
 
         <AnimatePresence>
           {showFAQ && (
