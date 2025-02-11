@@ -37,13 +37,13 @@ export function Header() {
           </Link>
           <Link
             href="/how-it-works"
-            className="text-[#111111] hover:text-[#403696] transition-colors"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
             How it works
           </Link>
           <Link
             href="/what-we-do"
-            className="text-[#111111] hover:text-[#403696] transition-colors"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
             What we do
           </Link>
