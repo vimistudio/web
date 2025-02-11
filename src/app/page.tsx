@@ -118,10 +118,10 @@ export default function Home() {
               // Create a container for the sliding effect
               const container = document.createElement('div');
               container.style.position = 'fixed';
-              container.style.top = '0';
+              container.style.top = '80px'; // Add space for navbar
               container.style.left = '0';
               container.style.width = '100%';
-              container.style.height = '100%';
+              container.style.height = 'calc(100% - 80px)'; // Subtract navbar height
               container.style.pointerEvents = 'none';
               container.style.zIndex = '100';
               document.body.appendChild(container);
