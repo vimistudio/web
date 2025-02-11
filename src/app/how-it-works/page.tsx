@@ -356,6 +356,37 @@ export default function HowItWorks() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Bottom ref div */}
+        <div className="w-full h-1" ref={bottomRef} />
+
+        {/* Banner */}
+        <AnimatePresence>
+          {showBanner && showFAQ && (
+            <motion.div
+              className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <div className="text-white text-center pb-safe">
+                <p className="text-lg font-semibold mb-2">
+                  Ready to explore what we can do for you?
+                </p>
+                <motion.button
+                  className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
+                  onClick={() => router.push("/what-we-do")}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  What We Do
+                  <ArrowRight size={20} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.main>
   );
