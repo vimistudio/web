@@ -261,11 +261,8 @@ export default function HowItWorks() {
             </motion.div>
           ))}
         </div>
-        {/* Invisible div to trigger the banner */}
-        <div ref={bottomRef} className="h-1 w-full" />
-
         <AnimatePresence>
-          {showBanner && showFAQ && (
+          {showFAQ && (
             <motion.div
               className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
               initial={{ y: 100, opacity: 0 }}
@@ -291,8 +288,14 @@ export default function HowItWorks() {
           )}
         </AnimatePresence>
 
-        {/* Invisible div to trigger the banner */}
-        <div ref={bottomRef} className="h-1 w-full" />
+        {/* Add wrapper div for proper positioning */}
+        <div className="relative w-full">
+          <div 
+            ref={bottomRef} 
+            className="absolute bottom-0 left-0 w-full h-1"
+            style={{ marginBottom: '100px' }}
+          />
+        </div>
 
         <AnimatePresence>
           {showFAQ && (
