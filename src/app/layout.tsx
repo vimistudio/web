@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Vimi Studio - Innovative Design Agency for Digital Products",
     description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
-    url: "https://www.vimistudio.com",
+    url: "https://vimistudio.com",
     siteName: "Vimi Studio",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://vimistudio.com/og-image.png",
         width: 1200,
         height: 630,
         alt: "Vimi Studio - Digital Product Design Agency"
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Vimi Studio - Innovative Design Agency for Digital Products",
     description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
-    images: ["/og-image.jpg"],
+    images: ["https://vimistudio.com/og-image.png"],
     creator: "@vimistudio"
   },
   icons: {

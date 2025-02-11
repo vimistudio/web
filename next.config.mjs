@@ -15,6 +15,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['www.vimistudio.com'],
   },
   experimental: {
     webpackBuildWorker: true,
