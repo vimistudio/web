@@ -105,6 +105,7 @@ export default function WhatWeDo() {
     <motion.main
       key="what-we-do"
       className="flex-1 flex flex-col items-center py-12 md:pt-24 lg:pt-32 relative"
+      role="main"
       initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}

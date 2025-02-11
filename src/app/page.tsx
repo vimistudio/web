@@ -49,6 +49,7 @@ export default function Home() {
     <motion.main
       key="home"
       className="flex-1 flex items-center"
+      role="main"
       initial={{ opacity: 0, x: -100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -100 }}
