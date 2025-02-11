@@ -34,13 +34,6 @@ export const metadata: Metadata = {
         height: 630,
         alt: "Vimi Studio - Digital Product Design Agency",
         type: "image/png",
-      },
-      {
-        url: "https://vimistudio.com/og-image-square.png",
-        width: 1080,
-        height: 1080,
-        alt: "Vimi Studio - Digital Product Design Agency",
-        type: "image/png",
       }
     ],
     locale: "en_US",
