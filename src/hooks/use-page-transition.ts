@@ -9,22 +9,18 @@ interface PageTransitionOptions {
 }
 
 export function usePageTransition(options: PageTransitionOptions = {}) {
-  const {
-    duration = 600,
-    delay = 200,
-    navbarHeight = 80
-  } = options;
-  
+  const { duration = 600, delay = 200, navbarHeight = 80 } = options;
+
   const router = useRouter();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const createTransition = async (path: string) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    
+
     try {
       // Wait for button press animation
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
 
       // Create and run animation
       const transition = new TransitionAnimation({ duration, navbarHeight });
@@ -32,9 +28,8 @@ export function usePageTransition(options: PageTransitionOptions = {}) {
 
       // Navigate to the new page
       router.push(path);
-      
     } catch (error) {
-      console.error('Transition failed:', error);
+      console.error("Transition failed:", error);
       router.push(path);
     } finally {
       setIsTransitioning(false);
@@ -43,6 +38,6 @@ export function usePageTransition(options: PageTransitionOptions = {}) {
 
   return {
     isTransitioning,
-    createTransition
+    createTransition,
   };
 }
