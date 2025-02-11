@@ -23,7 +23,9 @@ export class TransitionAnimation {
     this.container.style.pointerEvents = 'none';
     this.container.style.zIndex = '100';
     this.container.style.willChange = 'transform';
-    this.container.style.overflow = 'hidden'; // Prevent any potential overflow
+    this.container.style.overflow = 'hidden';
+    this.container.style.transformStyle = 'preserve-3d';
+    this.container.style.backfaceVisibility = 'hidden';
 
     // Setup slider
     this.slider.style.position = 'absolute';
@@ -32,8 +34,10 @@ export class TransitionAnimation {
     this.slider.style.width = '100%';
     this.slider.style.height = '100%';
     this.slider.style.backgroundColor = '#fbfafa';
-    this.slider.style.transform = 'translateX(100%)';
+    this.slider.style.transform = 'translate3d(100%, 0, 0)';
     this.slider.style.willChange = 'transform';
+    this.slider.style.transformStyle = 'preserve-3d';
+    this.slider.style.backfaceVisibility = 'hidden';
   }
 
   public async animate(): Promise<void> {
@@ -42,28 +46,32 @@ export class TransitionAnimation {
       document.body.appendChild(this.container);
       this.container.appendChild(this.slider);
 
-      // Force reflow
+      // Force reflow and add transition before animation starts
       this.slider.offsetHeight;
+      this.slider.style.transition = `transform ${this.options.duration/1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
-      // Add transition
-      this.slider.style.transition = `transform ${this.options.duration/1000}s cubic-bezier(0.65, 0, 0.35, 1)`;
-
-      // Start animation
+      // Trigger animation in next frame
       requestAnimationFrame(() => {
-        this.slider.style.transform = 'translateX(0%)';
+        this.slider.style.transform = 'translate3d(0, 0, 0)';
       });
 
-      // Cleanup after animation
-      const cleanup = () => {
-        this.container.remove();
+      // Resolve promise after animation completes
+      this.slider.addEventListener('transitionend', () => {
+        this.cleanup();
         resolve();
-      };
+      }, { once: true });
 
-      setTimeout(cleanup, this.options.duration/2);
+      // Backup cleanup in case transitionend doesn't fire
+      setTimeout(() => {
+        this.cleanup();
+        resolve();
+      }, this.options.duration + 100);
     });
   }
 
   public cleanup(): void {
-    this.container.remove();
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
   }
 }

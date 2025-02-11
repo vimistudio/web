@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { TransitionAnimation } from "@/lib/transition-animation";
 
 interface PageTransitionOptions {
@@ -9,35 +9,42 @@ interface PageTransitionOptions {
 }
 
 export function usePageTransition(options: PageTransitionOptions = {}) {
-  const { duration = 600, delay = 200, navbarHeight = 80 } = options;
-
+  const {
+    duration = 400, // Reduced duration for smoother feel
+    delay = 100,    // Reduced delay for more immediate response
+    navbarHeight = 80
+  } = options;
+  
   const router = useRouter();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const createTransition = async (path: string) => {
+  const createTransition = useCallback(async (path: string) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-
+    
     try {
-      // Wait for button press animation
-      await new Promise((resolve) => setTimeout(resolve, delay));
-
-      // Create and run animation
       const transition = new TransitionAnimation({ duration, navbarHeight });
-      await transition.animate();
+      
+      // Shorter delay for button press feedback
+      await new Promise(resolve => setTimeout(resolve, delay));
 
-      // Navigate to the new page
-      router.push(path);
+      // Run animation and navigation concurrently
+      await Promise.all([
+        transition.animate(),
+        new Promise(resolve => setTimeout(resolve, duration/2))
+          .then(() => router.push(path))
+      ]);
+      
     } catch (error) {
-      console.error("Transition failed:", error);
+      console.error('Transition failed:', error);
       router.push(path);
     } finally {
       setIsTransitioning(false);
     }
-  };
+  }, [duration, delay, navbarHeight, router, isTransitioning]);
 
   return {
     isTransitioning,
-    createTransition,
+    createTransition
   };
 }
