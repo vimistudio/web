@@ -22,6 +22,29 @@ export const metadata: Metadata = {
     template: "%s | Vimi Studio"
   },
   description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
+  openGraph: {
+    title: "Vimi Studio - Innovative Design Agency for Digital Products",
+    description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
+    url: "https://www.vimistudio.com",
+    siteName: "Vimi Studio",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Vimi Studio - Digital Product Design Agency"
+      }
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vimi Studio - Innovative Design Agency for Digital Products",
+    description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
+    images: ["/og-image.jpg"],
+    creator: "@vimistudio"
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
