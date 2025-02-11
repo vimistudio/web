@@ -240,7 +240,7 @@ export default function WhatWeDo() {
       <AnimatePresence>
         {showBanner && (
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[hsl(var(--primary-accent))] to-[#2d2869] p-4 flex justify-center items-center"
+            className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
@@ -251,7 +251,7 @@ export default function WhatWeDo() {
                 Ready to bring your vision to life?
               </p>
               <motion.button
-                className="bg-white text-[#5046c0] px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
+                className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
                 onClick={() => router.push("/start-project")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
