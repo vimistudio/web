@@ -118,6 +118,63 @@ export default function WhatWeDo() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
+            className="space-y-12 bg-[#111111] text-white rounded-3xl p-8"
+          >
+            <div>
+              <h3 className="text-lg font-medium text-gray-400 mb-4">
+                WHAT WE DO:
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {services.map((service) => (
+                  <motion.div
+                    key={service}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    viewport={{ once: true }}
+                  >
+                    <Button
+                      variant="secondary"
+                      className="rounded-full bg-white/10 hover:bg-[hsl(var(--primary-accent))] border-none"
+                    >
+                      {service}
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-400 mb-4">
+                HOW FAST WE DO IT:
+              </h3>
+              <div className="grid gap-2">
+                {timeframes.map(({ service, duration }) => (
+                  <motion.div
+                    key={service}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-2"
+                  >
+                    <Button
+                      variant="secondary"
+                      className="rounded-full bg-white/10 hover:bg-[hsl(var(--primary-accent))] border-none flex-grow text-left justify-start"
+                    >
+                      {service}: {duration}
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
             className="space-y-12 bg-[#F5F5F5] rounded-3xl p-8"
           >
             <div>
@@ -174,14 +231,6 @@ export default function WhatWeDo() {
               </div>
             </div>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="space-y-12 bg-[#111111] text-white rounded-3xl p-8"
-          >
             <div>
               <h3 className="text-lg font-medium text-gray-400 mb-4">
                 WHAT WE DO:
