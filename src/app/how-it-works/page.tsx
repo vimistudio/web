@@ -95,7 +95,7 @@ export default function HowItWorks() {
         }
         return prev + 1;
       });
-    }, 4500); // Changed from 2000 to 1500
+    }, 2000);
 
     return () => clearInterval(timer);
   }, [triggerConfetti]); // Added triggerConfetti to dependencies
@@ -119,9 +119,9 @@ export default function HowItWorks() {
           <div className="absolute left-6 top-6 bottom-0 w-0.5 bg-gray-200 md:hidden">
             <motion.div
               className="absolute top-0 left-0 w-full bg-[hsl(var(--primary-accent))]"
-              style={{ 
+              style={{
                 originY: 0,
-                height: `${((activeStep + 1) * 20)}%`,
+                height: `${(activeStep + 1) * 20}%`,
               }}
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
@@ -133,7 +133,7 @@ export default function HowItWorks() {
           <div className="hidden md:block absolute top-5 left-[10%] right-[10%] h-0.5 bg-gray-200">
             <motion.div
               className="absolute top-0 left-0 h-full bg-[#5046c0]"
-              style={{ 
+              style={{
                 originX: 0,
                 width: `${(activeStep / (processSteps.length - 1)) * 100}%`,
               }}
@@ -153,15 +153,21 @@ export default function HowItWorks() {
             >
               <div
                 className={`rounded-full p-3 mr-4 md:mr-0 md:mb-4 md:self-center flex-shrink-0 w-12 h-12 flex items-center justify-center transition-colors duration-300 ${
-                  index <= activeStep ? "bg-[hsl(var(--primary-accent))]" : "bg-gray-200"
+                  index <= activeStep
+                    ? "bg-[hsl(var(--primary-accent))]"
+                    : "bg-gray-200"
                 }`}
               >
                 <step.icon className="w-6 h-6 text-white" />
               </div>
               <div className="md:text-center flex-grow">
-                <h3 className={`text-xl font-semibold mb-2 transition-colors duration-300 ${
-                  index <= activeStep ? "text-[hsl(var(--primary-accent))]" : "text-gray-400"
-                }`}>
+                <h3
+                  className={`text-xl font-semibold mb-2 transition-colors duration-300 ${
+                    index <= activeStep
+                      ? "text-[hsl(var(--primary-accent))]"
+                      : "text-gray-400"
+                  }`}
+                >
                   {step.title}
                 </h3>
                 <p
