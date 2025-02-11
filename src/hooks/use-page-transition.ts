@@ -1,5 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TransitionAnimation } from "@/lib/transition-animation";
 
 interface PageTransitionOptions {
   duration?: number;
@@ -18,49 +19,26 @@ export function usePageTransition(options: PageTransitionOptions = {}) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const createTransition = async (path: string) => {
+    if (isTransitioning) return;
     setIsTransitioning(true);
     
-    // Wait for button press animation
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    // Create a container for the sliding effect
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.top = `${navbarHeight}px`;
-    container.style.left = '0';
-    container.style.width = '100%';
-    container.style.height = `calc(100% - ${navbarHeight}px)`;
-    container.style.pointerEvents = 'none';
-    container.style.zIndex = '100';
-    document.body.appendChild(container);
+    try {
+      // Wait for button press animation
+      await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Create the sliding element
-    const slider = document.createElement('div');
-    slider.style.position = 'absolute';
-    slider.style.top = '0';
-    slider.style.right = '0';
-    slider.style.width = '100%';
-    slider.style.height = '100%';
-    slider.style.backgroundColor = '#fbfafa';
-    slider.style.transform = 'translateX(100%)';
-    slider.style.transition = `transform ${duration/1000}s cubic-bezier(0.65, 0, 0.35, 1)`;
-    container.appendChild(slider);
+      // Create and run animation
+      const transition = new TransitionAnimation({ duration, navbarHeight });
+      await transition.animate();
 
-    // Trigger the slide animation
-    requestAnimationFrame(() => {
-      slider.style.transform = 'translateX(0%)';
-    });
-
-    // Wait for animation to complete
-    await new Promise(resolve => setTimeout(resolve, duration/2));
-
-    // Navigate to the next page
-    router.push(path);
-
-    // Clean up the animation elements
-    setTimeout(() => {
-      container.remove();
-    }, 100);
+      // Navigate to the new page
+      router.push(path);
+      
+    } catch (error) {
+      console.error('Transition failed:', error);
+      router.push(path);
+    } finally {
+      setIsTransitioning(false);
+    }
   };
 
   return {
