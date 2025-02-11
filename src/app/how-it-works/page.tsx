@@ -144,9 +144,8 @@ export default function HowItWorks() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Only show banner if we're at the bottom AND FAQ is shown
-        setHasScrolledToBottom(entry.isIntersecting);
-        setShowBanner(showFAQ && entry.isIntersecting);
+        // Update banner visibility based on intersection
+        setShowBanner(entry.isIntersecting && showFAQ);
       },
       {
         root: null,
@@ -164,7 +163,7 @@ export default function HowItWorks() {
         observer.unobserve(bottomRef.current);
       }
     };
-  }, [showFAQ]); // Add showFAQ to dependencies
+  }, [showFAQ]); // Keep showFAQ in dependencies
 
   return (
     <motion.main
@@ -276,6 +275,9 @@ export default function HowItWorks() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Invisible div to trigger the banner */}
+        <div ref={bottomRef} className="h-1 w-full" />
         
         <AnimatePresence>
           {showFAQ && (
