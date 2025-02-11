@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Phone, Users, Palette, Zap, Package } from "lucide-react";
+import { Phone, Users, Palette, Zap, Package, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 
@@ -181,20 +181,28 @@ export default function HowItWorks() {
             </motion.div>
           ))}
         </div>
-        <div className="mt-12 text-center space-x-4">
-          <Button
-            className="bg-[#111111] text-white hover:bg-[#777EF0] transition-colors rounded-full px-6 py-3 text-lg"
-            onClick={() => router.push("/")}
-          >
-            Back to Home
-          </Button>
-          <Button
-            className="bg-[hsl(var(--primary-accent))] text-white hover:bg-[#111111] transition-colors rounded-full px-6 py-3 text-lg"
-            onClick={() => router.push("/what-we-do")}
-          >
-            What We Do
-          </Button>
-        </div>
+        <motion.div
+          className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
+          <div className="text-white text-center pb-safe">
+            <p className="text-lg font-semibold mb-2">
+              Ready to explore what we can do for you?
+            </p>
+            <motion.button
+              className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
+              onClick={() => router.push("/what-we-do")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              What We Do
+              <ArrowRight size={20} />
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
     </motion.main>
   );
