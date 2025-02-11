@@ -145,7 +145,10 @@ export default function HowItWorks() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setShowBanner(true);
+          // Add 1 second delay before showing the banner
+          setTimeout(() => {
+            setShowBanner(true);
+          }, 1000);
         } else {
           setShowBanner(false);
         }
@@ -166,7 +169,7 @@ export default function HowItWorks() {
         observer.unobserve(bottomRef.current);
       }
     };
-  }, []); // Remove showFAQ from dependencies since we handle FAQ visibility separately
+  }, []); // Keep dependencies empty array
 
   return (
     <motion.main
