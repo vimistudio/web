@@ -185,10 +185,12 @@ export default function HowItWorks() {
       key="how-it-works"
       className="flex-1 flex items-center"
       role="main"
-      initial={{ opacity: 0, x: 100 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 100 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ 
+        duration: 0.3
+      }}
     >
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <h2 className="text-4xl md:text-5xl font-bold mb-8 text-center">

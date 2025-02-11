@@ -49,12 +49,17 @@ export function Header() {
           </Link>
         </div>
 
-        <Button
-          className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
-          onClick={() => router.push("/start-project")}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          Start A Project
-        </Button>
+          <Button
+            className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
+            onClick={() => router.push("/start-project")}
+          >
+            Start A Project
+          </Button>
+        </motion.div>
       </nav>
     </motion.header>
   );

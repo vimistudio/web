@@ -3,13 +3,14 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
+import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
 import { statements } from "@/lib/word-bank";
 
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-  const router = useRouter();
+  const { isTransitioning, createTransition } = usePageTransition();
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -100,14 +101,14 @@ export default function Home() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             animate={{
-              scale: [1, 1.05, 1],
+              scale: isTransitioning ? 0.95 : [1, 1.05, 1],
               transition: {
                 duration: 1.5,
                 repeat: Number.POSITIVE_INFINITY,
                 repeatType: "reverse",
               },
             }}
-            onClick={() => router.push("/how-it-works")}
+            onClick={() => createTransition("/how-it-works")}
           >
             <motion.div
               className="py-2 sm:py-3 pl-4 sm:pl-6 pr-6 sm:pr-8 flex items-center"
