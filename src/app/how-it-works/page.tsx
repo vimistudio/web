@@ -7,6 +7,41 @@ import { Phone, Users, Palette, Zap, Package, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 
+const faqItems = [
+  {
+    question: "WHAT HAPPENS IF MY PROJECT SCOPE CHANGES MID-WAY?",
+    answer: "We understand that project requirements can evolve. We maintain flexible processes to accommodate changes while ensuring timeline and budget transparency."
+  },
+  {
+    question: "CAN YOU COLLABORATE WITH OUR IN-HOUSE TEAM?",
+    answer: "Absolutely! We regularly work alongside in-house teams, providing complementary expertise and seamless integration with your existing workflows."
+  },
+  {
+    question: "WHY NOT HIRE DESIGNERS FULL-TIME?",
+    answer: "Our specialized team brings diverse expertise and proven processes, offering flexibility and cost-effectiveness compared to full-time hires."
+  },
+  {
+    question: "DESIGNME VS OTHER CONTRACTORS",
+    answer: "We combine agency-quality design with the personal attention of freelancers, delivering consistent results through our established process."
+  },
+  {
+    question: "HOW DO YOU CHARGE?",
+    answer: "We offer transparent, project-based pricing with clear deliverables. Contact us for a custom quote based on your specific needs."
+  },
+  {
+    question: "DO YOU HANDLE CONTENT CREATION, OR SHOULD WE PROVIDE COPY AND VISUALS?",
+    answer: "We can handle both. While you're welcome to provide content, we also offer comprehensive content creation services to ensure cohesive design and messaging."
+  },
+  {
+    question: "WHAT IF I ONLY NEED A SMALL DESIGN TASK?",
+    answer: "We handle projects of all sizes. Our flexible approach allows us to scale our services to match your specific needs."
+  },
+  {
+    question: "HOW SOON CAN YOU START?",
+    answer: "We typically can begin new projects within 1-2 weeks. Contact us to discuss your timeline and requirements."
+  }
+];
+
 const processSteps = [
   {
     icon: Phone,
@@ -203,6 +238,35 @@ export default function HowItWorks() {
             </motion.button>
           </div>
         </motion.div>
+        
+        <div className="container mx-auto px-4 py-16">
+          <h2 className="text-4xl font-bold mb-12 text-center">
+            YOUR QUESTIONS, <span className="text-gray-500">ANSWERED.</span>
+          </h2>
+          <div className="max-w-4xl mx-auto space-y-4">
+            {faqItems.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="border-b border-gray-200 pb-4"
+              >
+                <button
+                  className="w-full text-left flex justify-between items-center py-4"
+                  onClick={() => {/* Add accordion functionality if desired */}}
+                >
+                  <h3 className="text-lg font-medium">{item.question}</h3>
+                  <div className="text-[hsl(var(--primary-accent))]">+</div>
+                </button>
+                <div className="text-gray-600 pb-4">
+                  {item.answer}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
     </motion.main>
   );
