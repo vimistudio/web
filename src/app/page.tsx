@@ -119,11 +119,11 @@ export default function Home() {
               const overlay = document.createElement('div');
               overlay.style.position = 'fixed';
               overlay.style.top = '0';
-              overlay.style.left = '0';
+              overlay.style.right = '0';
               overlay.style.width = '100%';
               overlay.style.height = '100%';
-              overlay.style.backgroundColor = '#7076CF';
-              overlay.style.transform = 'translateX(-100%)';
+              overlay.style.backgroundColor = '#fbfafa';
+              overlay.style.transform = 'translateX(100%)';
               overlay.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
               overlay.style.zIndex = '100';
               document.body.appendChild(overlay);
@@ -134,10 +134,15 @@ export default function Home() {
               });
 
               // Wait for animation to complete
-              await new Promise(resolve => setTimeout(resolve, 600));
+              await new Promise(resolve => setTimeout(resolve, 300));
 
               // Navigate to the next page
               router.push("/how-it-works");
+
+              // Remove the overlay after navigation
+              setTimeout(() => {
+                overlay.remove();
+              }, 100);
             }}
           >
             <motion.div
