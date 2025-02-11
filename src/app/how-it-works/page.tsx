@@ -72,6 +72,7 @@ const processSteps = [
 
 export default function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const router = useRouter();
 
   const triggerConfetti = () => {
@@ -251,18 +252,39 @@ export default function HowItWorks() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="border-b border-gray-200 pb-4"
+                className="border-b border-gray-200"
               >
                 <button
                   className="w-full text-left flex justify-between items-center py-4"
-                  onClick={() => {/* Add accordion functionality if desired */}}
+                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                  aria-expanded={openIndex === index}
                 >
                   <h3 className="text-lg font-medium">{item.question}</h3>
-                  <div className="text-[hsl(var(--primary-accent))]">+</div>
+                  <div 
+                    className={`text-[hsl(var(--primary-accent))] transition-transform duration-200 ${
+                      openIndex === index ? 'rotate-45' : ''
+                    }`}
+                  >
+                    +
+                  </div>
                 </button>
-                <div className="text-gray-600 pb-4">
-                  {item.answer}
-                </div>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: openIndex === index ? 'auto' : 0,
+                    opacity: openIndex === index ? 1 : 0,
+                    marginBottom: openIndex === index ? 16 : 0
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: "easeInOut"
+                  }}
+                  className="overflow-hidden"
+                >
+                  <div className="text-gray-600">
+                    {item.answer}
+                  </div>
+                </motion.div>
               </motion.div>
             ))}
           </div>
