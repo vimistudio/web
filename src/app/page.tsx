@@ -4,14 +4,13 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
 import { statements } from "@/lib/word-bank";
 
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const router = useRouter();
+  const { isTransitioning, createTransition } = usePageTransition();
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -109,51 +108,7 @@ export default function Home() {
                 repeatType: "reverse",
               },
             }}
-            onClick={async () => {
-              setIsTransitioning(true);
-              
-              // Wait for button press animation
-              await new Promise(resolve => setTimeout(resolve, 200));
-              
-              // Create a container for the sliding effect
-              const container = document.createElement('div');
-              container.style.position = 'fixed';
-              container.style.top = '80px'; // Add space for navbar
-              container.style.left = '0';
-              container.style.width = '100%';
-              container.style.height = 'calc(100% - 80px)'; // Subtract navbar height
-              container.style.pointerEvents = 'none';
-              container.style.zIndex = '100';
-              document.body.appendChild(container);
-
-              // Create the sliding element
-              const slider = document.createElement('div');
-              slider.style.position = 'absolute';
-              slider.style.top = '0';
-              slider.style.right = '0';
-              slider.style.width = '100%';
-              slider.style.height = '100%';
-              slider.style.backgroundColor = '#fbfafa';
-              slider.style.transform = 'translateX(100%)';
-              slider.style.transition = 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1)';
-              container.appendChild(slider);
-
-              // Trigger the slide animation
-              requestAnimationFrame(() => {
-                slider.style.transform = 'translateX(0%)';
-              });
-
-              // Wait for animation to complete
-              await new Promise(resolve => setTimeout(resolve, 300));
-
-              // Navigate to the next page
-              router.push("/how-it-works");
-
-              // Clean up the animation elements
-              setTimeout(() => {
-                container.remove();
-              }, 100);
-            }}
+            onClick={() => createTransition("/how-it-works")}
           >
             <motion.div
               className="py-2 sm:py-3 pl-4 sm:pl-6 pr-6 sm:pr-8 flex items-center"
