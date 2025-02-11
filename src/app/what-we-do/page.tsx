@@ -240,7 +240,7 @@ export default function WhatWeDo() {
       <AnimatePresence>
         {showBanner && (
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#5046c0] to-[#3d3599] p-4 flex justify-center items-center"
+            className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#403696] to-[#2d2869] p-4 flex justify-center items-center"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
