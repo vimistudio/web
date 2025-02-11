@@ -144,11 +144,9 @@ export default function HowItWorks() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setHasScrolledToBottom(true);
-        } else {
-          setHasScrolledToBottom(false);
-        }
+        // Only show banner if we're at the bottom AND FAQ is shown
+        setHasScrolledToBottom(entry.isIntersecting);
+        setShowBanner(showFAQ && entry.isIntersecting);
       },
       {
         root: null,
@@ -166,12 +164,7 @@ export default function HowItWorks() {
         observer.unobserve(bottomRef.current);
       }
     };
-  }, []);
-
-  // Add a useEffect to control banner visibility based on both conditions
-  useEffect(() => {
-    setShowBanner(showFAQ && hasScrolledToBottom);
-  }, [showFAQ, hasScrolledToBottom]);
+  }, [showFAQ]); // Add showFAQ to dependencies
 
   return (
     <motion.main
