@@ -17,11 +17,21 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://vimistudio.com'),
   title: {
     default: "Vimi Studio - Innovative Design Agency for Digital Products",
     template: "%s | Vimi Studio"
   },
   description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
+  keywords: ["design agency", "digital products", "UX design", "UI design", "web design", "product design", "branding"],
+  authors: [{ name: "Vimi Studio" }],
+  creator: "Vimi Studio",
+  publisher: "Vimi Studio",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     title: "Vimi Studio - Innovative Design Agency for Digital Products",
     description: "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
@@ -38,6 +48,17 @@ export const metadata: Metadata = {
     ],
     locale: "en_US",
     type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   other: {
     "og:image:secure_url": "https://vimistudio.com/og-image.png",
@@ -67,7 +88,7 @@ export const metadata: Metadata = {
       {
         rel: "mask-icon",
         url: "/safari-pinned-tab.svg",
-        color: "#777ef0"
+        color: "#7076CF"
       }
     ]
   },
