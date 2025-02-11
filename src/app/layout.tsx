@@ -1,9 +1,16 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import Template from "./_components/template"
 
 const inter = Inter({ subsets: ["latin"] })
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#777ef0"
+}
 
 export const metadata: Metadata = {
   title: {
@@ -35,13 +42,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Vimi Studio"
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1
-  },
-  themeColor: "#777ef0"
+  }
 }
 
 export default function RootLayout({
