@@ -2,6 +2,7 @@
 
 import { Header } from "./header"
 import { LoadingOverlay } from "@/app/_components/loading-overlay"
+import { VideoIntro } from "@/components/video-intro"
 import type React from "react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -10,6 +11,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isHomepage = pathname === "/"
   const [mounted, setMounted] = useState(false)
+  const [showVideoIntro, setShowVideoIntro] = useState(true)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -26,7 +28,10 @@ export default function Template({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#fbfafa] flex flex-col">
-      {isHomepage && <LoadingOverlay shouldShow={isHomepage} />}
+      {isHomepage && showVideoIntro && (
+        <VideoIntro onComplete={() => setShowVideoIntro(false)} />
+      )}
+      {isHomepage && !showVideoIntro && <LoadingOverlay shouldShow={isHomepage} />}
       <Header />
       {children}
     </div>
