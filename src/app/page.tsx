@@ -2,27 +2,34 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useState, useEffect, useLayoutEffect, useCallback } from "react";
-
-function debounce(func: (...args: any[]) => void, wait: number) {
-  let timeout: NodeJS.Timeout | null;
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      if (timeout !== null) {
-        clearTimeout(timeout);
-      }
-      func(...args);
-    };
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(later, wait);
-  };
-}
+import { useState, useLayoutEffect } from "react";
 import { AnimatePresence } from "framer-motion";
+import { debounce } from "@/lib/utils"; // Assuming debounce is moved to utils
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
 import { statements } from "@/lib/word-bank";
+
+const DEBOUNCE_DELAY = 100;
+const HEADING_VARIANTS = {
+    hover: {
+      scale: 1.05,
+      transition: {
+        duration: 0.3,
+        yoyo: Number.POSITIVE_INFINITY,
+      },
+    },
+  };
+
+const SUBHEADER_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: (i: number) => ({
+      opacity: 1,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+      },
+    }),
+  };
 
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -34,50 +41,13 @@ export default function Home() {
     };
 
     checkScreenSize();
-    const debounceResize = debounce(checkScreenSize, 100);
+    const debounceResize = debounce(checkScreenSize, DEBOUNCE_DELAY);
     window.addEventListener("resize", debounceResize);
 
     return () => window.removeEventListener("resize", debounceResize);
   }, []);
 
   const currentWords = isLargeScreen ? statements.large : statements.small;
-
-  const headingVariants = {
-    hover: {
-      scale: 1.05,
-      transition: {
-        duration: 0.3,
-        yoyo: Number.POSITIVE_INFINITY,
-      },
-    },
-  };
-
-  const subheaderVariants = {
-    hidden: { opacity: 0 },
-    visible: (i: number) => ({
-      opacity: 1,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.5,
-      },
-    }),
-  };
-
-  useEffect(() => {
-    const handlePageLoad = () => {
-      // Ensure the correct page is loaded based on the URL
-      const currentPath = window.location.pathname;
-      if (currentPath !== "/") {
-        createTransition(currentPath);
-      }
-    };
-
-    window.addEventListener("load", handlePageLoad);
-
-    return () => {
-      window.removeEventListener("load", handlePageLoad);
-    };
-  }, [createTransition]);
   return (
     <motion.main
       key="home"
@@ -95,27 +65,27 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           whileHover="hover"
-          variants={headingVariants}
+          variants={HEADING_VARIANTS}
         >
-          <motion.div variants={headingVariants}>Designed</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>Designed</motion.div>
           <div className="relative h-[1.1em] overflow-hidden">
             <motion.span
               className="absolute left-0 right-0"
-              variants={headingVariants}
+              variants={HEADING_VARIANTS}
             >
               for <WordRotator words={currentWords} />
               <span className="text-black">.</span>
             </motion.span>
           </div>
-          <motion.div variants={headingVariants}>Inspired</motion.div>
-          <motion.div variants={headingVariants}>by stories.</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>Inspired</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>by stories.</motion.div>
         </motion.h1>
 
         <motion.p
           className="text-[#898989] text-lg sm:text-xl md:text-xl lg:text-2xl text-center mt-4 sm:mt-6 md:mt-8 max-w-xs sm:max-w-lg md:max-w-3xl mx-auto"
           initial="hidden"
           animate="visible"
-          variants={subheaderVariants}
+          variants={SUBHEADER_VARIANTS}
           custom={0}
         >
           Every click, every scroll — intentionally designed to connect, engage,
