@@ -21,9 +21,8 @@ export function usePageTransition(options: PageTransitionOptions = {}) {
   const createTransition = useCallback(async (path: string) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    
+    const transition = new TransitionAnimation({ duration, navbarHeight });
     try {
-      const transition = new TransitionAnimation({ duration, navbarHeight });
       
       // Shorter delay for button press feedback
       await new Promise(resolve => setTimeout(resolve, delay));

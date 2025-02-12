@@ -27,7 +27,7 @@ export function WordRotator({ words = [] }: { words: string[] }) {  // Add defau
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -50, opacity: 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className="inline-block text-[hsl(var(--primary-accent))]"
+        className="inline-block text-[hsl(var(--primary-accent))] will-change-transform"
       >
         {words[currentIndex]}
       </motion.span>

@@ -2,7 +2,19 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 import { AnimatePresence } from "framer-motion";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
@@ -18,9 +30,10 @@ export default function Home() {
     };
 
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
+    const debounceResize = debounce(checkScreenSize, 100);
+    window.addEventListener("resize", debounceResize);
 
-    return () => window.removeEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", debounceResize);
   }, []);
 
   const currentWords = isLargeScreen ? statements.large : statements.small;
