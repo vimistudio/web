@@ -2,27 +2,57 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { storage } from "@/lib/storage";
 
 export function VideoIntro({ onComplete }: { onComplete: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoEnded, setIsVideoEnded] = useState(false);
+  const [shouldPlayVideo, setShouldPlayVideo] = useState(false);
 
   useEffect(() => {
+    // Check if video has been seen before
+    if (storage.hasSeenVideo()) {
+      onComplete();
+      return;
+    }
+
+    setShouldPlayVideo(true);
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!shouldPlayVideo) return;
+
     const video = videoRef.current;
     if (!video) return;
 
-    video.play();
-
-    const handleEnded = () => {
-      setIsVideoEnded(true);
-      setTimeout(() => {
-        onComplete();
-      }, 1000); // Delay before triggering onComplete to allow fade out animation
+    const playVideo = async () => {
+      try {
+        await video.play();
+      } catch (error) {
+        console.error('Video playback failed:', error);
+        handleVideoEnd();
+      }
     };
 
-    video.addEventListener("ended", handleEnded);
-    return () => video.removeEventListener("ended", handleEnded);
-  }, [onComplete]);
+    const handleVideoEnd = () => {
+      setIsVideoEnded(true);
+      storage.markVideoAsSeen();
+      setTimeout(() => {
+        onComplete();
+      }, 1000);
+    };
+
+    video.addEventListener("ended", handleVideoEnd);
+    playVideo();
+
+    return () => {
+      video.removeEventListener("ended", handleVideoEnd);
+      video.pause();
+      video.currentTime = 0;
+    };
+  }, [shouldPlayVideo, onComplete]);
+
+  if (!shouldPlayVideo) return null;
 
   return (
     <AnimatePresence>
