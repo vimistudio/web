@@ -4,14 +4,18 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
+function debounce(func: (...args: any[]) => void, wait: number) {
+  let timeout: NodeJS.Timeout | null;
+  return function executedFunction(...args: any[]) {
     const later = () => {
-      clearTimeout(timeout);
+      if (timeout !== null) {
+        clearTimeout(timeout);
+      }
       func(...args);
     };
-    clearTimeout(timeout);
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
     timeout = setTimeout(later, wait);
   };
 }
