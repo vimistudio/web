@@ -22,21 +22,26 @@ export default function Template({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Show initial loader first
-    const initialLoaderTimer = setTimeout(() => {
-      setShowInitialLoader(false);
-      // Only show video if user hasn't seen it
-      if (!storage.hasSeenVideo()) {
-        setShowVideoIntro(true);
-      }
-      setMounted(true);
-    }, 1500);
+    const hasSeenVideo = storage.hasSeenVideo();
 
-    return () => clearTimeout(initialLoaderTimer);
+    // If we're on homepage and haven't seen the video, skip loader and show video
+    if (!hasSeenVideo) {
+      setShowInitialLoader(false);
+      setShowVideoIntro(true);
+      setMounted(true);
+    } else {
+      // If we've seen the video, show loader then content
+      const initialLoaderTimer = setTimeout(() => {
+        setShowInitialLoader(false);
+        setMounted(true);
+      }, 1500);
+
+      return () => clearTimeout(initialLoaderTimer);
+    }
   }, [isHomepage]);
 
-  // Show initial loader
-  if (showInitialLoader) {
+  // Show initial loader only if video has been seen before
+  if (showInitialLoader && storage.hasSeenVideo()) {
     return <LoadingOverlay shouldShow={true} />
   }
 
@@ -45,7 +50,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
       {isHomepage && showVideoIntro && (
         <VideoIntro onComplete={() => setShowVideoIntro(false)} />
       )}
-      {isHomepage && !showVideoIntro && mounted && (
+      {isHomepage && !showVideoIntro && mounted && storage.hasSeenVideo() && (
         <LoadingOverlay shouldShow={isHomepage} />
       )}
       <Header />
