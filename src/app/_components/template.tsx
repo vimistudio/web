@@ -6,23 +6,37 @@ import { VideoIntro } from "@/components/video-intro"
 import type React from "react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+import { storage } from "@/lib/storage"
 
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isHomepage = pathname === "/"
   const [mounted, setMounted] = useState(false)
-  const [showVideoIntro, setShowVideoIntro] = useState(true)
+  const [showVideoIntro, setShowVideoIntro] = useState(false)
+  const [showInitialLoader, setShowInitialLoader] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true)
-    }, 100) // Short delay to ensure smooth mounting
+    if (!isHomepage) {
+      setShowInitialLoader(false);
+      setMounted(true);
+      return;
+    }
 
-    return () => clearTimeout(timer)
-  }, [])
+    // Show initial loader first
+    const initialLoaderTimer = setTimeout(() => {
+      setShowInitialLoader(false);
+      // Only show video if user hasn't seen it
+      if (!storage.hasSeenVideo()) {
+        setShowVideoIntro(true);
+      }
+      setMounted(true);
+    }, 1500);
 
-  // Only show loading overlay on homepage
-  if (!mounted && isHomepage) {
+    return () => clearTimeout(initialLoaderTimer);
+  }, [isHomepage]);
+
+  // Show initial loader
+  if (showInitialLoader) {
     return <LoadingOverlay shouldShow={true} />
   }
 
@@ -31,7 +45,9 @@ export default function Template({ children }: { children: React.ReactNode }) {
       {isHomepage && showVideoIntro && (
         <VideoIntro onComplete={() => setShowVideoIntro(false)} />
       )}
-      {isHomepage && !showVideoIntro && <LoadingOverlay shouldShow={isHomepage} />}
+      {isHomepage && !showVideoIntro && mounted && (
+        <LoadingOverlay shouldShow={isHomepage} />
+      )}
       <Header />
       {children}
     </div>
