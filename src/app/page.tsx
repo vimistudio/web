@@ -55,12 +55,13 @@ export default function Home() {
       }
     };
 
-    window.addEventListener('load', handlePageLoad);
+    window.addEventListener("load", handlePageLoad);
 
     return () => {
-      window.removeEventListener('load', handlePageLoad);
+      window.removeEventListener("load", handlePageLoad);
     };
   }, [createTransition]);
+  return (
     <motion.main
       key="home"
       className="flex-1 flex items-center"
