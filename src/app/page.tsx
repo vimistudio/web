@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
@@ -12,7 +12,7 @@ export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const { isTransitioning, createTransition } = usePageTransition();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const checkScreenSize = () => {
       setIsLargeScreen(window.innerWidth >= 768);
     };
@@ -46,7 +46,21 @@ export default function Home() {
     }),
   };
 
-  return (
+  useEffect(() => {
+    const handlePageLoad = () => {
+      // Ensure the correct page is loaded based on the URL
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/") {
+        createTransition(currentPath);
+      }
+    };
+
+    window.addEventListener('load', handlePageLoad);
+
+    return () => {
+      window.removeEventListener('load', handlePageLoad);
+    };
+  }, [createTransition]);
     <motion.main
       key="home"
       className="flex-1 flex items-center"
