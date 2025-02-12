@@ -51,9 +51,10 @@ export class TransitionAnimation {
       this.slider.style.transition = `transform ${this.options.duration/1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
       // Trigger animation in next frame
-      requestAnimationFrame(() => {
+      const animateFrame = () => {
         this.slider.style.transform = 'translate3d(0, 0, 0)';
-      });
+      };
+      requestAnimationFrame(animateFrame);
 
       // Resolve promise after animation completes
       this.slider.addEventListener('transitionend', () => {

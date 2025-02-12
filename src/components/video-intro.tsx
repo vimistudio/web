@@ -68,6 +68,7 @@ export function VideoIntro({ onComplete }: { onComplete: () => void }) {
             className="w-full h-full object-cover"
             playsInline
             muted
+            style={{ willChange: "opacity" }}
           >
             <source src="/hands-overlay.mp4" type="video/mp4" />
           </video>
