@@ -79,9 +79,37 @@ export default function StartProject() {
         <div className="inline-block w-full max-w-4xl">
           <Cal
             calLink="vimistudio"
-            style={{ width: "100%", height: "100%", minHeight: "600px" }}
+            style={{ 
+              width: "100%", 
+              height: "100%", 
+              minHeight: "600px",
+              position: "relative"
+            }}
             config={{
               name: "Vimi Studio",
+              styles: {
+                branding: { brandColor: "#777EF0" },
+                elements: {
+                  ".select__control": {
+                    minHeight: "auto !important",
+                    height: "auto !important"
+                  },
+                  ".select__value-container": {
+                    padding: "8px !important",
+                    height: "auto !important",
+                    display: "flex !important",
+                    flexWrap: "wrap !important",
+                    gap: "4px !important"
+                  },
+                  ".select__multi-value": {
+                    margin: "0 !important"
+                  },
+                  ".select__input-container": {
+                    margin: "0 !important",
+                    padding: "0 !important"
+                  }
+                }
+              }
             }}
           />
         </div>
