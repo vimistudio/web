@@ -90,23 +90,25 @@ export default function StartProject() {
               styles: {
                 branding: { brandColor: "#777EF0" },
                 elements: {
-                  ".select__control": {
-                    minHeight: "auto !important",
-                    height: "auto !important"
-                  },
-                  ".select__value-container": {
-                    padding: "8px !important",
+                  "div[class*='select-control']": {
+                    minHeight: "unset !important",
                     height: "auto !important",
-                    display: "flex !important",
-                    flexWrap: "wrap !important",
-                    gap: "4px !important"
+                    maxHeight: "none !important"
                   },
-                  ".select__multi-value": {
-                    margin: "0 !important"
+                  "div[class*='select__value-container']": {
+                    height: "auto !important",
+                    maxHeight: "none !important",
+                    overflow: "visible !important"
                   },
-                  ".select__input-container": {
-                    margin: "0 !important",
-                    padding: "0 !important"
+                  "div[class*='select__multi-value__label']": {
+                    padding: "2px 6px !important"
+                  },
+                  "div[class*='select__placeholder']": {
+                    position: "static !important"
+                  },
+                  ".select__control--is-focused": {
+                    height: "auto !important",
+                    maxHeight: "none !important"
                   }
                 }
               }
