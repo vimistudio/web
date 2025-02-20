@@ -11,25 +11,25 @@ import { statements } from "@/lib/word-bank";
 
 const DEBOUNCE_DELAY = 100;
 const HEADING_VARIANTS = {
-    hover: {
-      scale: 1.05,
-      transition: {
-        duration: 0.3,
-        yoyo: Number.POSITIVE_INFINITY,
-      },
+  hover: {
+    scale: 1.05,
+    transition: {
+      duration: 0.3,
+      yoyo: Number.POSITIVE_INFINITY,
     },
-  };
+  },
+};
 
 const SUBHEADER_VARIANTS = {
-    hidden: { opacity: 0 },
-    visible: (i: number) => ({
-      opacity: 1,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.5,
-      },
-    }),
-  };
+  hidden: { opacity: 0 },
+  visible: (i: number) => ({
+    opacity: 1,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+    },
+  }),
+};
 
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -117,7 +117,7 @@ export default function Home() {
               whileHover="hover"
             >
               <span className="text-base sm:text-lg md:text-lg lg:text-xl font-medium whitespace-nowrap mr-2">
-                WE DESIGN, YOU SHINE
+                No stress, just good design.
               </span>
               <motion.span
                 className="inline-block"
@@ -135,7 +135,7 @@ export default function Home() {
                   },
                 }}
               >
-                ✨
+                🤙
               </motion.span>
             </motion.div>
             <div className="pr-2 sm:pr-3">
