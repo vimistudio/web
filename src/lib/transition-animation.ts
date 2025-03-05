@@ -33,7 +33,7 @@ export class TransitionAnimation {
     this.slider.style.right = '0';
     this.slider.style.width = '100%';
     this.slider.style.height = '100%';
-    this.slider.style.backgroundColor = '#fbfafa';
+    this.slider.style.backgroundColor = '#F3F2F1';
     this.slider.style.transform = 'translate3d(100%, 0, 0)';
     this.slider.style.willChange = 'transform';
     this.slider.style.transformStyle = 'preserve-3d';
