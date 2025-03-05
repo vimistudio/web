@@ -85,6 +85,7 @@ export default function HowItWorks() {
   const [showBanner, setShowBanner] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [showExcitementTooltip, setShowExcitementTooltip] = useState(false);
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -136,19 +137,35 @@ export default function HowItWorks() {
           clearInterval(timer);
           return prev;
         }
+
+        // Show excitement tooltip right before the final step
         if (prev === processSteps.length - 2) {
-          // Trigger confetti on the last step
+          // First hide the tooltip if it's shown
+          setShowExcitementTooltip(false);
+
+          // Then show it with a slight delay for better effect
+          setTimeout(() => {
+            setShowExcitementTooltip(true);
+
+            // Hide it after 3.5 seconds
+            setTimeout(() => {
+              setShowExcitementTooltip(false);
+            }, 3500);
+          }, 300);
+
+          // Trigger confetti with a longer delay
           setTimeout(() => {
             triggerConfetti();
             setShowFAQ(true); // Show FAQ after confetti
-          }, 500); // Small delay to allow the last step to animate
+          }, 1000);
         }
+
         return prev + 1;
       });
     }, 2000);
 
     return () => clearInterval(timer);
-  }, [triggerConfetti]); // Added triggerConfetti to dependencies
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -188,8 +205,8 @@ export default function HowItWorks() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ 
-        duration: 0.3
+      transition={{
+        duration: 0.3,
       }}
     >
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -224,6 +241,24 @@ export default function HowItWorks() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
             />
           </div>
+
+          {/* Excitement Tooltip */}
+          <AnimatePresence>
+            {showExcitementTooltip && (
+              <motion.div
+                className="absolute z-10 bottom-full left-[85%] mb-2 transform -translate-x-1/2"
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -5, scale: 0.9 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <div className="bg-black text-white px-4 py-2 rounded-lg shadow-lg text-sm md:text-base font-medium">
+                  Are you excited like we are? ✨
+                  <div className="absolute w-3 h-3 bg-black transform rotate-45 left-1/2 -bottom-1.5 -ml-1.5"></div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {processSteps.map((step, index) => (
             <motion.div
