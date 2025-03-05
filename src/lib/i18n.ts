@@ -136,7 +136,7 @@ export const translations = {
     // FAQ section
     faq: "Preguntas Frecuentes",
     yourQuestions: "TUS PREGUNTAS,",
-    answered: "RESPONDIDAS.",
+    answered: "RESUELTAS.",
 
     // FAQ Questions
     faqQuestion1:
