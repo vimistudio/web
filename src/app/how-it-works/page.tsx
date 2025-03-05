@@ -248,7 +248,7 @@ export default function HowItWorks() {
               <motion.div
                 className="absolute z-10 md:bottom-full md:left-[85%] md:mb-2 md:-translate-x-1/2
                            /* Mobile positioning */
-                           left-12 top-[80%] md:top-auto"
+                          left-12 top-[80%] md:top-auto"
                 initial={{ opacity: 0, y: 10, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -5, scale: 0.9 }}
