@@ -5,6 +5,7 @@ import { LoadingOverlay } from "@/components/loading-overlay";
 import type React from "react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LanguageProvider } from "@/contexts/language-context";
 
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,10 +25,14 @@ export default function Template({ children }: { children: React.ReactNode }) {
   }, [isHomepage]);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-color)] flex flex-col">
-      {isHomepage && showInitialLoader && <LoadingOverlay shouldShow={true} />}
-      <Header />
-      {children}
-    </div>
+    <LanguageProvider>
+      <div className="min-h-screen bg-[var(--bg-color)] flex flex-col">
+        {isHomepage && showInitialLoader && (
+          <LoadingOverlay shouldShow={true} />
+        )}
+        <Header />
+        {children}
+      </div>
+    </LanguageProvider>
   );
 }

@@ -6,76 +6,71 @@ import { Button } from "@/components/ui/button";
 import { Phone, Users, Palette, Zap, Package, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
+import { useLanguage } from "@/contexts/language-context";
+import { translations } from "@/lib/i18n";
+
+type TranslationKey = keyof typeof translations.en;
 
 const faqItems = [
   {
-    question: "WHAT HAPPENS IF MY PROJECT SCOPE CHANGES MID-WAY?",
-    answer:
-      "We understand that project requirements can evolve. We maintain flexible processes to accommodate changes while ensuring timeline and budget transparency.",
+    questionKey: "faqQuestion1" as TranslationKey,
+    answerKey: "faqAnswer1" as TranslationKey,
   },
   {
-    question: "CAN YOU COLLABORATE WITH OUR IN-HOUSE TEAM?",
-    answer:
-      "Absolutely! We regularly work alongside in-house teams, providing complementary expertise and seamless integration with your existing workflows.",
+    questionKey: "faqQuestion2" as TranslationKey,
+    answerKey: "faqAnswer2" as TranslationKey,
   },
   {
-    question: "WHY NOT HIRE DESIGNERS FULL-TIME?",
-    answer:
-      "Our specialized team brings diverse expertise and proven processes, offering flexibility and cost-effectiveness compared to full-time hires.",
+    questionKey: "faqQuestion3" as TranslationKey,
+    answerKey: "faqAnswer3" as TranslationKey,
   },
   {
-    question: "VIMISTUDIO VS OTHER CONTRACTORS",
-    answer:
-      "We combine agency-quality design with the personal attention of freelancers, delivering consistent results through our established process.",
+    questionKey: "faqQuestion4" as TranslationKey,
+    answerKey: "faqAnswer4" as TranslationKey,
   },
   {
-    question: "HOW DO YOU CHARGE?",
-    answer:
-      "We offer transparent, project-based pricing with clear deliverables. Contact us for a custom quote based on your specific needs.",
+    questionKey: "faqQuestion5" as TranslationKey,
+    answerKey: "faqAnswer5" as TranslationKey,
   },
   {
-    question:
-      "DO YOU HANDLE CONTENT CREATION, OR SHOULD WE PROVIDE COPY AND VISUALS?",
-    answer:
-      "We can handle both. While you're welcome to provide content, we also offer comprehensive content creation services to ensure cohesive design and messaging.",
+    questionKey: "faqQuestion6" as TranslationKey,
+    answerKey: "faqAnswer6" as TranslationKey,
   },
   {
-    question: "WHAT IF I ONLY NEED A SMALL DESIGN TASK?",
-    answer:
-      "We handle projects of all sizes. Our flexible approach allows us to scale our services to match your specific needs.",
+    questionKey: "faqQuestion7" as TranslationKey,
+    answerKey: "faqAnswer7" as TranslationKey,
   },
   {
-    question: "HOW SOON CAN YOU START?",
-    answer:
-      "We typically can begin new projects within 1-2 weeks. Contact us to discuss your timeline and requirements.",
+    questionKey: "faqQuestion8" as TranslationKey,
+    answerKey: "faqAnswer8" as TranslationKey,
   },
 ];
 
 const processSteps = [
   {
     icon: Phone,
-    title: "Request a Quote or Book a Call",
-    description: "Get in touch with us to discuss your project needs.",
+    titleKey: "initialConsultation" as TranslationKey,
+    descriptionKey: "initialConsultationDesc" as TranslationKey,
   },
   {
     icon: Users,
-    title: "Kickoff Call",
-    description: "We'll dive deep into your vision and requirements.",
+    titleKey: "discoveryPhase" as TranslationKey,
+    descriptionKey: "discoveryPhaseDesc" as TranslationKey,
   },
   {
     icon: Palette,
-    title: "Moodboards and Feedback",
-    description: "We'll create initial designs and gather your feedback.",
+    titleKey: "designBriefing" as TranslationKey,
+    descriptionKey: "designBriefingDesc" as TranslationKey,
   },
   {
     icon: Zap,
-    title: "Design Sprint Iteration",
-    description: "Rapid iterations to refine and perfect the design.",
+    titleKey: "designSprint" as TranslationKey,
+    descriptionKey: "designSprintDesc" as TranslationKey,
   },
   {
     icon: Package,
-    title: "Final Design Delivery",
-    description: "Receive your polished, ready-to-use design.",
+    titleKey: "finalDelivery" as TranslationKey,
+    descriptionKey: "finalDeliveryDesc" as TranslationKey,
   },
 ];
 
@@ -88,6 +83,7 @@ export default function HowItWorks() {
   const [showExcitementTooltip, setShowExcitementTooltip] = useState(false);
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   const triggerConfetti = () => {
     const colors = [
@@ -211,7 +207,7 @@ export default function HowItWorks() {
     >
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <h2 className="text-4xl md:text-5xl font-bold mb-8 text-center">
-          HOW IT WORKS
+          {t("howItWorksTitle")}
         </h2>
         <div className="relative md:flex md:justify-between md:items-start">
           {/* Timeline line for mobile - moved before the steps */}
@@ -246,15 +242,23 @@ export default function HowItWorks() {
           <AnimatePresence>
             {showExcitementTooltip && (
               <motion.div
-                className="absolute z-10 bottom-full left-[85%] mb-2 transform -translate-x-1/2"
+                className="absolute z-10 md:bottom-full md:left-[85%] md:mb-2 md:-translate-x-1/2
+                           /* Mobile positioning */
+                           left-12 top-[80%] md:top-auto"
                 initial={{ opacity: 0, y: 10, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -5, scale: 0.9 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <div className="bg-black text-white px-4 py-2 rounded-lg shadow-lg text-sm md:text-base font-medium">
-                  Are you excited like we are? ✨
-                  <div className="absolute w-3 h-3 bg-black transform rotate-45 left-1/2 -bottom-1.5 -ml-1.5"></div>
+                  {t("excitementTooltip")} ✨
+                  {/* Triangle pointer - different position on mobile vs desktop */}
+                  <div
+                    className="absolute w-3 h-3 bg-black transform rotate-45 
+                                  md:left-1/2 md:-bottom-1.5 md:-ml-1.5
+                                  /* Mobile pointer position */
+                                  -left-1.5 top-1/2 -mt-1.5 md:top-auto"
+                  ></div>
                 </div>
               </motion.div>
             )}
@@ -262,7 +266,7 @@ export default function HowItWorks() {
 
           {processSteps.map((step, index) => (
             <motion.div
-              key={step.title}
+              key={step.titleKey}
               className={`flex md:flex-col items-start mb-8 md:mb-0 relative md:w-1/5`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -285,14 +289,14 @@ export default function HowItWorks() {
                       : "text-gray-400"
                   }`}
                 >
-                  {step.title}
+                  {t(step.titleKey)}
                 </h3>
                 <p
                   className={`transition-colors duration-300 ${
                     index <= activeStep ? "text-gray-600" : "text-gray-400"
                   } text-sm md:text-base`}
                 >
-                  {step.description}
+                  {t(step.descriptionKey)}
                 </p>
               </div>
             </motion.div>
@@ -312,7 +316,8 @@ export default function HowItWorks() {
               className="container mx-auto px-4 py-16 pb-32"
             >
               <h2 className="text-4xl font-bold mb-12 text-center">
-                YOUR QUESTIONS, <span className="text-gray-500">ANSWERED.</span>
+                {t("yourQuestions")}{" "}
+                <span className="text-gray-500">{t("answered")}</span>
               </h2>
               <div className="max-w-4xl mx-auto space-y-4">
                 {faqItems.map((item, index) => (
@@ -331,7 +336,9 @@ export default function HowItWorks() {
                       }
                       aria-expanded={openIndex === index}
                     >
-                      <h3 className="text-lg font-medium">{item.question}</h3>
+                      <h3 className="text-lg font-medium">
+                        {t(item.questionKey)}
+                      </h3>
                       <div
                         className={`text-[hsl(var(--primary-accent))] transition-transform duration-200 ${
                           openIndex === index ? "rotate-45" : ""
@@ -353,7 +360,7 @@ export default function HowItWorks() {
                       }}
                       className="overflow-hidden"
                     >
-                      <div className="text-gray-600">{item.answer}</div>
+                      <div className="text-gray-600">{t(item.answerKey)}</div>
                     </motion.div>
                   </motion.div>
                 ))}
@@ -377,7 +384,7 @@ export default function HowItWorks() {
             >
               <div className="text-white text-center pb-safe">
                 <p className="text-lg font-semibold mb-2">
-                  Ready to explore what we can do for you?
+                  {t("readyToExplore")}
                 </p>
                 <motion.button
                   className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
@@ -385,7 +392,7 @@ export default function HowItWorks() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  What We Do
+                  {t("whatWeDoButton")}
                   <ArrowRight size={20} />
                 </motion.button>
               </div>

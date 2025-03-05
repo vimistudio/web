@@ -5,9 +5,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/language-context";
+import { LanguageToggle } from "./language-toggle";
 
 export function Header() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   return (
     <motion.header
@@ -28,36 +31,55 @@ export function Header() {
           />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-6">
           <Link
             href="/"
             className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
-            Home
+            {t("home")}
           </Link>
           <Link
             href="/how-it-works"
             className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
-            How it works
+            {t("howItWorks")}
           </Link>
           <Link
             href="/what-we-do"
             className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
-            What we do
+            {t("whatWeDo")}
           </Link>
+
+          {/* Language toggle */}
+          <LanguageToggle />
         </div>
 
+        {/* Mobile elements: Language toggle and CTA button */}
+        <div className="md:hidden flex items-center gap-3">
+          <LanguageToggle />
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-3 py-1.5 text-xs"
+              onClick={() => router.push("/start-project")}
+            >
+              {t("startProject")}
+            </Button>
+          </motion.div>
+        </div>
+
+        {/* Desktop CTA button */}
         <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          className="hidden md:block"
         >
           <Button
             className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
             onClick={() => router.push("/start-project")}
           >
-            Start A Project
+            {t("startProject")}
           </Button>
         </motion.div>
       </nav>
