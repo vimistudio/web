@@ -158,12 +158,12 @@ export const translations = {
 
     faqQuestion5: "¿CÓMO COBRAN?",
     faqAnswer5:
-      "Ofrecemos precios transparentes basados en proyectos con entregables claros. Contáctenos para obtener un presupuesto personalizado según sus necesidades específicas.",
+      "Ofrecemos precios transparentes basados en proyectos con entregables claros. Contáctanos para obtener un presupuesto personalizado según sus necesidades específicas.",
 
     faqQuestion6:
       "¿MANEJAN LA CREACIÓN DE CONTENIDO O DEBEMOS PROPORCIONAR TEXTOS E IMÁGENES?",
     faqAnswer6:
-      "Podemos manejar ambas cosas. Aunque puede proporcionar contenido, también ofrecemos servicios completos de creación de contenido para garantizar un diseño y mensaje coherentes.",
+      "Podemos manejar ambas cosas. Aunque puedes proporcionarnos el contenido, también ofrecemos servicios completos de creación de contenido para garantizar que tu diseño y tu mensaje sean coherentes.",
 
     faqQuestion7: "¿QUÉ PASA SI SOLO NECESITO UNA PEQUEÑA TAREA DE DISEÑO?",
     faqAnswer7:
@@ -171,7 +171,7 @@ export const translations = {
 
     faqQuestion8: "¿QUÉ TAN PRONTO PUEDEN COMENZAR?",
     faqAnswer8:
-      "Típicamente podemos comenzar nuevos proyectos dentro de 1-2 semanas. Contáctenos para discutir su cronograma y requisitos.",
+      "Típicamente podemos comenzar nuevos proyectos dentro de 1-2 semanas. Contáctenos para discutir tu cronograma y tus requisitos.",
 
     // Banner messages
     readyToExplore: "¿Listo para explorar lo que podemos hacer por ti?",
