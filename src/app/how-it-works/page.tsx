@@ -255,7 +255,7 @@ export default function HowItWorks() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <div className="bg-black text-white px-4 py-2 rounded-lg shadow-lg text-sm md:text-base font-medium">
-                  Are you excited like we are? ✨
+                  Are you just as excited as we are? ✨
                   {/* Triangle pointer - different position on mobile vs desktop */}
                   <div
                     className="absolute w-3 h-3 bg-black transform rotate-45 
