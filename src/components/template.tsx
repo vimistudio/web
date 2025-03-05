@@ -24,7 +24,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   }, [isHomepage]);
 
   return (
-    <div className="min-h-screen bg-[#fbfafa] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-color)] flex flex-col">
       {isHomepage && showInitialLoader && <LoadingOverlay shouldShow={true} />}
       <Header />
       {children}
