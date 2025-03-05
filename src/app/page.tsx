@@ -135,7 +135,7 @@ export default function Home() {
                   },
                 }}
               >
-                🤙
+                👌
               </motion.span>
             </motion.div>
             <div className="pr-2 sm:pr-3">
