@@ -27,7 +27,7 @@ export function LoadingOverlay({ shouldShow }: LoadingOverlayProps) {
     <AnimatePresence>
       {isLoading && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F2F1]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-color)]"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}

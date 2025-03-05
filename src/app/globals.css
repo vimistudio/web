@@ -4,6 +4,7 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background-color: #F3F2F1;
 }
 
 @layer utilities {
@@ -17,6 +18,7 @@ body {
     --background: 0 0% 95%;
     --foreground: 0 0% 3.9%;
     --primary-accent: 235 42% 63%;
+    --bg-color: #F3F2F1;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;

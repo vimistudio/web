@@ -175,7 +175,7 @@ export default function WhatWeDo() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="space-y-12 bg-[#F5F5F5] rounded-3xl p-8"
+            className="space-y-12 bg-[#F3F2F1] rounded-3xl p-8"
           >
             <div>
               <h3 className="text-lg font-medium text-gray-500 mb-4">
@@ -216,7 +216,7 @@ export default function WhatWeDo() {
                     viewport={{ once: true }}
                     className="flex flex-col items-center gap-2"
                   >
-                    <div className="w-12 h-12 relative bg-gray-100 rounded-xl p-2">
+                    <div className="w-12 h-12 relative bg-[#F3F2F1] rounded-xl p-2">
                       <Image
                         src={tech.icon || "/placeholder.svg"}
                         alt={`${tech.name} icon`}
