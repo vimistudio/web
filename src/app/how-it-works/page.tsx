@@ -334,7 +334,7 @@ export default function HowItWorks() {
         <AnimatePresence>
           {showBanner && showFAQ && (
             <motion.div
-              className="fixed bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md p-4 flex justify-center items-center"
+              className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md p-4 flex justify-center items-center"
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
