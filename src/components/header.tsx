@@ -11,7 +11,7 @@ export function Header() {
 
   return (
     <motion.header
-      className="sticky top-0 z-10 bg-[#fbfafa] shadow-sm"
+      className="sticky top-0 z-10 bg-[#F3F2F1] shadow-sm"
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
