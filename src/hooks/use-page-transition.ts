@@ -10,40 +10,42 @@ interface PageTransitionOptions {
 
 export function usePageTransition(options: PageTransitionOptions = {}) {
   const {
-    duration = 400, // Reduced duration for smoother feel
-    delay = 100,    // Reduced delay for more immediate response
-    navbarHeight = 80
+    duration = 500, // Reduced duration for smoother feel
+    delay = 100, // Reduced delay for more immediate response
+    navbarHeight = 80,
   } = options;
-  
+
   const router = useRouter();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const createTransition = useCallback(async (path: string) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    const transition = new TransitionAnimation({ duration, navbarHeight });
-    try {
-      
-      // Shorter delay for button press feedback
-      await new Promise(resolve => setTimeout(resolve, delay));
+  const createTransition = useCallback(
+    async (path: string) => {
+      if (isTransitioning) return;
+      setIsTransitioning(true);
+      const transition = new TransitionAnimation({ duration, navbarHeight });
+      try {
+        // Shorter delay for button press feedback
+        await new Promise((resolve) => setTimeout(resolve, delay));
 
-      // Run animation and navigation concurrently
-      await Promise.all([
-        transition.animate(),
-        new Promise(resolve => setTimeout(resolve, duration/2))
-          .then(() => router.push(path))
-      ]);
-      
-    } catch (error) {
-      console.error('Transition failed:', error);
-      router.push(path);
-    } finally {
-      setIsTransitioning(false);
-    }
-  }, [duration, delay, navbarHeight, router, isTransitioning]);
+        // Run animation and navigation concurrently
+        await Promise.all([
+          transition.animate(),
+          new Promise((resolve) => setTimeout(resolve, duration / 2)).then(() =>
+            router.push(path)
+          ),
+        ]);
+      } catch (error) {
+        console.error("Transition failed:", error);
+        router.push(path);
+      } finally {
+        setIsTransitioning(false);
+      }
+    },
+    [duration, delay, navbarHeight, router, isTransitioning]
+  );
 
   return {
     isTransitioning,
-    createTransition
+    createTransition,
   };
 }
