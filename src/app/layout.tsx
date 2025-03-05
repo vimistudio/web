@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     siteName: "Vimi Studio",
     images: [
       {
-        url: "https://vimistudio.com/og-image.jpeg",
+        url: "https://vimistudio.com/og-image.png",
         width: 1200,
         height: 630,
         alt: "Vimi Studio - Digital Product Design Agency",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     },
   },
   other: {
-    "og:image:secure_url": "https://vimistudio.com/og-image.jpeg",
+    "og:image:secure_url": "https://vimistudio.com/og-image.png",
     "og:image:type": "image/png",
     "og:image:width": "1200",
     "og:image:height": "630",
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     title: "Vimi Studio - Innovative Design Agency for Digital Products",
     description:
       "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
-    images: ["https://vimistudio.com/og-image.jpeg"],
+    images: ["https://vimistudio.com/og-image.png"],
     creator: "@vimistudio",
   },
   icons: {
