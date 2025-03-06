@@ -26,12 +26,12 @@ export default function Template({ children }: { children: React.ReactNode }) {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen bg-[var(--bg-color)] flex flex-col">
+      <div className="min-h-screen bg-[var(--bg-color)] flex flex-col overflow-x-hidden">
         {isHomepage && showInitialLoader && (
           <LoadingOverlay shouldShow={true} />
         )}
         <Header />
-        {children}
+        <div className="flex-1 flex flex-col">{children}</div>
       </div>
     </LanguageProvider>
   );

@@ -57,16 +57,16 @@ export default function Home() {
   return (
     <motion.main
       key="home"
-      className="flex-1 flex items-center"
+      className="flex-1 flex items-center pt-0 mt-0"
       role="main"
       initial={{ opacity: 0, x: -100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -100 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-0 pb-8 sm:py-8">
         <motion.h1
-          className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[120px] font-bold tracking-tight text-center leading-[1.1] max-w-[1200px] mx-auto"
+          className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[120px] font-bold tracking-tight text-center leading-[1.1] max-w-[1200px] mx-auto mt-0 pt-2 sm:mt-2"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
