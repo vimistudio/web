@@ -11,6 +11,7 @@ export function HomepageFooter() {
   const [currentTime, setCurrentTime] = useState({
     seattle: "",
     elSalvador: "",
+    madrid: "",
   });
   const [bookingText, setBookingText] = useState("");
 
@@ -70,9 +71,21 @@ export function HomepageFooter() {
           }
         );
 
+        const madridTime = new Date().toLocaleTimeString(
+          language === "es" ? "es-ES" : "en-US",
+          {
+            timeZone: "Europe/Madrid", // Madrid timezone
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          }
+        );
+
         setCurrentTime({
           seattle: seattleTime,
           elSalvador: elSalvadorTime,
+          madrid: madridTime,
         });
       } catch (error) {
         console.error("Error updating time:", error);
@@ -89,8 +102,29 @@ export function HomepageFooter() {
     return () => clearInterval(timer);
   }, [language]);
 
+  // Footer animation variants
+  const footerVariants = {
+    hidden: { y: 100, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15,
+        delay: 0.2,
+        duration: 0.7,
+      },
+    },
+  };
+
   return (
-    <footer className="w-full mt-auto relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black">
+    <motion.footer
+      className="w-full mt-auto relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black"
+      initial="hidden"
+      animate="visible"
+      variants={footerVariants}
+    >
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
       <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-indigo-500/10 blur-3xl"></div>
@@ -164,7 +198,15 @@ export function HomepageFooter() {
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           {/* Times */}
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8 text-xs font-mono">
+          <div className="flex flex-col sm:flex-row flex-wrap space-y-2 sm:space-y-0 sm:space-x-8 text-xs font-mono">
+            <motion.div
+              whileHover={{ letterSpacing: "0.05em" }}
+              className="flex items-center space-x-2"
+            >
+              <div className="w-1 h-1 rounded-full bg-pink-400"></div>
+              <span className="text-gray-400">MADRID</span>
+              <span className="text-white">{currentTime.madrid}</span>
+            </motion.div>
             <motion.div
               whileHover={{ letterSpacing: "0.05em" }}
               className="flex items-center space-x-2"
@@ -190,6 +232,6 @@ export function HomepageFooter() {
           </div>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
