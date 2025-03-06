@@ -11,6 +11,7 @@ export function HomepageFooter() {
   const [currentTime, setCurrentTime] = useState({
     seattle: "",
     elSalvador: "",
+    madrid: "",
   });
   const [bookingText, setBookingText] = useState("");
 
@@ -70,9 +71,21 @@ export function HomepageFooter() {
           }
         );
 
+        const madridTime = new Date().toLocaleTimeString(
+          language === "es" ? "es-ES" : "en-US",
+          {
+            timeZone: "Europe/Madrid", // Madrid timezone
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          }
+        );
+
         setCurrentTime({
           seattle: seattleTime,
           elSalvador: elSalvadorTime,
+          madrid: madridTime,
         });
       } catch (error) {
         console.error("Error updating time:", error);
@@ -164,7 +177,7 @@ export function HomepageFooter() {
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           {/* Times */}
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8 text-xs font-mono">
+          <div className="flex flex-col sm:flex-row flex-wrap space-y-2 sm:space-y-0 sm:space-x-8 text-xs font-mono">
             <motion.div
               whileHover={{ letterSpacing: "0.05em" }}
               className="flex items-center space-x-2"
@@ -180,6 +193,14 @@ export function HomepageFooter() {
               <div className="w-1 h-1 rounded-full bg-purple-400"></div>
               <span className="text-gray-400">EL SALVADOR</span>
               <span className="text-white">{currentTime.elSalvador}</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ letterSpacing: "0.05em" }}
+              className="flex items-center space-x-2"
+            >
+              <div className="w-1 h-1 rounded-full bg-pink-400"></div>
+              <span className="text-gray-400">MADRID</span>
+              <span className="text-white">{currentTime.madrid}</span>
             </motion.div>
           </div>
 
