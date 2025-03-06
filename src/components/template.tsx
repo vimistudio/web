@@ -13,16 +13,26 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const isHomepage = pathname === "/";
   const [mounted, setMounted] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(false);
+  const [showLanguageToggle, setShowLanguageToggle] = useState(false);
 
   useEffect(() => {
     if (!isHomepage) {
       setShowInitialLoader(false);
       setMounted(true);
+      setShowLanguageToggle(true);
       return;
     }
 
     setShowInitialLoader(true);
     setMounted(true);
+
+    // Hide language toggle during loading, then show it after loading completes (2s to be safe)
+    setShowLanguageToggle(false);
+    const timer = setTimeout(() => {
+      setShowLanguageToggle(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, [isHomepage]);
 
   return (
@@ -32,8 +42,13 @@ export default function Template({ children }: { children: React.ReactNode }) {
           <LoadingOverlay shouldShow={true} />
         )}
         <Header />
+
+        {/* Show language toggle based on dedicated state */}
+        {mounted && showLanguageToggle && (
+          <LanguageToggle isHomepage={isHomepage} />
+        )}
+
         <div className="flex-1 flex flex-col">{children}</div>
-        <LanguageToggle />
       </div>
     </LanguageProvider>
   );
