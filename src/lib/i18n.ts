@@ -211,7 +211,7 @@ export const translations = {
     startProjectTitle: "COMENZAR UN PROYECTO",
     createSomethingRemarkable: "Creemos Algo Extraordinario",
     getInTouch: "Ponte en contacto.",
-    newSpotsOpen: "Nuevos spots disponibles para",
+    newSpotsOpen: "Nuevos spots para",
 
     // Footer
     openForWork: "DISPONIBLE PARA TRABAJAR",
