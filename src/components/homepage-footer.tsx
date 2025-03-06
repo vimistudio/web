@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/language-context";
+import { motion } from "framer-motion";
 
 export function HomepageFooter() {
   const { t, language } = useLanguage();
@@ -89,64 +90,103 @@ export function HomepageFooter() {
   }, [language]);
 
   return (
-    <footer className="bg-black text-white w-full mt-auto">
-      {/* Top Row */}
-      <div className="max-w-7xl mx-auto border-b border-gray-800">
-        <div className="grid grid-cols-1 md:grid-cols-3 py-3 text-xs sm:text-sm font-mono">
-          <div className="px-4 text-center md:text-left mb-2 md:mb-0">
-            SEATTLE | {currentTime.seattle} GMT-7
+    <footer className="w-full mt-auto relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+      <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-indigo-500/10 blur-3xl"></div>
+      <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-purple-500/10 blur-3xl"></div>
+
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-4 pt-10 pb-8 relative z-10">
+        {/* Top section */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-12 space-y-8 md:space-y-0">
+          {/* Logo and booking status in a single flex container */}
+          <div className="flex flex-col sm:flex-row items-center space-y-8 sm:space-y-0 sm:space-x-12">
+            {/* Logo */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="flex-shrink-0"
+            >
+              <Image
+                src="/logo-vimi.png"
+                alt="Vimi Studio"
+                width={60}
+                height={60}
+                className="h-10 w-auto"
+              />
+            </motion.div>
+
+            {/* Booking status */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="backdrop-blur-sm bg-white/5 rounded-full py-2 px-6 flex items-center space-x-3 border border-white/10 shadow-glow"
+            >
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-white font-mono tracking-wider text-sm">
+                {bookingText}
+              </span>
+            </motion.div>
           </div>
-          <div className="flex items-center justify-center space-x-2 mb-2 md:mb-0">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>{bookingText}</span>
-          </div>
-          <div className="px-4 text-center md:text-right">
-            EL SALVADOR | {currentTime.elSalvador} GMT-6
+
+          {/* Social links */}
+          <div className="flex space-x-6">
+            {[
+              {
+                href: "https://instagram.com/vimistudioteam",
+                label: "INSTAGRAM",
+              },
+              { href: "https://x.com/vimistudio/", label: "X" },
+              {
+                href: "https://www.linkedin.com/company/vimistudioteam/",
+                label: "LINKEDIN",
+              },
+            ].map((social) => (
+              <motion.div key={social.label} whileHover={{ y: -3 }}>
+                <Link
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-gray-400 hover:text-white transition-colors font-mono text-xs"
+                >
+                  {social.label}
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Bottom Row */}
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 items-center py-4 px-4">
-          <div className="text-gray-400 text-xs sm:text-sm font-mono text-center md:text-left mb-4 md:mb-0">
-            © VIMI STUDIO {new Date().getFullYear()}. <br></br>
+        {/* Simple divider */}
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-8"></div>
+
+        {/* Bottom section */}
+        <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+          {/* Times */}
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8 text-xs font-mono">
+            <motion.div
+              whileHover={{ letterSpacing: "0.05em" }}
+              className="flex items-center space-x-2"
+            >
+              <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+              <span className="text-gray-400">SEATTLE</span>
+              <span className="text-white">{currentTime.seattle}</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ letterSpacing: "0.05em" }}
+              className="flex items-center space-x-2"
+            >
+              <div className="w-1 h-1 rounded-full bg-purple-400"></div>
+              <span className="text-gray-400">EL SALVADOR</span>
+              <span className="text-white">{currentTime.elSalvador}</span>
+            </motion.div>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-gray-500 text-xs items-center">
+            © VIMI STUDIO {new Date().getFullYear()} <br></br>{" "}
             {t("allRightsReserved")}
-          </div>
-          <div className="flex justify-center mb-4 md:mb-0">
-            <Image
-              src="/logo-vimi.png"
-              alt="Vimi Studio"
-              width={40}
-              height={40}
-              className="h-6 w-auto transition-transform duration-300 hover:scale-125"
-            />
-          </div>
-          <div className="flex justify-center md:justify-end space-x-6 text-xs sm:text-sm font-mono">
-            <Link
-              href="https://instagram.com/vimistudioteam"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              INSTAGRAM
-            </Link>
-            <Link
-              href="https://x.com/vimistudio/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              X
-            </Link>
-            <Link
-              href="https://www.linkedin.com/company/vimistudioteam/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              LINKEDIN
-            </Link>
           </div>
         </div>
       </div>
