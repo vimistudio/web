@@ -95,6 +95,27 @@ export const translations = {
     createSomethingRemarkable: "Let's Create Something Remarkable",
     getInTouch: "Get in touch.",
     newSpotsOpen: "New spots open for",
+
+    // Footer
+    openForWork: "OPEN FOR WORK",
+    allRightsReserved: "ALL RIGHTS RESERVED.",
+
+    // Month abbreviations
+    jan: "JAN",
+    feb: "FEB",
+    mar: "MAR",
+    apr: "APR",
+    may: "MAY",
+    jun: "JUN",
+    jul: "JUL",
+    aug: "AUG",
+    sep: "SEP",
+    oct: "OCT",
+    nov: "NOV",
+    dec: "DEC",
+
+    // Booking message
+    bookingFor: "BOOKING FOR",
   },
   es: {
     // Common
@@ -191,6 +212,27 @@ export const translations = {
     createSomethingRemarkable: "Creemos Algo Extraordinario",
     getInTouch: "Ponte en contacto.",
     newSpotsOpen: "Nuevos spots disponibles para",
+
+    // Footer
+    openForWork: "DISPONIBLE PARA TRABAJAR",
+    allRightsReserved: "TODOS LOS DERECHOS RESERVADOS.",
+
+    // Month abbreviations
+    jan: "ENE",
+    feb: "FEB",
+    mar: "MAR",
+    apr: "ABR",
+    may: "MAY",
+    jun: "JUN",
+    jul: "JUL",
+    aug: "AGO",
+    sep: "SEP",
+    oct: "OCT",
+    nov: "NOV",
+    dec: "DIC",
+
+    // Booking message
+    bookingFor: "RESERVANDO PARA",
   },
 };
 
