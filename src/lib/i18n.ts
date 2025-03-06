@@ -22,7 +22,7 @@ export const translations = {
 
     // How it works page
     howItWorksTitle: "HOW IT WORKS",
-    excitementTooltip: "Are you as excited like we are?",
+    excitementTooltip: "Are you as excited as we are?",
 
     // Process steps
     initialConsultation: "Initial Consultation",
