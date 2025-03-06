@@ -7,10 +7,12 @@ import type React from "react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LanguageProvider } from "@/contexts/language-context";
+import { AuthProvider } from "@/contexts/auth-context";
 
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHomepage = pathname === "/";
+  const isPortal = pathname?.startsWith("/portal");
   const [mounted, setMounted] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(false);
   const [showLanguageToggle, setShowLanguageToggle] = useState(false);
@@ -37,19 +39,23 @@ export default function Template({ children }: { children: React.ReactNode }) {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen bg-[var(--bg-color)] flex flex-col overflow-x-hidden">
-        {isHomepage && showInitialLoader && (
-          <LoadingOverlay shouldShow={true} />
-        )}
-        <Header />
+      <AuthProvider>
+        <div className="min-h-screen bg-[var(--bg-color)] flex flex-col overflow-x-hidden">
+          {isHomepage && showInitialLoader && (
+            <LoadingOverlay shouldShow={true} />
+          )}
+          
+          {/* Only show header on non-portal pages */}
+          {!isPortal && <Header />}
 
-        {/* Show language toggle based on dedicated state */}
-        {mounted && showLanguageToggle && (
-          <LanguageToggle isHomepage={isHomepage} />
-        )}
+          {/* Show language toggle based on dedicated state and not on portal pages */}
+          {mounted && showLanguageToggle && !isPortal && (
+            <LanguageToggle isHomepage={isHomepage} />
+          )}
 
-        <div className="flex-1 flex flex-col">{children}</div>
-      </div>
+          <div className="flex-1 flex flex-col">{children}</div>
+        </div>
+      </AuthProvider>
     </LanguageProvider>
   );
 }
