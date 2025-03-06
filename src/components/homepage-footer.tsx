@@ -203,6 +203,14 @@ export function HomepageFooter() {
               whileHover={{ letterSpacing: "0.05em" }}
               className="flex items-center space-x-2"
             >
+              <div className="w-1 h-1 rounded-full bg-pink-400"></div>
+              <span className="text-gray-400">MADRID</span>
+              <span className="text-white">{currentTime.madrid}</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ letterSpacing: "0.05em" }}
+              className="flex items-center space-x-2"
+            >
               <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
               <span className="text-gray-400">SEATTLE</span>
               <span className="text-white">{currentTime.seattle}</span>
@@ -214,14 +222,6 @@ export function HomepageFooter() {
               <div className="w-1 h-1 rounded-full bg-purple-400"></div>
               <span className="text-gray-400">EL SALVADOR</span>
               <span className="text-white">{currentTime.elSalvador}</span>
-            </motion.div>
-            <motion.div
-              whileHover={{ letterSpacing: "0.05em" }}
-              className="flex items-center space-x-2"
-            >
-              <div className="w-1 h-1 rounded-full bg-pink-400"></div>
-              <span className="text-gray-400">MADRID</span>
-              <span className="text-white">{currentTime.madrid}</span>
             </motion.div>
           </div>
 
