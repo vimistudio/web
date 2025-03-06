@@ -26,9 +26,9 @@ export default function StartProject() {
     return `${capitalizedMonth} ${currentDate.getFullYear()}`;
   }, [currentDate, language]);
 
-  // Efecto para inicializar Cal
+  // Efecto para inicializar Cal y manejar cambios de idioma
   useEffect(() => {
-    // Initialize Cal when the component mounts
+    // Initialize Cal when the component mounts or language changes
     (async () => {
       const cal = await getCalApi();
       cal("ui", {
@@ -36,7 +36,10 @@ export default function StartProject() {
         hideEventTypeDetails: false,
       });
     })();
+  }, [language]);
 
+  // Efecto para actualizar la fecha al cambio de mes
+  useEffect(() => {
     // Configurar el temporizador para actualizar la fecha al cambio de mes
     const getMillisecondsUntilNextMonth = () => {
       const now = new Date();
@@ -92,7 +95,8 @@ export default function StartProject() {
         </div>
         <div className="inline-block w-full max-w-4xl">
           <Cal
-            calLink="vimistudio"
+            key={`calendar-${language}`}
+            calLink={`vimistudio?lang=${language === "es" ? "es-ES" : "en"}`}
             style={{
               width: "100%",
               height: "100%",
@@ -104,6 +108,7 @@ export default function StartProject() {
               styles: {
                 branding: "#777EF0",
               },
+              locale: language === "es" ? "es-ES" : "en",
             }}
           />
         </div>

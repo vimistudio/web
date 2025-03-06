@@ -19,14 +19,14 @@ export function Header() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <nav className="container mx-auto px-4 py-2 sm:py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vimistudio-logo-LWRIbdkb53uyy1SNL8LDs5bfAQ9WlM.svg"
             alt="Vimi Studio Logo"
             width={150}
             height={48}
-            className="h-8 sm:h-12 w-auto"
+            className="h-6 sm:h-8 md:h-12 w-auto"
             priority
           />
         </Link>

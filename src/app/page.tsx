@@ -57,16 +57,16 @@ export default function Home() {
   return (
     <motion.main
       key="home"
-      className="flex-1 flex items-center"
+      className="flex-1 flex items-start sm:items-center pt-16 sm:pt-0 mt-0"
       role="main"
       initial={{ opacity: 0, x: -100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -100 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-0 pb-8 sm:py-8">
         <motion.h1
-          className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[120px] font-bold tracking-tight text-center leading-[1.1] max-w-[1200px] mx-auto"
+          className="text-[42px] sm:text-[64px] md:text-[80px] lg:text-[120px] font-bold tracking-tight text-center leading-[1.05] sm:leading-[1.1] max-w-[1200px] mx-auto mt-0 pt-2 sm:mt-2"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -88,7 +88,7 @@ export default function Home() {
         </motion.h1>
 
         <motion.p
-          className="text-[#898989] text-lg sm:text-xl md:text-xl lg:text-2xl text-center mt-4 sm:mt-6 md:mt-8 max-w-xs sm:max-w-lg md:max-w-3xl mx-auto"
+          className="text-[#898989] text-base sm:text-lg md:text-xl lg:text-2xl text-center mt-3 sm:mt-6 md:mt-8 max-w-xs sm:max-w-lg md:max-w-3xl mx-auto"
           initial="hidden"
           animate="visible"
           variants={SUBHEADER_VARIANTS}
