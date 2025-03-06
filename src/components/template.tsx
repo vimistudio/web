@@ -2,6 +2,7 @@
 
 import { Header } from "./header";
 import { LoadingOverlay } from "@/components/loading-overlay";
+import { LanguageToggle } from "@/components/language-toggle";
 import type React from "react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -32,6 +33,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
         )}
         <Header />
         <div className="flex-1 flex flex-col">{children}</div>
+        <LanguageToggle />
       </div>
     </LanguageProvider>
   );

@@ -5,34 +5,36 @@ import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/language-context";
 
 export function LanguageToggle() {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "es" : "en");
   };
 
   return (
-    <motion.button
-      onClick={toggleLanguage}
-      className="flex items-center justify-center px-2 py-1 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      aria-label={`Switch to ${language === "en" ? "Spanish" : "English"}`}
-    >
-      <span
-        className={`mr-1 ${language === "en" ? "font-bold" : "opacity-60"}`}
+    <div className="fixed bottom-6 right-6 z-40">
+      <motion.button
+        onClick={toggleLanguage}
+        className="flex items-center justify-center rounded-full 
+                  bg-black text-white shadow-lg
+                  hover:shadow-xl transition-all duration-300
+                  w-12 h-12 sm:w-14 sm:h-14"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 20,
+          duration: 0.4,
+        }}
+        aria-label={`Switch to ${language === "en" ? "Spanish" : "English"}`}
       >
-        EN
-      </span>
-      <span className="mx-1 text-gray-400">|</span>
-      <span
-        className={`ml-1 ${language === "es" ? "font-bold" : "opacity-60"}`}
-      >
-        ES
-      </span>
-    </motion.button>
+        <div className="text-center font-medium">
+          {language === "en" ? "ES" : "EN"}
+        </div>
+      </motion.button>
+    </div>
   );
 }

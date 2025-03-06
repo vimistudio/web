@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/language-context";
-import { LanguageToggle } from "./language-toggle";
 
 export function Header() {
   const router = useRouter();
@@ -51,14 +50,10 @@ export function Header() {
           >
             {t("whatWeDo")}
           </Link>
-
-          {/* Language toggle */}
-          <LanguageToggle />
         </div>
 
-        {/* Mobile elements: Language toggle and CTA button */}
-        <div className="md:hidden flex items-center gap-3">
-          <LanguageToggle />
+        {/* Mobile elements: CTA button */}
+        <div className="md:hidden flex items-center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-3 py-1.5 text-xs"
