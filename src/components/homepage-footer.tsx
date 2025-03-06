@@ -138,9 +138,23 @@ export function HomepageFooter() {
           <div className="flex flex-col sm:flex-row items-center space-y-8 sm:space-y-0 sm:space-x-12">
             {/* Logo */}
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              className="flex-shrink-0"
+              whileHover={{
+                scale: 1.15,
+                filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))",
+                rotate: 2,
+              }}
+              whileTap={{
+                scale: 1.15,
+                filter: "drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))",
+                rotate: 2,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 15,
+                duration: 0.4,
+              }}
+              className="flex-shrink-0 cursor-pointer"
             >
               <Image
                 src="/logo-vimi.png"
