@@ -19,20 +19,12 @@ import ModuleCard from "@/components/dashboard/ModuleCard";
 import { projects } from "@/lib/data";
 
 export default function Components() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
   const exampleProject = projects[0];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-      
-      <div className="flex flex-1">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        
-        <main className="flex-1 p-6 lg:ml-64">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Component Library</h1>
             
@@ -297,8 +289,5 @@ export default function Components() {
               </div>
             </section>
           </div>
-        </main>
-      </div>
-    </div>
   );
 }

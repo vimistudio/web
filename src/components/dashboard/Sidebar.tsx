@@ -48,6 +48,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { name: "Messages", href: "/portal/messages", icon: <MessageSquare className="h-5 w-5" /> },
     { name: "Files", href: "/portal/files", icon: <FileImage className="h-5 w-5" /> },
     { name: "Team", href: "/portal/team", icon: <Users className="h-5 w-5" /> },
+    { name: "Components", href: "/portal/components", icon: <Settings className="h-5 w-5" /> },
     { name: "Settings", href: "/portal/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
