@@ -37,14 +37,12 @@ export const statements: WordBank = {
   },
   es: {
     small: [
-      "soñadores",
-      "creadores",
-      "pensadores",
+      "el futuro",
       "líderes",
-      "fabricantes",
-      "hacedores",
-      "formadores",
-      "visionarios",
+      "artistas",
+      "genios",
+      "mentores",
+      "pioneros",
     ],
     large: [
       "innovadores",
