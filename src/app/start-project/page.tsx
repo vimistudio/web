@@ -2,61 +2,71 @@
 
 import { motion } from "framer-motion";
 import Cal, { getCalApi } from "@calcom/embed-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function StartProject() {
-  const [currentMonth, setCurrentMonth] = useState("");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const { t, language } = useLanguage();
 
+  // Función para capitalizar la primera letra
+  const capitalizeFirstLetter = (string: string): string => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
+
+  // Usando useMemo para calcular el mes formateado en lugar de un estado separado
+  const formattedMonth = useMemo(() => {
+    const monthName = currentDate.toLocaleString(
+      language === "es" ? "es-ES" : "en-US",
+      { month: "long" }
+    );
+
+    // Asegurar que el mes comience con mayúscula
+    const capitalizedMonth = capitalizeFirstLetter(monthName);
+    return `${capitalizedMonth} ${currentDate.getFullYear()}`;
+  }, [currentDate, language]);
+
+  // Efecto para inicializar Cal
   useEffect(() => {
     // Initialize Cal when the component mounts
     (async () => {
       const cal = await getCalApi();
       cal("ui", {
-        theme: "light",
         styles: { branding: { brandColor: "#777EF0" } },
         hideEventTypeDetails: false,
-        layout: "month_view",
       });
     })();
 
-    // Function to update the current month
-    const updateMonth = () => {
-      const now = new Date();
-      const currentMonthName = now.toLocaleString("default", { month: "long" });
-      const currentYear = now.getFullYear();
-      setCurrentMonth(`${currentMonthName} ${currentYear}`);
-    };
-
-    // Initial update
-    updateMonth();
-
-    // Function to calculate milliseconds until the next month
+    // Configurar el temporizador para actualizar la fecha al cambio de mes
     const getMillisecondsUntilNextMonth = () => {
       const now = new Date();
       const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       return nextMonth.getTime() - now.getTime();
     };
 
-    // Set up the interval to update at the start of each month
-    const setMonthUpdateInterval = () => {
-      const msUntilNextMonth = getMillisecondsUntilNextMonth();
-
-      // Set a timeout to update at the exact start of the next month
-      const timeoutId = setTimeout(() => {
-        updateMonth();
-        // After updating, set up the next interval
-        setMonthUpdateInterval();
-      }, msUntilNextMonth);
-
-      return timeoutId;
+    const updateDate = () => {
+      setCurrentDate(new Date());
     };
 
-    // Start the update cycle
-    const timeoutId = setMonthUpdateInterval();
+    const setMonthUpdateInterval = () => {
+      const timeUntilNextMonth = getMillisecondsUntilNextMonth();
 
-    // Cleanup function
-    return () => clearTimeout(timeoutId);
-  }, []);
+      // Configurar un temporizador para el próximo cambio de mes
+      const timerId = setTimeout(() => {
+        updateDate();
+        // Volver a configurar el temporizador para el siguiente mes
+        setMonthUpdateInterval();
+      }, timeUntilNextMonth);
+
+      return timerId;
+    };
+
+    // Iniciar el temporizador para la actualización del mes
+    const timerId = setMonthUpdateInterval();
+
+    // Limpieza al desmontar el componente
+    return () => clearTimeout(timerId);
+  }, []); // Sin dependencia de language
 
   return (
     <motion.main
@@ -69,16 +79,16 @@ export default function StartProject() {
     >
       <div className="container mx-auto px-4 sm:px-6 text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 px-4">
-          Let's Create Something Remarkable
+          {t("createSomethingRemarkable")}
         </h1>
         <div className="flex flex-col items-center justify-center mb-8 px-4">
           <div className="flex items-center mb-2 sm:mb-0">
             <div className="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse flex-shrink-0"></div>
-            <p className="text-lg sm:text-xl">Get in touch.</p>
+            <p className="text-lg sm:text-xl">{t("getInTouch")}</p>
           </div>
-          <p className="text-lg sm:text-xl">
-            New spots open for {currentMonth}.
-          </p>
+          <div className="mb-4 text-lg text-gray-700">
+            {t("newSpotsOpen")} {formattedMonth}.
+          </div>
         </div>
         <div className="inline-block w-full max-w-4xl">
           <Cal

@@ -8,6 +8,7 @@ import { debounce } from "@/lib/utils"; // Assuming debounce is moved to utils
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
 import { statements } from "@/lib/word-bank";
+import { useLanguage } from "@/contexts/language-context";
 
 const DEBOUNCE_DELAY = 100;
 const HEADING_VARIANTS = {
@@ -34,6 +35,7 @@ const SUBHEADER_VARIANTS = {
 export default function Home() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const { isTransitioning, createTransition } = usePageTransition();
+  const { t, language } = useLanguage();
 
   useLayoutEffect(() => {
     const checkScreenSize = () => {
@@ -47,7 +49,11 @@ export default function Home() {
     return () => window.removeEventListener("resize", debounceResize);
   }, []);
 
-  const currentWords = isLargeScreen ? statements.large : statements.small;
+  // Get words in the current language
+  const currentWords = isLargeScreen
+    ? statements[language].large
+    : statements[language].small;
+
   return (
     <motion.main
       key="home"
@@ -67,18 +73,18 @@ export default function Home() {
           whileHover="hover"
           variants={HEADING_VARIANTS}
         >
-          <motion.div variants={HEADING_VARIANTS}>Designed</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>{t("designed")}</motion.div>
           <div className="relative h-[1.1em] overflow-hidden">
             <motion.span
               className="absolute left-0 right-0"
               variants={HEADING_VARIANTS}
             >
-              for <WordRotator words={currentWords} />
+              {t("for")} <WordRotator words={currentWords} />
               <span className="text-black">.</span>
             </motion.span>
           </div>
-          <motion.div variants={HEADING_VARIANTS}>Inspired</motion.div>
-          <motion.div variants={HEADING_VARIANTS}>by stories.</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>{t("inspired")}</motion.div>
+          <motion.div variants={HEADING_VARIANTS}>{t("byStories")}</motion.div>
         </motion.h1>
 
         <motion.p
@@ -88,8 +94,7 @@ export default function Home() {
           variants={SUBHEADER_VARIANTS}
           custom={0}
         >
-          Every click, every scroll — intentionally designed to connect, engage,
-          and inspire.
+          {t("tagline")}
         </motion.p>
 
         <motion.div
@@ -110,14 +115,23 @@ export default function Home() {
                 repeatType: "reverse",
               },
             }}
-            onClick={() => createTransition("/how-it-works")}
+            onClick={(e) => {
+              // Stop any ongoing animations immediately
+              e.stopPropagation();
+              // Make sure we're not doing too many animations at once
+              if (!isTransitioning) {
+                // Force styles to be applied immediately before transition
+                document.body.offsetHeight;
+                createTransition("/how-it-works");
+              }
+            }}
           >
             <motion.div
               className="py-2 sm:py-3 pl-4 sm:pl-6 pr-6 sm:pr-8 flex items-center"
               whileHover="hover"
             >
               <span className="text-base sm:text-lg md:text-lg lg:text-xl font-medium whitespace-nowrap mr-2">
-                No stress, just good design.
+                {t("ctaButton")}
               </span>
               <motion.span
                 className="inline-block"

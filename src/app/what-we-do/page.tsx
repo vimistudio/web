@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 const industries = [
   "AI",
@@ -73,6 +74,7 @@ export default function WhatWeDo() {
   const router = useRouter();
   const [showBanner, setShowBanner] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -122,7 +124,7 @@ export default function WhatWeDo() {
           >
             <div>
               <h3 className="text-lg font-medium text-gray-400 mb-4">
-                WHAT WE DO:
+                {t("whatWeDoSection")}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {services.map((service) => (
@@ -146,7 +148,7 @@ export default function WhatWeDo() {
 
             <div>
               <h3 className="text-lg font-medium text-gray-400 mb-4">
-                HOW FAST WE DO IT:
+                {t("howFastSection")}
               </h3>
               <div className="grid gap-2">
                 {timeframes.map(({ service, duration }) => (
@@ -179,7 +181,7 @@ export default function WhatWeDo() {
           >
             <div>
               <h3 className="text-lg font-medium text-gray-500 mb-4">
-                WHO WE WORK WITH:
+                {t("whoWeWorkWithSection")}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {industries.map((industry) => (
@@ -203,7 +205,7 @@ export default function WhatWeDo() {
 
             <div>
               <h3 className="text-lg font-medium text-gray-500 mb-4">
-                OUR TECH STACK:
+                {t("techStackSection")}
               </h3>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-6">
                 {techStack.map((tech) => (
@@ -248,7 +250,7 @@ export default function WhatWeDo() {
           >
             <div className="text-white text-center pb-safe">
               <p className="text-lg font-semibold mb-2">
-                Ready to bring your vision to life?
+                {t("readyToBringVision")}
               </p>
               <motion.button
                 className="bg-white text-black px-6 py-2 rounded-full inline-flex items-center gap-2 hover:bg-opacity-90 transition-colors"
@@ -256,7 +258,7 @@ export default function WhatWeDo() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Start Your Project
+                {t("startYourProject")}
                 <ArrowRight size={20} />
               </motion.button>
             </div>
