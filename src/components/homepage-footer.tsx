@@ -19,8 +19,16 @@ export function HomepageFooter() {
   useEffect(() => {
     const updateBookingText = () => {
       const today = new Date();
-      const monthIndex = today.getMonth();
-      const yearShort = today.getFullYear().toString().slice(2);
+      const currentDay = today.getDate();
+
+      // If day is past 21st, show next month
+      let targetDate = today;
+      if (currentDay > 21) {
+        targetDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      }
+
+      const monthIndex = targetDate.getMonth();
+      const yearShort = targetDate.getFullYear().toString().slice(2);
 
       // Get month abbreviation using i18n
       const monthKeys = [
