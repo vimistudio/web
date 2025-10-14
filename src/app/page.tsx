@@ -7,7 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import { debounce } from "@/lib/utils"; // Assuming debounce is moved to utils
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { WordRotator } from "@/components/word-rotator";
-import { statements } from "@/lib/word-bank";
+import { statements, inspirations } from "@/lib/word-bank";
 import { useLanguage } from "@/contexts/language-context";
 import { HomepageFooter } from "@/components/homepage-footer";
 
@@ -55,6 +55,10 @@ export default function Home() {
     ? statements[language].large
     : statements[language].small;
 
+  const currentInspirations = isLargeScreen
+    ? inspirations[language].large
+    : inspirations[language].small;
+
   return (
     <>
       <motion.main
@@ -82,13 +86,16 @@ export default function Home() {
                 variants={HEADING_VARIANTS}
               >
                 {t("for")} <WordRotator words={currentWords} />
-                <span className="text-black">.</span>
               </motion.span>
             </div>
-            <motion.div variants={HEADING_VARIANTS}>{t("inspired")}</motion.div>
-            <motion.div variants={HEADING_VARIANTS}>
-              {t("byStories")}
-            </motion.div>
+            <div className="relative h-[1.1em] overflow-hidden">
+              <motion.span
+                className="absolute left-0 right-0"
+                variants={HEADING_VARIANTS}
+              >
+                <WordRotator words={currentInspirations} initialDelay={1500} />
+              </motion.span>
+            </div>
           </motion.h1>
 
           <motion.p

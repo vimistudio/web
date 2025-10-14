@@ -49,3 +49,47 @@ export const statements: WordBank = {
     ],
   },
 };
+
+// Second rotating section for the inspiration/approach
+export const inspirations: WordBank = {
+  en: {
+    small: [
+      "inspired by stories.",
+      "built on insights.",
+      "powered by data.",
+      "driven by vision.",
+      "backed by research.",
+      "crafted with passion.",
+    ],
+    large: [
+      "inspired by stories.",
+      "built on insights.",
+      "powered by data.",
+      "driven by your vision.",
+      "backed by research.",
+      "crafted with passion.",
+      "fueled by ambition.",
+      "shaped by experience.",
+    ],
+  },
+  es: {
+    small: [
+      "inspirado por historias.",
+      "construido con insights.",
+      "impulsado por datos.",
+      "guiado por visión.",
+      "respaldado por investigación.",
+      "creado con pasión.",
+    ],
+    large: [
+      "inspirado por historias.",
+      "construido con insights.",
+      "impulsado por datos.",
+      "guiado por tu visión.",
+      "respaldado por investigación.",
+      "creado con pasión.",
+      "alimentado por ambición.",
+      "moldeado por experiencia.",
+    ],
+  },
+};
