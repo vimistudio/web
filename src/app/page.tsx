@@ -160,46 +160,85 @@ export default function Home() {
               {t("tagline2")}
             </motion.p>
             <motion.div
-              className="text-black text-base sm:text-lg md:text-xl lg:text-2xl text-center font-semibold flex flex-wrap items-center justify-center gap-2"
+              className="relative inline-block"
               initial="hidden"
               animate="visible"
               variants={SUBHEADER_VARIANTS}
               custom={2}
             >
-              <motion.span
-                animate={{
-                  scale: [1, 1.02, 1],
+              {/* Paint splatter background */}
+              <motion.div
+                className="absolute inset-0 bg-black"
+                style={{
+                  clipPath:
+                    "polygon(2% 0%, 5% 8%, 0% 12%, 8% 18%, 3% 25%, 10% 30%, 5% 38%, 12% 45%, 8% 52%, 15% 58%, 10% 65%, 18% 70%, 12% 78%, 20% 85%, 15% 92%, 22% 98%, 28% 95%, 35% 100%, 42% 96%, 48% 98%, 55% 94%, 62% 99%, 68% 95%, 75% 98%, 82% 92%, 88% 96%, 95% 90%, 98% 85%, 92% 78%, 97% 70%, 90% 62%, 95% 55%, 88% 48%, 94% 40%, 87% 32%, 93% 25%, 86% 18%, 92% 10%, 85% 5%, 78% 0%, 70% 5%, 62% 2%, 55% 8%, 48% 3%, 40% 7%, 32% 2%, 25% 6%, 18% 1%, 10% 4%)",
+                  borderRadius: "8% 12% 10% 15% / 15% 10% 12% 8%",
                 }}
+                initial={{ scale: 0, rotate: -5 }}
+                animate={{ scale: 1, rotate: [0, 2, -1, 0] }}
                 transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
+                  scale: { duration: 0.5, delay: 0.3 },
+                  rotate: { duration: 3, repeat: Infinity, ease: "easeInOut" },
                 }}
-              >
-                {t("tagline3").replace(" 👌", "")}
-              </motion.span>
-              <motion.span
-                className="inline-block text-2xl sm:text-3xl md:text-4xl"
-                animate={{
-                  rotate: [0, -10, 10, -10, 10, 0],
-                  scale: [1, 1.2, 1, 1.1, 1],
+              />
+
+              {/* Drip effects */}
+              <motion.div
+                className="absolute left-[15%] top-full w-2 h-4 bg-black"
+                style={{
+                  clipPath: "polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%)",
                 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatDelay: 1,
-                  ease: "easeInOut",
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: [0, 1, 0.8, 1] }}
+                transition={{ duration: 1.2, delay: 0.5 }}
+              />
+              <motion.div
+                className="absolute right-[20%] top-full w-3 h-6 bg-black"
+                style={{
+                  clipPath: "polygon(0% 0%, 100% 0%, 75% 100%, 25% 100%)",
                 }}
-                whileHover={{
-                  rotate: [0, -20, 20, -20, 20, 0],
-                  scale: [1, 1.3, 1.3, 1.3, 1],
-                  transition: {
-                    duration: 0.5,
-                  },
-                }}
-              >
-                👌
-              </motion.span>
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: [0, 1, 0.9, 1] }}
+                transition={{ duration: 1, delay: 0.6 }}
+              />
+
+              {/* Text content */}
+              <div className="relative text-white text-base sm:text-lg md:text-xl lg:text-2xl text-center font-bold flex flex-wrap items-center justify-center gap-2 px-8 sm:px-12 md:px-16 py-4 sm:py-5 md:py-6">
+                <motion.span
+                  animate={{
+                    scale: [1, 1.02, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  {t("tagline3").replace(" 👌", "")}
+                </motion.span>
+                <motion.span
+                  className="inline-block text-2xl sm:text-3xl md:text-4xl"
+                  animate={{
+                    rotate: [0, -10, 10, -10, 10, 0],
+                    scale: [1, 1.2, 1, 1.1, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 1,
+                    ease: "easeInOut",
+                  }}
+                  whileHover={{
+                    rotate: [0, -20, 20, -20, 20, 0],
+                    scale: [1, 1.3, 1.3, 1.3, 1],
+                    transition: {
+                      duration: 0.5,
+                    },
+                  }}
+                >
+                  👌
+                </motion.span>
+              </div>
             </motion.div>
           </div>
 
