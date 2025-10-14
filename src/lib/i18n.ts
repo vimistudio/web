@@ -16,9 +16,11 @@ export const translations = {
     designed: "Designed",
     inspired: "Inspired",
     byStories: "by stories",
-    tagline:
-      "Every click, every scroll — intentionally designed to connect, engage, and inspire.",
-    ctaButton: "No stress, just good design.",
+    tagline1: "We design brands, products, and sites for early-stage startups.",
+    tagline2: "You focus on building. We handle the design.",
+    tagline3: "No stress, just good design 👌",
+    ctaButton1: "Book a 15-min call",
+    ctaButton2: "See our process",
 
     // How it works page
     howItWorksTitle: "HOW IT WORKS",
@@ -130,9 +132,12 @@ export const translations = {
     designed: "Diseñado",
     inspired: "Inspirado",
     byStories: "por historias",
-    tagline:
-      "Cada clic, cada desplazamiento — intencionalmente diseñado para conectar, involucrar e inspirar.",
-    ctaButton: "Sin estrés, solo buen diseño.",
+    tagline1:
+      "Diseñamos marcas, productos y sitios para startups en etapa inicial.",
+    tagline2: "Tú te enfocas en construir. Nosotros manejamos el diseño.",
+    tagline3: "Sin estrés, solo buen diseño 👌",
+    ctaButton1: "Reservar llamada de 15 min",
+    ctaButton2: "Ver nuestro proceso",
 
     // How it works page
     howItWorksTitle: "CÓMO FUNCIONA",
