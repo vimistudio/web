@@ -160,64 +160,31 @@ export default function Home() {
             >
               {t("tagline2")}
             </motion.p>
+            {/* Stamp - positioned absolutely so it doesn't affect layout */}
             <motion.div
-              className="relative inline-block"
-              initial="hidden"
-              animate="visible"
-              variants={SUBHEADER_VARIANTS}
-              custom={2}
+              className="absolute left-1/2 -translate-x-1/2 mt-4 sm:mt-6"
+              initial={{ scale: 0, opacity: 0, rotate: -5 }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                rotate: -5,
+              }}
+              transition={{
+                duration: 0.3,
+                delay: 0.4,
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+              }}
             >
-              {/* Stamp SVG Background */}
-              <motion.div
-                className="relative w-[280px] sm:w-[350px] md:w-[420px] lg:w-[500px] h-auto"
-                initial={{ scale: 0, rotate: -8 }}
-                animate={{
-                  scale: 1,
-                  rotate: [-5, -3, -4, -3, -5],
-                }}
-                transition={{
-                  scale: {
-                    duration: 0.5,
-                    delay: 0.3,
-                    type: "spring",
-                    stiffness: 200,
-                  },
-                  rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-                }}
-              >
-                <Image
-                  src="/stamp-no-stress_1.svg"
-                  alt="No stress, just good design"
-                  width={500}
-                  height={282}
-                  className="w-full h-auto"
-                  priority
-                />
-
-                {/* Animated emoji overlay */}
-                <motion.span
-                  className="absolute right-[8%] top-[48%] text-3xl sm:text-4xl md:text-5xl lg:text-6xl transform -translate-y-1/2"
-                  animate={{
-                    rotate: [0, -10, 10, -10, 10, 0],
-                    scale: [1, 1.2, 1, 1.1, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 1,
-                    ease: "easeInOut",
-                  }}
-                  whileHover={{
-                    rotate: [0, -20, 20, -20, 20, 0],
-                    scale: [1, 1.3, 1.3, 1.3, 1],
-                    transition: {
-                      duration: 0.5,
-                    },
-                  }}
-                >
-                  👌
-                </motion.span>
-              </motion.div>
+              <Image
+                src="/stamp-no-stress_1.svg"
+                alt="No stress, just good design"
+                width={500}
+                height={282}
+                className="w-[240px] sm:w-[300px] md:w-[360px] lg:w-[420px] h-auto"
+                priority
+              />
             </motion.div>
           </div>
 
