@@ -235,7 +235,7 @@ export function HomepageFooter() {
             }}
           >
             <Image
-              src="/stamp-no-stress_1.svg"
+              src="/stamp-no-stress-white.svg"
               alt="No stress, just good design"
               width={400}
               height={226}
