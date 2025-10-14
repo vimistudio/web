@@ -10,7 +10,6 @@ import { WordRotator } from "@/components/word-rotator";
 import { statements, inspirations } from "@/lib/word-bank";
 import { useLanguage } from "@/contexts/language-context";
 import { HomepageFooter } from "@/components/homepage-footer";
-import Image from "next/image";
 
 const DEBOUNCE_DELAY = 100;
 const HEADING_VARIANTS = {
@@ -160,32 +159,6 @@ export default function Home() {
             >
               {t("tagline2")}
             </motion.p>
-            {/* Stamp - positioned absolutely so it doesn't affect layout */}
-            <motion.div
-              className="absolute left-1/2 -translate-x-1/2 mt-4 sm:mt-6"
-              initial={{ scale: 0, opacity: 0, rotate: -5 }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-                rotate: -5,
-              }}
-              transition={{
-                duration: 0.3,
-                delay: 0.4,
-                type: "spring",
-                stiffness: 300,
-                damping: 20,
-              }}
-            >
-              <Image
-                src="/stamp-no-stress_1.svg"
-                alt="No stress, just good design"
-                width={500}
-                height={282}
-                className="w-[240px] sm:w-[300px] md:w-[360px] lg:w-[420px] h-auto"
-                priority
-              />
-            </motion.div>
           </div>
 
           <motion.div

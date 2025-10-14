@@ -217,6 +217,33 @@ export function HomepageFooter() {
         {/* Simple divider */}
         <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-8"></div>
 
+        {/* Stamp */}
+        <div className="flex justify-center my-12">
+          <motion.div
+            initial={{ scale: 0, opacity: 0, rotate: -5 }}
+            animate={{
+              scale: 1,
+              opacity: 1,
+              rotate: -5,
+            }}
+            transition={{
+              duration: 0.3,
+              delay: 0.4,
+              type: "spring",
+              stiffness: 300,
+              damping: 20,
+            }}
+          >
+            <Image
+              src="/stamp-no-stress_1.svg"
+              alt="No stress, just good design"
+              width={400}
+              height={226}
+              className="w-[200px] sm:w-[280px] md:w-[320px] lg:w-[380px] h-auto"
+            />
+          </motion.div>
+        </div>
+
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           {/* Times */}
