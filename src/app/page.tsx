@@ -10,6 +10,7 @@ import { WordRotator } from "@/components/word-rotator";
 import { statements, inspirations } from "@/lib/word-bank";
 import { useLanguage } from "@/contexts/language-context";
 import { HomepageFooter } from "@/components/homepage-footer";
+import { FloatingEyes } from "@/components/floating-eyes";
 
 const DEBOUNCE_DELAY = 100;
 const HEADING_VARIANTS = {
@@ -97,16 +98,19 @@ export default function Home() {
     <>
       <motion.main
         key="home"
-        className="flex-1 flex items-start sm:items-center pt-8 sm:pt-0 mt-0"
+        className="flex-1 flex items-start sm:items-center pt-8 sm:pt-0 mt-0 relative"
         role="main"
         initial={{ opacity: 0, x: -100 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -100 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
+        {/* Floating Eyes in hero section */}
+        <FloatingEyes />
+
         <div
           ref={containerRef}
-          className="container mx-auto px-4 pt-0 pb-8 sm:py-8"
+          className="container mx-auto px-4 pt-0 pb-8 sm:py-8 relative z-10"
         >
           <motion.h1
             ref={headingRef}

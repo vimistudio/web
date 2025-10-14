@@ -3,7 +3,6 @@
 import { Header } from "./header";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { LanguageToggle } from "@/components/language-toggle";
-import { FloatingEyes } from "@/components/floating-eyes";
 import type React from "react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -48,9 +47,6 @@ export default function Template({ children }: { children: React.ReactNode }) {
         {mounted && showLanguageToggle && (
           <LanguageToggle isHomepage={isHomepage} />
         )}
-
-        {/* Floating eyes that follow cursor */}
-        {mounted && <FloatingEyes />}
 
         <div className="flex-1 flex flex-col">{children}</div>
       </div>
