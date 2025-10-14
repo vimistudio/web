@@ -140,7 +140,7 @@ export default function Home() {
             </div>
           </motion.h1>
 
-          <div className="mt-3 sm:mt-6 md:mt-8 space-y-2 sm:space-y-3 max-w-xs sm:max-w-lg md:max-w-3xl mx-auto">
+          <div className="mt-8 sm:mt-12 md:mt-16 lg:mt-20 space-y-2 sm:space-y-3 max-w-xs sm:max-w-lg md:max-w-3xl mx-auto">
             <motion.p
               className="text-[#898989] text-base sm:text-lg md:text-xl text-center"
               initial="hidden"
@@ -159,15 +159,48 @@ export default function Home() {
             >
               {t("tagline2")}
             </motion.p>
-            <motion.p
-              className="text-black text-base sm:text-lg md:text-xl text-center font-medium"
+            <motion.div
+              className="text-black text-base sm:text-lg md:text-xl lg:text-2xl text-center font-semibold flex flex-wrap items-center justify-center gap-2"
               initial="hidden"
               animate="visible"
               variants={SUBHEADER_VARIANTS}
               custom={2}
             >
-              {t("tagline3")}
-            </motion.p>
+              <motion.span
+                animate={{
+                  scale: [1, 1.02, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                {t("tagline3").replace(" 👌", "")}
+              </motion.span>
+              <motion.span
+                className="inline-block text-2xl sm:text-3xl md:text-4xl"
+                animate={{
+                  rotate: [0, -10, 10, -10, 10, 0],
+                  scale: [1, 1.2, 1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                  ease: "easeInOut",
+                }}
+                whileHover={{
+                  rotate: [0, -20, 20, -20, 20, 0],
+                  scale: [1, 1.3, 1.3, 1.3, 1],
+                  transition: {
+                    duration: 0.5,
+                  },
+                }}
+              >
+                👌
+              </motion.span>
+            </motion.div>
           </div>
 
           <motion.div
