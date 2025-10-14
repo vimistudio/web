@@ -54,42 +54,40 @@ export const statements: WordBank = {
 export const inspirations: WordBank = {
   en: {
     small: [
-      "inspired by stories.",
-      "built on insights.",
-      "powered by data.",
-      "driven by vision.",
-      "backed by research.",
-      "crafted with passion.",
+      "inspired by stories.", // 20 chars
+      "built on insights.", // 18 chars
+      "powered by data.", // 16 chars
+      "driven by vision.", // 17 chars
+      "backed by research.", // 19 chars
+      "crafted with passion.", // 21 chars
     ],
     large: [
-      "inspired by stories.",
-      "built on insights.",
-      "powered by data.",
-      "driven by your vision.",
-      "backed by research.",
-      "crafted with passion.",
-      "fueled by ambition.",
-      "shaped by experience.",
+      "inspired by stories.", // 20 chars
+      "built on insights.", // 18 chars
+      "powered by data.", // 16 chars
+      "driven by vision.", // 17 chars (not "your vision" - too long!)
+      "backed by research.", // 19 chars
+      "crafted with passion.", // 21 chars
+      "fueled by ambition.", // 19 chars
     ],
   },
   es: {
     small: [
-      "inspirado por historias.",
-      "construido con insights.",
-      "impulsado por datos.",
-      "guiado por visión.",
-      "respaldado por investigación.",
-      "creado con pasión.",
+      "inspirado por historias.", // 25 chars
+      "construido con insights.", // 24 chars
+      "impulsado por datos.", // 20 chars
+      "guiado por visión.", // 18 chars
+      "respaldado con datos.", // 21 chars ✓
+      "creado con pasión.", // 18 chars
     ],
     large: [
-      "inspirado por historias.",
-      "construido con insights.",
-      "impulsado por datos.",
-      "guiado por tu visión.",
-      "respaldado por investigación.",
-      "creado con pasión.",
-      "alimentado por ambición.",
-      "moldeado por experiencia.",
+      "inspirado por historias.", // 25 chars
+      "construido con insights.", // 24 chars
+      "impulsado por datos.", // 20 chars
+      "guiado por visión.", // 18 chars
+      "respaldado con datos.", // 21 chars ✓
+      "creado con pasión.", // 18 chars
+      "alimentado por ambición.", // 25 chars
     ],
   },
 };

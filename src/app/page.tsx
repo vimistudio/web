@@ -93,7 +93,11 @@ export default function Home() {
                 className="absolute left-0 right-0"
                 variants={HEADING_VARIANTS}
               >
-                <WordRotator words={currentInspirations} initialDelay={1500} />
+                <WordRotator
+                  words={currentInspirations}
+                  initialDelay={1500}
+                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent"
+                />
               </motion.span>
             </div>
           </motion.h1>

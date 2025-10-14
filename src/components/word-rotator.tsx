@@ -7,12 +7,14 @@ interface WordRotatorProps {
   words?: string[];
   interval?: number;
   initialDelay?: number;
+  className?: string;
 }
 
 export function WordRotator({
   words = [],
   interval = 3000,
   initialDelay = 0,
+  className = "text-[hsl(var(--primary-accent))]",
 }: WordRotatorProps) {
   // Add guard clause for empty words array
   if (!words?.length) {
@@ -47,7 +49,7 @@ export function WordRotator({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -50, opacity: 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className="inline-block text-[hsl(var(--primary-accent))] will-change-transform"
+        className={`inline-block will-change-transform ${className}`}
       >
         {words[currentIndex]}
       </motion.span>
