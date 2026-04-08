@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
+import { NoAccess } from "@/components/portal/no-access";
 
 export default async function PortalLayout({
   children,
@@ -16,6 +17,7 @@ export default async function PortalLayout({
     redirect("/portal/login");
   }
 
+  // Check if user has a pre-created profile (invite-only gate)
   const { data: profile } = await supabase
     .from("profiles")
     .select("*, clients(*)")
@@ -23,34 +25,8 @@ export default async function PortalLayout({
     .single();
 
   if (!profile) {
-    // Auto-create profile if trigger didn't fire
-    const { data: newProfile } = await supabase
-      .from("profiles")
-      .insert({
-        id: user.id,
-        full_name:
-          user.user_metadata?.full_name ??
-          user.user_metadata?.name ??
-          user.email,
-        avatar_url:
-          user.user_metadata?.avatar_url ??
-          user.user_metadata?.picture ??
-          null,
-      })
-      .select("*, clients(*)")
-      .single();
-
-    if (!newProfile) {
-      // Sign out to break the loop, then redirect
-      await supabase.auth.signOut();
-      redirect("/portal/login?error=profile_creation_failed");
-    }
-
-    return (
-      <PortalShell user={user} profile={newProfile}>
-        {children}
-      </PortalShell>
-    );
+    // No profile = not invited. Show access denied.
+    return <NoAccess />;
   }
 
   return (
