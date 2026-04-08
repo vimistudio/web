@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusSignIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { Comment01Icon } from "@hugeicons-pro/core-stroke-rounded";
+import { PlusSignIcon } from "@/components/ui/icons";
+import { Comment01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 
 interface Request {

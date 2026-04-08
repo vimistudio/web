@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download01Icon } from "@hugeicons-pro/core-stroke-rounded";
+import { Download01Icon } from "@/components/ui/icons";
 
 interface Deliverable {
   id: string;

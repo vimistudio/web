@@ -15,9 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Notification03Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { Logout01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { Settings02Icon } from "@hugeicons-pro/core-stroke-rounded";
+import { Notification03Icon } from "@/components/ui/icons";
+import { Logout01Icon } from "@/components/ui/icons";
+import { Settings02Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { Profile } from "./portal-shell";

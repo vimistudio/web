@@ -2,9 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { GridViewIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { Image01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { UserCircleIcon } from "@hugeicons-pro/core-stroke-rounded";
+import { GridViewIcon } from "@/components/ui/icons";
+import { Image01Icon } from "@/components/ui/icons";
+import { UserCircleIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 const clientTabs = [

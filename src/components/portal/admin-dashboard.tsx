@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserGroupIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { Task01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { ViewIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { DollarCircleIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { ArrowRight01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { PlusSignIcon } from "@hugeicons-pro/core-stroke-rounded";
+import { UserGroupIcon } from "@/components/ui/icons";
+import { Task01Icon } from "@/components/ui/icons";
+import { ViewIcon } from "@/components/ui/icons";
+import { DollarCircleIcon } from "@/components/ui/icons";
+import { ArrowRight01Icon } from "@/components/ui/icons";
+import { PlusSignIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 

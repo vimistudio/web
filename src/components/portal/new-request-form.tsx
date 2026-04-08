@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Cancel01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { PlusSignIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { Image01Icon } from "@hugeicons-pro/core-stroke-rounded";
+import { Cancel01Icon } from "@/components/ui/icons";
+import { PlusSignIcon } from "@/components/ui/icons";
+import { Image01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 

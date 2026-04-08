@@ -3,11 +3,11 @@
 import { type User } from "@supabase/supabase-js";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardSquare01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { UserGroupIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { PaintBoardIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { Settings02Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { Logout01Icon } from "@hugeicons-pro/core-stroke-rounded";
+import { DashboardSquare01Icon } from "@/components/ui/icons";
+import { UserGroupIcon } from "@/components/ui/icons";
+import { PaintBoardIcon } from "@/components/ui/icons";
+import { Settings02Icon } from "@/components/ui/icons";
+import { Logout01Icon } from "@/components/ui/icons";
 import {
   Sidebar,
   SidebarContent,
