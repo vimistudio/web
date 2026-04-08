@@ -23,7 +23,34 @@ export default async function PortalLayout({
     .single();
 
   if (!profile) {
-    redirect("/portal/login?error=no_profile");
+    // Auto-create profile if trigger didn't fire
+    const { data: newProfile } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        full_name:
+          user.user_metadata?.full_name ??
+          user.user_metadata?.name ??
+          user.email,
+        avatar_url:
+          user.user_metadata?.avatar_url ??
+          user.user_metadata?.picture ??
+          null,
+      })
+      .select("*, clients(*)")
+      .single();
+
+    if (!newProfile) {
+      // Sign out to break the loop, then redirect
+      await supabase.auth.signOut();
+      redirect("/portal/login?error=profile_creation_failed");
+    }
+
+    return (
+      <PortalShell user={user} profile={newProfile}>
+        {children}
+      </PortalShell>
+    );
   }
 
   return (
