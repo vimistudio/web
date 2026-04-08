@@ -159,12 +159,25 @@ export function AdminDashboard({ stats, clients, recentActivity }: AdminDashboar
                   </div>
                 </div>
 
-                <Link href={`/portal/admin/clients/${client.slug}`}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    Open Board
-                    <ArrowRight01Icon size={12} />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      document.cookie = `impersonate_client=${client.id}; path=/; max-age=3600`;
+                      window.location.href = "/portal";
+                    }}
+                  >
+                    View as Client
                   </Button>
-                </Link>
+                  <Link href={`/portal/admin/clients/${client.slug}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      Open Board
+                      <ArrowRight01Icon size={12} />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </Card>
           ))}
