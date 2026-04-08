@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/portal/login-form";
@@ -15,15 +16,14 @@ export default async function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0d0f1a] px-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-[#909af7]/20 flex items-center justify-center">
-              <span className="text-[#909af7] font-bold text-lg">V</span>
-            </div>
-          </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">
-            vimi studio
-          </h1>
+        <div className="flex flex-col items-center space-y-4">
+          <Image
+            src="/logo-vimi.png"
+            alt="Vimi Studio"
+            width={60}
+            height={60}
+            className="h-14 w-auto"
+          />
         </div>
 
         <div className="text-center space-y-2">
