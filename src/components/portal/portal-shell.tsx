@@ -3,6 +3,7 @@
 import { type User } from "@supabase/supabase-js";
 import { AdminSidebar } from "./admin-sidebar";
 import { ClientBottomTabs } from "./client-bottom-tabs";
+import { ClientHeader } from "./client-header";
 import { PortalHeader } from "./portal-header";
 import {
   SidebarProvider,
@@ -46,10 +47,13 @@ export function PortalShell({ user, profile, children }: PortalShellProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fbfafa]">
-      <PortalHeader user={user} profile={profile} />
-      <main className="flex-1 p-4 pb-20">{children}</main>
-      <ClientBottomTabs />
+    <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
+      <ClientHeader user={user} profile={profile} />
+      <main className="flex-1 p-4 pb-20 md:pb-8 md:px-12">{children}</main>
+      {/* Bottom tabs only on mobile */}
+      <div className="md:hidden">
+        <ClientBottomTabs />
+      </div>
     </div>
   );
 }
