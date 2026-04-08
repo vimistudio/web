@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { type User } from "@supabase/supabase-js";
 import {
@@ -44,9 +45,13 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
 
       {!isAdmin && (
         <Link href="/portal" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-[#909af7]/20 flex items-center justify-center">
-            <span className="text-[#909af7] font-bold text-xs">V</span>
-          </div>
+          <Image
+            src="/logo-vimi.png"
+            alt="Vimi Studio"
+            width={28}
+            height={28}
+            className="h-6 w-auto"
+          />
           <span className="font-semibold text-sm">vimi</span>
         </Link>
       )}
