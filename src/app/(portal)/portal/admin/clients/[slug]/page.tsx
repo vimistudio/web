@@ -1,0 +1,45 @@
+import { createClient } from "@/lib/supabase/server";
+import { redirect, notFound } from "next/navigation";
+import { AdminBoard } from "@/components/portal/admin-board";
+
+export default async function AdminClientBoardPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/portal/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") redirect("/portal");
+
+  // Fetch client by slug
+  const { data: client } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("slug", params.slug)
+    .single();
+
+  if (!client) notFound();
+
+  // Fetch requests with related data
+  const { data: requests } = await supabase
+    .from("requests")
+    .select(
+      "*, deliverables(id, file_name, file_path, mime_type), comments(id), profiles:created_by(full_name, avatar_url)"
+    )
+    .eq("client_id", client.id)
+    .order("priority", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  return <AdminBoard client={client} requests={requests ?? []} />;
+}

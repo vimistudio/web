@@ -52,8 +52,14 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Mobile elements: CTA button */}
-        <div className="md:hidden flex items-center">
+        {/* Mobile elements: Portal + CTA */}
+        <div className="md:hidden flex items-center gap-2">
+          <Link
+            href="/portal"
+            className="text-sm text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
+          >
+            Portal
+          </Link>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-3 py-1.5 text-xs"
@@ -64,19 +70,23 @@ export function Header() {
           </motion.div>
         </div>
 
-        {/* Desktop CTA button */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="hidden md:block"
-        >
-          <Button
-            className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
-            onClick={() => router.push("/start-project")}
+        {/* Desktop: Portal link + CTA button */}
+        <div className="hidden md:flex items-center gap-4">
+          <Link
+            href="/portal"
+            className="text-[#111111] hover:text-[hsl(var(--primary-accent))] transition-colors"
           >
-            {t("startProject")}
-          </Button>
-        </motion.div>
+            Client Portal
+          </Link>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              className="bg-[#111111] text-white hover:bg-[hsl(var(--primary-accent))] transition-colors rounded-full px-4 sm:px-6 text-sm sm:text-base"
+              onClick={() => router.push("/start-project")}
+            >
+              {t("startProject")}
+            </Button>
+          </motion.div>
+        </div>
       </nav>
     </motion.header>
   );
