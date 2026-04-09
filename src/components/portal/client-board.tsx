@@ -61,12 +61,12 @@ const typeColors: Record<string, string> = {
 };
 
 const typeGradients: Record<string, string> = {
-  logo: "from-purple-300/60 to-purple-200/40",
-  social: "from-pink-300/60 to-pink-200/40",
-  web: "from-blue-300/60 to-blue-200/40",
-  brand: "from-amber-300/60 to-amber-200/40",
-  presentation: "from-emerald-300/60 to-emerald-200/40",
-  other: "from-gray-300/60 to-gray-200/40",
+  logo: "from-purple-100 to-purple-50",
+  social: "from-pink-100 to-pink-50",
+  web: "from-blue-100 to-blue-50",
+  brand: "from-amber-100 to-amber-50",
+  presentation: "from-emerald-100 to-emerald-50",
+  other: "from-gray-100 to-gray-50",
 };
 
 function RequestCardContent({ request }: { request: Request }) {
@@ -79,12 +79,8 @@ function RequestCardContent({ request }: { request: Request }) {
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
       <div
-        className={`hidden md:flex h-24 bg-gradient-to-br ${gradient} items-center justify-center`}
-      >
-        <span className="text-white/50 text-xs font-medium italic">
-          {request.title.split(" ").slice(0, 2).join(" ")}
-        </span>
-      </div>
+        className={`hidden md:block h-20 bg-gradient-to-br ${gradient}`}
+      />
       <CardContent className="p-3 md:p-4 space-y-2">
         <div className="flex items-start justify-between">
           <h3 className="font-semibold text-sm leading-tight">
