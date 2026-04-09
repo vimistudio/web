@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClientBoard } from "@/components/portal/client-board";
+import { SetLastVisited } from "@/components/portal/set-last-visited";
 
 export default async function PortalPage() {
   const supabase = createClient();
@@ -17,9 +18,10 @@ export default async function PortalPage() {
     .eq("id", user.id)
     .single();
 
-  // Check impersonation cookie
+  // Read cookies
   const cookieStore = cookies();
   const impersonateClientId = cookieStore.get("impersonate_client")?.value;
+  const lastVisitedAt = cookieStore.get("portal_last_visited")?.value || null;
   const isImpersonating = profile?.role === "admin" && !!impersonateClientId;
 
   // Only redirect admins to dashboard if NOT impersonating
@@ -60,11 +62,15 @@ export default async function PortalPage() {
   const clientName = client?.name ?? "Your Project";
 
   return (
-    <ClientBoard
-      clientName={clientName}
-      requests={requests ?? []}
-      requestCount={(requests ?? []).filter((r) => r.status !== "done").length}
-      isAdmin={isImpersonating}
-    />
+    <>
+      <SetLastVisited />
+      <ClientBoard
+        clientName={clientName}
+        requests={requests ?? []}
+        requestCount={(requests ?? []).filter((r) => r.status !== "done").length}
+        isAdmin={isImpersonating}
+        lastVisitedAt={lastVisitedAt}
+      />
+    </>
   );
 }

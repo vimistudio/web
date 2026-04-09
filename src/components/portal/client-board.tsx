@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusSignIcon, Comment01Icon } from "@/components/ui/icons";
+import { PlusSignIcon, Comment01Icon, Cancel01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -42,6 +42,7 @@ interface ClientBoardProps {
   requests: Request[];
   requestCount: number;
   isAdmin?: boolean;
+  lastVisitedAt?: string | null;
 }
 
 const statusColumns = [
@@ -203,11 +204,28 @@ export function ClientBoard({
   requests: initialRequests,
   requestCount,
   isAdmin = false,
+  lastVisitedAt,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // What's New banner — show when returning after 1+ hours
+  const lastVisit = lastVisitedAt ? new Date(lastVisitedAt) : null;
+  const hoursSinceVisit = lastVisit
+    ? (Date.now() - lastVisit.getTime()) / (1000 * 60 * 60)
+    : 0;
+  const updatedSinceVisit = lastVisit
+    ? requests.filter((r) => new Date(r.updated_at) > lastVisit)
+    : [];
+  const reviewReady = updatedSinceVisit.filter((r) => r.status === "review").length;
+  const completed = updatedSinceVisit.filter((r) => r.status === "done").length;
+  const showBanner =
+    !bannerDismissed &&
+    hoursSinceVisit > 1 &&
+    updatedSinceVisit.length > 0;
 
   // Require 8px movement before drag starts — prevents accidental drags on click
   const sensors = useSensors(
@@ -367,6 +385,28 @@ export function ClientBoard({
           );
         })}
       </div>
+
+      {/* What's New banner */}
+      {showBanner && (
+        <div className="bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+          <div>
+            <p className="text-sm font-medium">Welcome back!</p>
+            <p className="text-xs text-muted-foreground">
+              Since your last visit:{" "}
+              {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for review`}
+              {reviewReady > 0 && completed > 0 && ", "}
+              {completed > 0 && `${completed} completed`}
+              {reviewReady === 0 && completed === 0 && `${updatedSinceVisit.length} update${updatedSinceVisit.length > 1 ? "s" : ""} to your requests`}
+            </p>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="text-muted-foreground hover:text-foreground p-1 shrink-0"
+          >
+            <Cancel01Icon size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Desktop: 4-column kanban with drag-and-drop */}
       <DndContext
