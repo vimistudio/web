@@ -44,15 +44,14 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
       {isAdmin && <SidebarTrigger />}
 
       {!isAdmin && (
-        <Link href="/portal" className="flex items-center gap-2">
+        <Link href="/portal" className="flex items-center">
           <Image
-            src="/logo-vimi.png"
+            src="/vimi-logo-dark.svg"
             alt="Vimi Studio"
-            width={28}
-            height={28}
+            width={100}
+            height={32}
             className="h-6 w-auto"
           />
-          <span className="font-semibold text-sm">vimi</span>
         </Link>
       )}
 

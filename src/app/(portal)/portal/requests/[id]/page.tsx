@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { RequestDetail } from "@/components/portal/request-detail";
@@ -22,6 +23,11 @@ export default async function RequestDetailPage({
 
   if (!profile) redirect("/portal/login");
 
+  // Check impersonation
+  const cookieStore = cookies();
+  const impersonateClientId = cookieStore.get("impersonate_client")?.value;
+  const isImpersonating = profile.role === "admin" && !!impersonateClientId;
+
   // Fetch request with all related data
   const { data: request } = await supabase
     .from("requests")
@@ -30,7 +36,7 @@ export default async function RequestDetailPage({
       clients(name, slug),
       deliverables(id, file_name, file_path, file_size, mime_type, created_at),
       reference_images(id, file_name, file_path, file_size, mime_type, created_at),
-      comments(id, body, created_at, author_id, profiles:author_id(full_name, avatar_url))`
+      comments(id, body, created_at, author_id, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
     )
     .eq("id", params.id)
     .single();
@@ -42,16 +48,46 @@ export default async function RequestDetailPage({
     notFound();
   }
 
+  // Generate signed URLs for deliverables (private bucket)
+  const deliverableUrls = await Promise.all(
+    (request.deliverables ?? []).map(async (d) => {
+      const { data } = await supabase.storage
+        .from("deliverables")
+        .createSignedUrl(d.file_path, 3600);
+      return { ...d, url: data?.signedUrl ?? null };
+    })
+  );
+
+  // Generate signed URLs for reference images (private bucket)
+  const referenceUrls = await Promise.all(
+    (request.reference_images ?? []).map(async (ref) => {
+      const { data } = await supabase.storage
+        .from("references")
+        .createSignedUrl(ref.file_path, 3600);
+      return { ...ref, url: data?.signedUrl ?? null };
+    })
+  );
+
   // Sort comments chronologically
   const sortedComments = [...(request.comments ?? [])].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
+
+  const clientName = request.clients?.name ?? "Client";
 
   return (
     <RequestDetail
-      request={{ ...request, comments: sortedComments }}
+      request={{
+        ...request,
+        deliverables: deliverableUrls,
+        reference_images: referenceUrls,
+        comments: sortedComments,
+      }}
+      clientName={clientName}
       currentUserId={user.id}
       isAdmin={profile.role === "admin"}
+      isImpersonating={isImpersonating}
     />
   );
 }

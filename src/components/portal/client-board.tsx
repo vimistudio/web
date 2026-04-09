@@ -1,11 +1,25 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlusSignIcon, Comment01Icon } from "@/components/ui/icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { createClient } from "@/lib/supabase/client";
 
 interface Request {
   id: string;
@@ -19,6 +33,8 @@ interface Request {
   deliverables: { id: string; file_path: string; mime_type: string | null }[];
   comments: { id: string }[];
 }
+
+type RequestStatus = Request["status"];
 
 interface ClientBoardProps {
   clientName: string;
@@ -51,7 +67,7 @@ const typeGradients: Record<string, string> = {
   other: "from-gray-300/60 to-gray-200/40",
 };
 
-function RequestCard({ request }: { request: Request }) {
+function RequestCardContent({ request }: { request: Request }) {
   const timeSince = new Date(request.updated_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -59,52 +75,186 @@ function RequestCard({ request }: { request: Request }) {
   const gradient = typeGradients[request.type] ?? typeGradients.other;
 
   return (
-    <Link href={`/portal/requests/${request.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
-        {/* Thumbnail area — shown on desktop */}
-        <div
-          className={`hidden md:flex h-24 bg-gradient-to-br ${gradient} items-center justify-center`}
-        >
-          <span className="text-white/50 text-xs font-medium italic">
-            {request.title.split(" ").slice(0, 2).join(" ")}
+    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
+      <div
+        className={`hidden md:flex h-24 bg-gradient-to-br ${gradient} items-center justify-center`}
+      >
+        <span className="text-white/50 text-xs font-medium italic">
+          {request.title.split(" ").slice(0, 2).join(" ")}
+        </span>
+      </div>
+      <CardContent className="p-3 md:p-4 space-y-2">
+        <div className="flex items-start justify-between">
+          <h3 className="font-semibold text-sm leading-tight">
+            {request.title}
+          </h3>
+          {request.comments.length > 0 && (
+            <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
+              <Comment01Icon size={14} />
+              <span className="text-xs">{request.comments.length}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="secondary"
+            className={`text-[10px] px-1.5 py-0 ${typeColors[request.type] ?? typeColors.other}`}
+          >
+            {request.type.toUpperCase()}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            Updated {timeSince}
           </span>
         </div>
-        <CardContent className="p-3 md:p-4 space-y-2">
-          <div className="flex items-start justify-between">
-            <h3 className="font-semibold text-sm leading-tight">
-              {request.title}
-            </h3>
-            {request.comments.length > 0 && (
-              <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
-                <Comment01Icon size={14} />
-                <span className="text-xs">{request.comments.length}</span>
-              </div>
-            )}
-          </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="secondary"
-              className={`text-[10px] px-1.5 py-0 ${typeColors[request.type] ?? typeColors.other}`}
-            >
-              {request.type.toUpperCase()}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              Updated {timeSince}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+function RequestCard({ request }: { request: Request }) {
+  return (
+    <Link href={`/portal/requests/${request.id}`}>
+      <RequestCardContent request={request} />
     </Link>
+  );
+}
+
+function DraggableRequestCard({ request }: { request: Request }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({ id: request.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <div
+        onClick={(e) => {
+          if (!isDragging) {
+            window.location.href = `/portal/requests/${request.id}`;
+          }
+        }}
+        className="cursor-grab active:cursor-grabbing"
+      >
+        <RequestCardContent request={request} />
+      </div>
+    </div>
+  );
+}
+
+function DroppableColumn({
+  columnKey,
+  label,
+  color,
+  requests,
+}: {
+  columnKey: string;
+  label: string;
+  color: string;
+  requests: Request[];
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: columnKey });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`space-y-3 rounded-lg transition-colors ${
+        isOver ? "bg-accent/50 ring-2 ring-primary/20" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2 pb-2">
+        <div className={`w-2 h-2 rounded-full ${color}`} />
+        <span className="text-sm font-semibold text-muted-foreground">
+          {label}
+        </span>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {requests.length}
+        </span>
+      </div>
+      <div className="space-y-3 min-h-[60px]">
+        {requests.map((request) => (
+          <DraggableRequestCard key={request.id} request={request} />
+        ))}
+      </div>
+      {requests.length === 0 && !isOver && (
+        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+          <p className="text-xs text-muted-foreground">No requests</p>
+        </div>
+      )}
+      {requests.length === 0 && isOver && (
+        <div className="border-2 border-dashed border-primary/40 rounded-lg p-6 text-center bg-primary/5">
+          <p className="text-xs text-primary">Drop here</p>
+        </div>
+      )}
+    </div>
   );
 }
 
 export function ClientBoard({
   clientName,
-  requests,
+  requests: initialRequests,
   requestCount,
 }: ClientBoardProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [requests, setRequests] = useState<Request[]>(initialRequests);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Require 8px movement before drag starts — prevents accidental drags on click
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const activeRequest = activeId
+    ? requests.find((r) => r.id === activeId) ?? null
+    : null;
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setActiveId(null);
+      const { active, over } = event;
+      if (!over) return;
+
+      const requestId = active.id as string;
+      const newStatus = over.id as RequestStatus;
+
+      const request = requests.find((r) => r.id === requestId);
+      if (!request || request.status === newStatus) return;
+
+      // Optimistic update
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: newStatus } : r
+        )
+      );
+
+      // Persist to Supabase
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("requests")
+        .update({ status: newStatus })
+        .eq("id", requestId);
+
+      if (error) {
+        // Revert on failure
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === requestId ? { ...r, status: request.status } : r
+          )
+        );
+      } else {
+        router.refresh();
+      }
+    },
+    [requests, router]
+  );
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -209,35 +359,36 @@ export function ClientBoard({
         })}
       </div>
 
-      {/* Desktop: 4-column kanban */}
-      <div className="hidden md:grid grid-cols-4 gap-5 min-h-[50vh]">
-        {statusColumns.map((col) => {
-          const colRequests = requests.filter((r) => r.status === col.key);
-          return (
-            <div key={col.key} className="space-y-3">
-              <div className="flex items-center gap-2 pb-2">
-                <div className={`w-2 h-2 rounded-full ${col.color}`} />
-                <span className="text-sm font-semibold text-muted-foreground">
-                  {col.label}
-                </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {colRequests.length}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {colRequests.map((request) => (
-                  <RequestCard key={request.id} request={request} />
-                ))}
-              </div>
-              {colRequests.length === 0 && (
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                  <p className="text-xs text-muted-foreground">No requests</p>
-                </div>
-              )}
+      {/* Desktop: 4-column kanban with drag-and-drop */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="hidden md:grid grid-cols-4 gap-5 min-h-[50vh]">
+          {statusColumns.map((col) => {
+            const colRequests = requests.filter((r) => r.status === col.key);
+            return (
+              <DroppableColumn
+                key={col.key}
+                columnKey={col.key}
+                label={col.label}
+                color={col.color}
+                requests={colRequests}
+              />
+            );
+          })}
+        </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeRequest ? (
+            <div className="opacity-90 rotate-2 scale-105 shadow-xl">
+              <RequestCardContent request={activeRequest} />
             </div>
-          );
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Mobile: stacked cards by status */}
       <div className="md:hidden space-y-3">

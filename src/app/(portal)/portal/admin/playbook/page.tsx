@@ -71,11 +71,11 @@ export default async function AdminPlaybookPage() {
                   className={`${height} bg-gradient-to-b ${gradient} relative flex items-center justify-center`}
                 >
                   <Image
-                    src="/logo-vimi.png"
+                    src="/vimi-logo-dark.svg"
                     alt=""
-                    width={32}
+                    width={100}
                     height={32}
-                    className="h-8 w-auto opacity-20"
+                    className="h-6 w-auto opacity-20"
                   />
                 </div>
                 <CardContent className="p-3 space-y-1">

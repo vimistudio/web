@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { NoAccess } from "@/components/portal/no-access";
 import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
+import { Toaster } from "@/components/ui/sonner";
 
 export default async function PortalLayout({
   children,
@@ -63,8 +64,11 @@ export default async function PortalLayout({
   }
 
   return (
-    <PortalShell user={user} profile={profile}>
-      {children}
-    </PortalShell>
+    <>
+      <Toaster position="top-center" richColors />
+      <PortalShell user={user} profile={profile}>
+        {children}
+      </PortalShell>
+    </>
   );
 }

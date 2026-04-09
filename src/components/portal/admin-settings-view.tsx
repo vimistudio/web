@@ -196,18 +196,15 @@ export function AdminSettingsView({
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <Image
-                src="/logo-vimi.png"
+                src="/vimi-logo-dark.svg"
                 alt="Vimi Studio"
-                width={32}
-                height={32}
-                className="h-8 w-auto"
+                width={120}
+                height={39}
+                className="h-7 w-auto"
               />
-              <div>
-                <p className="text-sm font-medium">Vimi Studio</p>
-                <p className="text-xs text-muted-foreground">
-                  vimistudio.com
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                vimistudio.com
+              </p>
             </div>
           </CardContent>
         </Card>

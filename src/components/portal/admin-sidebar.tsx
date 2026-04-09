@@ -52,15 +52,14 @@ export function AdminSidebar({ user, profile }: AdminSidebarProps) {
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-4">
-        <Link href="/portal/admin" className="flex items-center gap-2">
+        <Link href="/portal/admin" className="flex items-center">
           <Image
-            src="/logo-vimi.png"
+            src="/vimi-logo-dark.svg"
             alt="Vimi Studio"
-            width={32}
-            height={32}
+            width={120}
+            height={39}
             className="h-7 w-auto"
           />
-          <span className="font-semibold text-sm">vimi studio</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>

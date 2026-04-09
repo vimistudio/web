@@ -18,11 +18,11 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center space-y-4">
           <Image
-            src="/logo-vimi.png"
+            src="/vimi-logo-light.svg"
             alt="Vimi Studio"
-            width={60}
-            height={60}
-            className="h-14 w-auto"
+            width={200}
+            height={65}
+            className="h-12 w-auto"
           />
         </div>
 
