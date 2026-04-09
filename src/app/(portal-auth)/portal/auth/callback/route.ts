@@ -22,20 +22,25 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role, client_id, full_name, clients(name)")
+          .select("role, client_id, full_name, first_login_at, clients(name)")
           .eq("id", user.id)
           .single();
 
-        if (profile?.role === "client" && profile.client_id) {
+        if (profile?.role === "client" && profile.client_id && !profile.first_login_at) {
           const clientName =
             (profile as { clients?: { name?: string } | null }).clients?.name || "their project";
 
-          // Fire-and-forget: notify admin of first sign-in
-          // Entire block is non-blocking — don't delay the redirect
+          // Fire-and-forget: notify admin of FIRST sign-in only
           const callerName = profile.full_name || "A client";
           const callerEmail = user.email || "";
           void (async () => {
             try {
+              // Mark first login immediately to prevent duplicates
+              await supabase
+                .from("profiles")
+                .update({ first_login_at: new Date().toISOString() })
+                .eq("id", user.id);
+
               const { data: admins } = await supabase
                 .from("profiles")
                 .select("email")

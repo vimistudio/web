@@ -319,6 +319,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           email: string | null
+          first_login_at: string | null
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"]
@@ -329,6 +330,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           email?: string | null
+          first_login_at?: string | null
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -339,6 +341,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           email?: string | null
+          first_login_at?: string | null
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
