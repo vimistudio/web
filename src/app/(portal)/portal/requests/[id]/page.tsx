@@ -48,13 +48,24 @@ export default async function RequestDetailPage({
     notFound();
   }
 
+  // Fetch deliverable events (views + downloads) with profile names
+  const deliverableIds = (request.deliverables ?? []).map((d) => d.id);
+  const { data: deliverableEvents } = deliverableIds.length > 0
+    ? await supabase
+        .from("deliverable_events")
+        .select("id, deliverable_id, user_id, event_type, created_at, profiles(full_name)")
+        .in("deliverable_id", deliverableIds)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+
   // Generate signed URLs for deliverables (private bucket)
   const deliverableUrls = await Promise.all(
     (request.deliverables ?? []).map(async (d) => {
       const { data } = await supabase.storage
         .from("deliverables")
         .createSignedUrl(d.file_path, 3600);
-      return { ...d, url: data?.signedUrl ?? null };
+      const events = (deliverableEvents ?? []).filter((e) => e.deliverable_id === d.id);
+      return { ...d, url: data?.signedUrl ?? null, deliverable_events: events };
     })
   );
 

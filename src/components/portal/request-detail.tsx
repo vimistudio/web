@@ -57,6 +57,14 @@ interface Comment {
   } | null;
 }
 
+interface DeliverableEvent {
+  id: string;
+  user_id: string;
+  event_type: string;
+  created_at: string;
+  profiles?: { full_name: string | null } | null;
+}
+
 interface Deliverable {
   id: string;
   file_name: string;
@@ -67,6 +75,7 @@ interface Deliverable {
   url: string | null;
   is_hidden?: boolean;
   tags?: string[];
+  deliverable_events?: DeliverableEvent[];
 }
 
 interface Request {
@@ -223,18 +232,60 @@ function DeliverableCard({
   onDelete,
   onToggleHidden,
   onUpdateTags,
+  onDownload,
 }: {
   d: Deliverable;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
   onUpdateTags?: (tags: string[]) => void;
+  onDownload?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [showTagInput, setShowTagInput] = useState(false);
+  const [showViewers, setShowViewers] = useState(false);
   const tags = d.tags ?? [];
+  const events = d.deliverable_events ?? [];
+  const viewCount = events.filter((e) => e.event_type === "view").length;
+  const downloadCount = events.filter((e) => e.event_type === "download").length;
+
+  const statsSection = events.length > 0 ? (
+    <div className="relative mt-1">
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setShowViewers(!showViewers); }}
+          className="flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <ViewIcon size={12} />
+          {viewCount}
+        </button>
+        <span className="flex items-center gap-1">
+          <Download01Icon size={12} />
+          {downloadCount}
+        </span>
+      </div>
+      {showViewers && events.length > 0 && (
+        <div
+          className="absolute z-20 bottom-full mb-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[200px]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {events
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 10)
+            .map((ev) => (
+              <p key={ev.id} className="text-[11px] text-muted-foreground py-0.5">
+                {ev.profiles?.full_name ?? "Someone"}{" "}
+                {ev.event_type === "view" ? "viewed" : "downloaded"} on{" "}
+                {new Date(ev.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            ))}
+        </div>
+      )}
+    </div>
+  ) : null;
 
   const tagSection = (tags.length > 0 || onUpdateTags) ? (
     <div className="flex flex-wrap items-center gap-1 mt-1">
@@ -381,6 +432,7 @@ function DeliverableCard({
               ].filter(Boolean).join(" · ")}
             </p>
             {tagSection}
+            {statsSection}
           </CardContent>
         </Card>
       </button>
@@ -402,6 +454,7 @@ function DeliverableCard({
           a.download = d.file_name;
           a.click();
           URL.revokeObjectURL(url);
+          onDownload?.();
         } catch {
           toast.error("Couldn't download file");
         }
@@ -836,6 +889,17 @@ export function RequestDetail({
     [router]
   );
 
+  const logDeliverableEvent = useCallback(
+    (deliverableId: string, eventType: "view" | "download") => {
+      const supabase = createClient();
+      supabase
+        .from("deliverable_events")
+        .insert({ deliverable_id: deliverableId, user_id: currentUserId, event_type: eventType })
+        .then(() => {});
+    },
+    [currentUserId]
+  );
+
   // Realtime: live comment updates
   useRealtime({
     table: "comments",
@@ -1055,6 +1119,7 @@ export function RequestDetail({
                       ? () => {
                           setLightboxIndex(imageIndex);
                           setLightboxOpen(true);
+                          logDeliverableEvent(d.id, "view");
                         }
                       : undefined
                   }
@@ -1077,6 +1142,7 @@ export function RequestDetail({
                       ? (tags) => handleUpdateTags(d.id, tags)
                       : undefined
                   }
+                  onDownload={() => logDeliverableEvent(d.id, "download")}
                 />
               );
             })}
