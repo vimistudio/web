@@ -20,6 +20,7 @@ import {
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtime } from "@/hooks/use-realtime";
 
 interface Request {
   id: string;
@@ -40,11 +41,12 @@ interface ClientBoardProps {
   clientName: string;
   requests: Request[];
   requestCount: number;
+  isAdmin?: boolean;
 }
 
 const statusColumns = [
-  { key: "in_progress" as const, label: "In Progress", color: "bg-blue-500" },
   { key: "queued" as const, label: "Queued", color: "bg-gray-400" },
+  { key: "in_progress" as const, label: "In Progress", color: "bg-blue-500" },
   { key: "review" as const, label: "Review", color: "bg-amber-500" },
   { key: "done" as const, label: "Done", color: "bg-emerald-500" },
 ];
@@ -61,8 +63,8 @@ const typeColors: Record<string, string> = {
 const typeGradients: Record<string, string> = {
   logo: "from-purple-300/60 to-purple-200/40",
   social: "from-pink-300/60 to-pink-200/40",
-  web: "from-[#5a7a5a] to-[#c4b896]",
-  brand: "from-[#6a7a5a] to-[#8a9a6a]",
+  web: "from-blue-300/60 to-blue-200/40",
+  brand: "from-amber-300/60 to-amber-200/40",
   presentation: "from-emerald-300/60 to-emerald-200/40",
   other: "from-gray-300/60 to-gray-200/40",
 };
@@ -121,6 +123,7 @@ function RequestCard({ request }: { request: Request }) {
 }
 
 function DraggableRequestCard({ request }: { request: Request }) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: request.id });
 
@@ -134,7 +137,7 @@ function DraggableRequestCard({ request }: { request: Request }) {
       <div
         onClick={(e) => {
           if (!isDragging) {
-            window.location.href = `/portal/requests/${request.id}`;
+            router.push(`/portal/requests/${request.id}`);
           }
         }}
         className="cursor-grab active:cursor-grabbing"
@@ -150,19 +153,21 @@ function DroppableColumn({
   label,
   color,
   requests,
+  canDrag,
 }: {
   columnKey: string;
   label: string;
   color: string;
   requests: Request[];
+  canDrag: boolean;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
 
   return (
     <div
-      ref={setNodeRef}
+      ref={canDrag ? setNodeRef : undefined}
       className={`space-y-3 rounded-lg transition-colors ${
-        isOver ? "bg-accent/50 ring-2 ring-primary/20" : ""
+        isOver && canDrag ? "bg-accent/50 ring-2 ring-primary/20" : ""
       }`}
     >
       <div className="flex items-center gap-2 pb-2">
@@ -175,16 +180,20 @@ function DroppableColumn({
         </span>
       </div>
       <div className="space-y-3 min-h-[60px]">
-        {requests.map((request) => (
-          <DraggableRequestCard key={request.id} request={request} />
-        ))}
+        {requests.map((request) =>
+          canDrag ? (
+            <DraggableRequestCard key={request.id} request={request} />
+          ) : (
+            <RequestCard key={request.id} request={request} />
+          )
+        )}
       </div>
       {requests.length === 0 && !isOver && (
         <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
           <p className="text-xs text-muted-foreground">No requests</p>
         </div>
       )}
-      {requests.length === 0 && isOver && (
+      {requests.length === 0 && isOver && canDrag && (
         <div className="border-2 border-dashed border-primary/40 rounded-lg p-6 text-center bg-primary/5">
           <p className="text-xs text-primary">Drop here</p>
         </div>
@@ -197,6 +206,7 @@ export function ClientBoard({
   clientName,
   requests: initialRequests,
   requestCount,
+  isAdmin = false,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -211,6 +221,15 @@ export function ClientBoard({
   const activeRequest = activeId
     ? requests.find((r) => r.id === activeId) ?? null
     : null;
+
+  // Realtime: live status updates from admin
+  useRealtime({
+    table: "requests",
+    event: "UPDATE",
+    onEvent: useCallback(() => {
+      router.refresh();
+    }, [router]),
+  });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -342,19 +361,16 @@ export function ClientBoard({
         </Link>
       </div>
 
-      {/* Mobile: horizontal status filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:hidden">
+      {/* Mobile: status summary */}
+      <div className="flex gap-3 md:hidden text-xs text-muted-foreground">
         {statusColumns.map((col) => {
           const count = requests.filter((r) => r.status === col.key).length;
+          if (count === 0) return null;
           return (
-            <button
-              key={col.key}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm whitespace-nowrap shrink-0 hover:bg-gray-50 transition-colors"
-            >
-              <div className={`w-2 h-2 rounded-full ${col.color}`} />
-              {col.label}
-              <span className="text-muted-foreground">{count}</span>
-            </button>
+            <div key={col.key} className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${col.color}`} />
+              <span>{count} {col.label}</span>
+            </div>
           );
         })}
       </div>
@@ -376,6 +392,7 @@ export function ClientBoard({
                 label={col.label}
                 color={col.color}
                 requests={colRequests}
+                canDrag={isAdmin}
               />
             );
           })}

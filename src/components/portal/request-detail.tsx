@@ -29,6 +29,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { useRealtime } from "@/hooks/use-realtime";
 
 // --- Types ---
 
@@ -70,12 +71,23 @@ interface Request {
   comments: Comment[];
 }
 
+interface ActivityEntry {
+  id: string;
+  action: string;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+  actor_id: string | null;
+  profiles: { full_name: string | null; avatar_url: string | null } | null;
+}
+
 interface RequestDetailProps {
   request: Request;
   clientName: string;
   currentUserId: string;
   isAdmin: boolean;
   isImpersonating: boolean;
+  activityLog?: ActivityEntry[];
 }
 
 // --- Config ---
@@ -250,6 +262,57 @@ function DeliverableCard({ d }: { d: Deliverable }) {
   );
 }
 
+const activityConfig: Record<string, { label: (oldVal: string | null, newVal: string | null, actor: string) => string; dot: string }> = {
+  status_changed: {
+    label: (oldVal, newVal, actor) => {
+      const to = statusConfig[newVal ?? ""]?.label ?? newVal;
+      return `${actor} moved to ${to}`;
+    },
+    dot: "bg-blue-500",
+  },
+  comment_added: {
+    label: (_o, _n, actor) => `${actor} commented`,
+    dot: "bg-[#909af7]",
+  },
+  deliverable_uploaded: {
+    label: (_o, newVal, actor) => `${actor} uploaded ${newVal ?? "a file"}`,
+    dot: "bg-emerald-500",
+  },
+};
+
+function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <h2 className="text-sm font-medium">Activity</h2>
+      <div className="relative pl-5 space-y-3">
+        <div className="absolute left-[7px] top-1 bottom-1 w-px bg-muted-foreground/15" />
+        {entries.map((entry) => {
+          const actor = entry.profiles?.full_name ?? "Someone";
+          const config = activityConfig[entry.action];
+          const label = config
+            ? config.label(entry.old_value, entry.new_value, actor)
+            : `${actor} ${entry.action}`;
+          const dotColor = config?.dot ?? "bg-gray-400";
+
+          return (
+            <div key={entry.id} className="flex items-start gap-3 relative">
+              <div className={`absolute left-[-14px] top-1.5 w-2 h-2 rounded-full ${dotColor}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // --- Main component ---
 
 export function RequestDetail({
@@ -258,6 +321,7 @@ export function RequestDetail({
   currentUserId,
   isAdmin,
   isImpersonating,
+  activityLog = [],
 }: RequestDetailProps) {
   const router = useRouter();
   const [comment, setComment] = useState("");
@@ -447,6 +511,16 @@ export function RequestDetail({
     [request.id, request.client_id, currentUserId, router]
   );
 
+  // Realtime: live comment updates
+  useRealtime({
+    table: "comments",
+    event: "INSERT",
+    filter: `request_id=eq.${request.id}`,
+    onEvent: useCallback(() => {
+      router.refresh();
+    }, [router]),
+  });
+
   // Scroll to bottom of comments after posting
   useEffect(() => {
     if (allComments.length > 0) {
@@ -573,7 +647,7 @@ export function RequestDetail({
               </Button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {request.deliverables.map((d) => (
               <DeliverableCard key={d.id} d={d} />
             ))}
@@ -734,6 +808,9 @@ export function RequestDetail({
           </div>
         </div>
       )}
+
+      {/* Activity Timeline */}
+      {activityLog.length > 0 && <ActivityTimeline entries={activityLog} />}
 
       {/* Comments */}
       <div className="space-y-4">

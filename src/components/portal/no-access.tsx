@@ -31,7 +31,10 @@ export function NoAccess() {
           </h1>
           <p className="text-sm text-gray-400">
             This portal is invite-only. If you&apos;re a Vimi Studio client,
-            contact your studio to get set up.
+            reach out to get set up:{" "}
+            <a href="mailto:hello@vimistudio.com" className="text-[#909af7] hover:underline">
+              hello@vimistudio.com
+            </a>
           </p>
         </div>
 

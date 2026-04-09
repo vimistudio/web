@@ -64,6 +64,7 @@ export default async function PortalPage() {
       clientName={clientName}
       requests={requests ?? []}
       requestCount={(requests ?? []).filter((r) => r.status !== "done").length}
+      isAdmin={isImpersonating}
     />
   );
 }

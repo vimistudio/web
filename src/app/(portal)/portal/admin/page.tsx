@@ -12,7 +12,7 @@ export default async function AdminDashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", user.id)
     .single();
 
@@ -31,9 +31,10 @@ export default async function AdminDashboardPage() {
     .select("id, client_id, status, updated_at, title");
 
   // Get recent comments for activity feed
+  // Uses explicit FK hint since author_id has FKs to both auth.users and profiles
   const { data: recentComments } = await supabase
     .from("comments")
-    .select("*, profiles:author_id(full_name, avatar_url), requests(title, client_id)")
+    .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id)")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -76,6 +77,7 @@ export default async function AdminDashboardPage() {
       }}
       clients={clientSummaries}
       recentActivity={recentComments ?? []}
+      adminName={profile.full_name ?? undefined}
     />
   );
 }
