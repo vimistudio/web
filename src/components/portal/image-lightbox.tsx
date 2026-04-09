@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogPortal,
@@ -252,17 +253,47 @@ export function ImageLightbox({
               </span>
             )}
 
-            {/* Download button */}
-            <a
-              href={current.url}
-              download={current.fileName}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shrink-0"
-            >
-              <Download01Icon size={16} />
-              <span className="hidden sm:inline">Download</span>
-            </a>
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(current.url);
+                    const blob = await res.blob();
+                    if (navigator.clipboard && window.ClipboardItem) {
+                      await navigator.clipboard.write([
+                        new ClipboardItem({ [blob.type]: blob }),
+                      ]);
+                      toast.success("Copied to clipboard");
+                    } else if (navigator.share) {
+                      const file = new File([blob], current.fileName, { type: blob.type });
+                      await navigator.share({ files: [file] });
+                    } else {
+                      toast.error("Clipboard not supported in this browser");
+                    }
+                  } catch {
+                    toast.error("Couldn't copy image");
+                  }
+                }}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                <span className="hidden sm:inline">Copy</span>
+              </button>
+              <a
+                href={current.url}
+                download={current.fileName}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                <Download01Icon size={16} />
+                <span className="hidden sm:inline">Download</span>
+              </a>
+            </div>
           </div>
 
           {/* Mobile position indicator */}

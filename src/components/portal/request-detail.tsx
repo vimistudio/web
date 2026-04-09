@@ -30,6 +30,8 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
 
@@ -688,16 +690,23 @@ export function RequestDetail({
                 variant="ghost"
                 size="sm"
                 className="text-xs h-7 gap-1"
-                onClick={() => {
-                  downloadAllUrls.forEach((d, i) => {
-                    setTimeout(() => {
-                      const a = document.createElement("a");
-                      a.href = d.url!;
-                      a.download = d.file_name;
-                      a.target = "_blank";
-                      a.click();
-                    }, i * 300);
-                  });
+                onClick={async () => {
+                  const toastId = toast.loading("Preparing your files...");
+                  try {
+                    const zip = new JSZip();
+                    await Promise.all(
+                      downloadAllUrls.map(async (d) => {
+                        const res = await fetch(d.url!);
+                        const blob = await res.blob();
+                        zip.file(d.file_name, blob);
+                      })
+                    );
+                    const content = await zip.generateAsync({ type: "blob" });
+                    saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
+                    toast.success("Download ready!", { id: toastId });
+                  } catch {
+                    toast.error("Couldn't prepare the download", { id: toastId });
+                  }
                 }}
               >
                 <Download01Icon size={12} />
