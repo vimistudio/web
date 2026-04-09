@@ -27,6 +27,7 @@ import {
   Download01Icon,
   Upload01Icon,
   ViewIcon,
+  PlusSignIcon,
 } from "@/components/ui/icons";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -45,6 +46,10 @@ interface Comment {
   body: string;
   created_at: string;
   author_id: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  attachment_url?: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -432,9 +437,12 @@ export function RequestDetail({
   const [optimisticComments, setOptimisticComments] = useState<Comment[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [commentAttachment, setCommentAttachment] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const commentFileRef = useRef<HTMLInputElement>(null);
 
   const allComments = [...request.comments, ...optimisticComments];
 
@@ -470,27 +478,53 @@ export function RequestDetail({
   }, [request.comments.length]);
 
   const handleSubmitComment = useCallback(async () => {
-    if (!comment.trim() || isSubmitting) return;
+    if ((!comment.trim() && !commentAttachment) || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Optimistic: show comment immediately
     const optimisticComment: Comment = {
       id: `optimistic-${Date.now()}`,
       body: comment.trim(),
       created_at: new Date().toISOString(),
       author_id: currentUserId,
+      attachment_path: null,
+      attachment_name: commentAttachment?.name ?? null,
+      attachment_type: commentAttachment?.type ?? null,
+      attachment_url: attachmentPreview,
       profiles: { full_name: "You", avatar_url: null, role: isAdmin ? "admin" : "client" },
     };
     setOptimisticComments((prev) => [...prev, optimisticComment]);
     const commentText = comment.trim();
+    const file = commentAttachment;
     setComment("");
+    setCommentAttachment(null);
+    setAttachmentPreview(null);
     if (commentInputRef.current) commentInputRef.current.style.height = "auto";
 
     const supabase = createClient();
+
+    // Upload attachment if present
+    let attachmentPath: string | null = null;
+    let attachmentName: string | null = null;
+    let attachmentType: string | null = null;
+    if (file) {
+      const filePath = `${request.client_id}/${request.id}/comments/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("references")
+        .upload(filePath, file);
+      if (!uploadError) {
+        attachmentPath = filePath;
+        attachmentName = file.name;
+        attachmentType = file.type;
+      }
+    }
+
     const { error } = await supabase.from("comments").insert({
       request_id: request.id,
       author_id: currentUserId,
-      body: commentText,
+      body: commentText || (attachmentName ? `Attached ${attachmentName}` : ""),
+      attachment_path: attachmentPath,
+      attachment_name: attachmentName,
+      attachment_type: attachmentType,
     });
 
     if (error) {
@@ -506,13 +540,12 @@ export function RequestDetail({
     setIsSubmitting(false);
     router.refresh();
 
-    // Fire-and-forget email notification
     fetch("/api/portal/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "comment_added", request_id: request.id }),
     }).catch(() => {});
-  }, [comment, isSubmitting, currentUserId, isAdmin, request.id, router]);
+  }, [comment, commentAttachment, attachmentPreview, isSubmitting, currentUserId, isAdmin, request.id, request.client_id, router]);
 
   const handleStatusChange = useCallback(
     async (newStatus: "queued" | "in_progress" | "review" | "done") => {
@@ -1162,9 +1195,30 @@ export function RequestDetail({
                         })}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                  {c.body}
-                </p>
+                {c.body && (
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                    {c.body}
+                  </p>
+                )}
+                {c.attachment_url && c.attachment_type?.startsWith("image/") && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.attachment_url}
+                    alt={c.attachment_name ?? "attachment"}
+                    className="mt-2 rounded-lg max-w-[280px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  />
+                )}
+                {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
+                  <a
+                    href={c.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#909af7] hover:underline"
+                  >
+                    <Download01Icon size={12} />
+                    {c.attachment_name ?? "Attachment"}
+                  </a>
+                )}
               </div>
             </div>
           );
@@ -1186,7 +1240,62 @@ export function RequestDetail({
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
+          {/* Attachment preview */}
+          {attachmentPreview && (
+            <div className="relative inline-block mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={attachmentPreview}
+                alt="attachment"
+                className="h-20 rounded-lg object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => { setCommentAttachment(null); setAttachmentPreview(null); }}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
+              >
+                <Cancel01Icon size={10} />
+              </button>
+            </div>
+          )}
+          {commentAttachment && !attachmentPreview && (
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground bg-gray-50 rounded-lg px-3 py-2">
+              <span className="truncate">{commentAttachment.name}</span>
+              <button
+                type="button"
+                onClick={() => { setCommentAttachment(null); setAttachmentPreview(null); }}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <Cancel01Icon size={12} />
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-[#909af7]/30 focus-within:border-[#909af7]/40 transition-all">
+            <button
+              type="button"
+              onClick={() => commentFileRef.current?.click()}
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-gray-100 transition-colors"
+              aria-label="Attach image"
+            >
+              <PlusSignIcon size={16} />
+            </button>
+            <input
+              ref={commentFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setCommentAttachment(file);
+                if (file.type.startsWith("image/")) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => setAttachmentPreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+                e.target.value = "";
+              }}
+            />
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
@@ -1211,9 +1320,9 @@ export function RequestDetail({
             <button
               aria-label="Send comment"
               onClick={handleSubmitComment}
-              disabled={!comment.trim() || isSubmitting}
+              disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
               className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                comment.trim()
+                comment.trim() || commentAttachment
                   ? "bg-[#909af7] hover:bg-[#7b85e8] text-white scale-100"
                   : "bg-gray-100 text-gray-400 scale-90"
               }`}
