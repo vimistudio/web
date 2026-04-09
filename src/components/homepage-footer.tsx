@@ -165,11 +165,11 @@ export function HomepageFooter() {
               className="flex-shrink-0 cursor-pointer"
             >
               <Image
-                src="/logo-vimi.png"
+                src="/vimi-logo-dark.svg"
                 alt="Vimi Studio"
-                width={60}
-                height={60}
-                className="h-10 w-auto"
+                width={160}
+                height={52}
+                className="h-8 w-auto"
               />
             </motion.div>
 

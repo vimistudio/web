@@ -18,11 +18,11 @@ export function NoAccess() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0d0f1a] px-4">
       <div className="w-full max-w-sm space-y-8 text-center">
         <Image
-          src="/logo-vimi.png"
+          src="/vimi-logo-light.svg"
           alt="Vimi Studio"
-          width={60}
-          height={60}
-          className="h-14 w-auto mx-auto"
+          width={200}
+          height={65}
+          className="h-12 w-auto mx-auto"
         />
 
         <div className="space-y-2">

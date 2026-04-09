@@ -111,13 +111,12 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
         <CardContent className="pt-6">
           <div className="flex items-center gap-3 mb-3">
             <Image
-              src="/logo-vimi.png"
+              src="/vimi-logo-dark.svg"
               alt="Vimi Studio"
-              width={24}
-              height={24}
+              width={100}
+              height={32}
               className="h-5 w-auto"
             />
-            <span className="text-sm font-medium">Vimi Studio</span>
           </div>
           <p className="text-xs text-muted-foreground">
             Your design partner. Need help? Reach out at{" "}

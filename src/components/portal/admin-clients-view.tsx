@@ -124,11 +124,11 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-[#909af7]/10 flex items-center justify-center">
                     <Image
-                      src="/logo-vimi.png"
+                      src="/vimi-logo-dark.svg"
                       alt={client.name}
-                      width={24}
-                      height={24}
-                      className="h-5 w-auto opacity-60"
+                      width={80}
+                      height={26}
+                      className="h-4 w-auto opacity-60"
                     />
                   </div>
                   <div>

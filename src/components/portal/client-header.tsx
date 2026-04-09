@@ -39,15 +39,14 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
     <>
       {/* Mobile: light compact header */}
       <header className="md:hidden sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-white/80 backdrop-blur-sm px-4">
-        <Link href="/portal" className="flex items-center gap-2">
+        <Link href="/portal" className="flex items-center">
           <Image
-            src="/logo-vimi.png"
+            src="/vimi-logo-dark.svg"
             alt="Vimi Studio"
-            width={28}
-            height={28}
+            width={100}
+            height={32}
             className="h-6 w-auto"
           />
-          <span className="font-semibold text-sm">vimi</span>
         </Link>
 
         <div className="flex-1" />
@@ -89,22 +88,14 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
       {/* Desktop: dark header matching Paper design */}
       <header className="hidden md:flex items-center justify-between bg-[#0d0f1a] px-8 py-4">
         {/* Logo */}
-        <Link href="/portal" className="flex items-center gap-3">
+        <Link href="/portal" className="flex items-center">
           <Image
-            src="/logo-vimi.png"
+            src="/vimi-logo-light.svg"
             alt="Vimi Studio"
-            width={32}
-            height={32}
+            width={140}
+            height={45}
             className="h-8 w-auto"
           />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[#C8CCFF] text-base font-bold tracking-tight">
-              vimi
-            </span>
-            <span className="text-[#6B6F99] text-[10px] font-medium tracking-widest">
-              studio
-            </span>
-          </div>
         </Link>
 
         {/* Search */}
