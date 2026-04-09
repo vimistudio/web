@@ -56,6 +56,7 @@ export default async function RequestDetailPage({
         .select("id, deliverable_id, user_id, event_type, created_at, profiles(full_name)")
         .in("deliverable_id", deliverableIds)
         .order("created_at", { ascending: false })
+        .limit(100)
     : { data: [] };
 
   // Generate signed URLs for deliverables (private bucket)

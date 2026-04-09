@@ -268,21 +268,25 @@ function DeliverableCard({
         </span>
       </div>
       {showViewers && events.length > 0 && (
-        <div
-          className="absolute z-20 bottom-full mb-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[200px]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {events
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 10)
-            .map((ev) => (
-              <p key={ev.id} className="text-[11px] text-muted-foreground py-0.5">
-                {ev.profiles?.full_name ?? "Someone"}{" "}
-                {ev.event_type === "view" ? "viewed" : "downloaded"} on{" "}
-                {new Date(ev.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-              </p>
-            ))}
-        </div>
+        <>
+          {/* Click-outside overlay to close */}
+          <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowViewers(false); }} />
+          <div
+            className="absolute z-20 bottom-full mb-1 left-0 bg-background border border-border rounded-lg shadow-lg p-2 min-w-[200px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {events
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, 10)
+              .map((ev) => (
+                <p key={ev.id} className="text-[11px] text-muted-foreground py-0.5">
+                  {ev.profiles?.full_name ?? "Someone"}{" "}
+                  {ev.event_type === "view" ? "viewed" : "downloaded"} on{" "}
+                  {new Date(ev.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              ))}
+          </div>
+        </>
       )}
     </div>
   ) : null;
@@ -332,7 +336,8 @@ function DeliverableCard({
           onKeyDown={(e) => {
             e.stopPropagation();
             if (e.key === "Enter" && tagInput.trim()) {
-              onUpdateTags([...tags, tagInput.trim().toLowerCase()]);
+              const newTag = tagInput.trim().toLowerCase();
+              onUpdateTags(tags.includes(newTag) ? tags : [...tags, newTag]);
               setTagInput("");
               setShowTagInput(false);
             }
@@ -343,7 +348,8 @@ function DeliverableCard({
           }}
           onBlur={() => {
             if (tagInput.trim()) {
-              onUpdateTags([...tags, tagInput.trim().toLowerCase()]);
+              const newTag = tagInput.trim().toLowerCase();
+              onUpdateTags(tags.includes(newTag) ? tags : [...tags, newTag]);
             }
             setTagInput("");
             setShowTagInput(false);
@@ -440,9 +446,10 @@ function DeliverableCard({
   }
 
   return (
-    <button
-      type="button"
-      className={`block w-full text-left ${!d.url ? "pointer-events-none opacity-50" : ""}`}
+    <div
+      role="button"
+      tabIndex={0}
+      className={`block w-full text-left cursor-pointer ${!d.url ? "pointer-events-none opacity-50" : ""}`}
       onClick={async () => {
         if (!d.url) return;
         try {
@@ -481,7 +488,7 @@ function DeliverableCard({
           {tagSection}
         </CardContent>
       </Card>
-    </button>
+    </div>
   );
 }
 
@@ -891,11 +898,12 @@ export function RequestDetail({
 
   const logDeliverableEvent = useCallback(
     (deliverableId: string, eventType: "view" | "download") => {
+      if (!currentUserId) return;
       const supabase = createClient();
       supabase
         .from("deliverable_events")
         .insert({ deliverable_id: deliverableId, user_id: currentUserId, event_type: eventType })
-        .then(() => {});
+        .then(() => {}, () => {});
     },
     [currentUserId]
   );
