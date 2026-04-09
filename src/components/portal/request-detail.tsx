@@ -1447,7 +1447,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white pl-2 pr-1.5 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -1486,7 +1486,7 @@ export function RequestDetail({
               }}
               maxLength={2000}
               rows={1}
-              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent rounded-none p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
