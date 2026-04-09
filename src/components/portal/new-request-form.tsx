@@ -139,6 +139,18 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
       );
     }
 
+    // Notify admin about the new request
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "request_created",
+        request_id: request.id,
+        priority,
+        description: description.trim() || undefined,
+      }),
+    }).catch(() => {});
+
     toast.success("Request submitted! Your designer will see it shortly.");
     setIsSubmitting(false);
     if (isAdmin) router.back();

@@ -4,9 +4,10 @@ import { CommentAddedEmail } from "@/lib/email/templates/comment";
 import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
+import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -27,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, request_id, new_status, old_status, invite_email, client_name } = body;
+    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json(
@@ -191,6 +192,20 @@ export async function POST(request: Request) {
             uploaderName: actorName,
             fileNames,
             fileCount: fileNames.length || 1,
+          });
+          break;
+        }
+        case "request_created": {
+          const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
+          const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
+          subject = `\u{1F4CB} New request from ${clientName}: "${req.title}"`;
+          react = RequestCreatedEmail({
+            requestTitle: req.title,
+            requestUrl,
+            clientName,
+            requestType: TYPE_LABELS[req.type] || req.type,
+            priority: priorityLabels[reqPriority as number] || "Normal",
+            description: (reqDescription as string) || undefined,
           });
           break;
         }
