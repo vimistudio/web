@@ -4,6 +4,7 @@ import { CommentAddedEmail } from "@/lib/email/templates/comment";
 import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
+import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") {
@@ -28,9 +29,12 @@ export async function GET(request: Request) {
     case "invite":
       element = InviteEmail(InviteEmail.PreviewProps);
       break;
+    case "request":
+      element = RequestCreatedEmail(RequestCreatedEmail.PreviewProps);
+      break;
     default:
       return NextResponse.json(
-        { error: `Unknown template: ${template}. Use: comment, status, deliverable, invite` },
+        { error: `Unknown template: ${template}. Use: comment, status, deliverable, invite, request` },
         { status: 400 }
       );
   }
