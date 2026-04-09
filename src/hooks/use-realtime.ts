@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type PostgresEvent = "INSERT" | "UPDATE" | "DELETE" | "*";
@@ -18,35 +18,37 @@ export function useRealtime({
   filter,
   onEvent,
 }: UseRealtimeOptions) {
-  // Use a ref to avoid re-subscribing when the callback changes
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
+  // useId() is stable per component instance — prevents collisions
+  // when the same hook is used in multiple mounted instances
+  const instanceId = useId();
+
   useEffect(() => {
     const supabase = createClient();
-    const channelName = `rt-${table}-${filter ?? "all"}-${Date.now()}`;
+    const channelName = `rt-${table}-${filter ?? "all"}-${instanceId}`;
 
-    const channel = supabase.channel(channelName);
-
-    channel.on(
-      "postgres_changes" as "system",
-      {
-        event,
-        schema,
-        table,
-        ...(filter ? { filter } : {}),
-      },
-      (payload: unknown) => {
-        onEventRef.current(payload);
-      }
-    );
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes" as "system",
+        {
+          event,
+          schema,
+          table,
+          ...(filter ? { filter } : {}),
+        },
+        (payload: unknown) => {
+          onEventRef.current(payload);
+        }
+      );
 
     channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-    // Only re-subscribe when the subscription parameters change, not the callback
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, schema, event, filter]);
+  }, [table, schema, event, filter, instanceId]);
 }
