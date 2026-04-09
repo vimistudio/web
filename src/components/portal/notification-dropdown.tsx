@@ -43,7 +43,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
     const supabase = createClient();
     const { data } = await supabase
       .from("notifications")
-      .select("*, profiles:actor_id(full_name, avatar_url)")
+      .select("*, profiles!notifications_actor_id_fkey(full_name, avatar_url)")
       .order("created_at", { ascending: false })
       .limit(20);
 

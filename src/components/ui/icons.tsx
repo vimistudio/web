@@ -217,3 +217,102 @@ export function DollarCircleIcon({ size, ...props }: IconProps) {
     </Icon>
   );
 }
+
+// --- Request type icons ---
+
+export function PenToolIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M13.5 2L2 13.5L7.5 13.5L10.5 22L22 10.5L16.5 10.5L13.5 2Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M10 14L8 16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function SmartPhoneIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M5 9C5 5.70017 5 4.05025 6.02513 3.02513C7.05025 2 8.70017 2 12 2C15.2998 2 16.9497 2 17.9749 3.02513C19 4.05025 19 5.70017 19 9V15C19 18.2998 19 19.9497 17.9749 20.9749C16.9497 22 15.2998 22 12 22C8.70017 22 7.05025 22 6.02513 20.9749C5 19.9497 5 18.2998 5 15V9Z" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
+      <path d="M11 19H13" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function BrowserIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.6569 20 17.7712 20 14 20H10C6.22876 20 4.34315 20 3.17157 18.8284C2 17.6569 2 15.7712 2 12Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M2 9H22" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M6 6.5H6.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="M9 6.5H9.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </Icon>
+  );
+}
+
+export function ColourSwatchIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12Z" stroke="currentColor" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function PresentationIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M2 5H22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M3 5V14.5C3 16.357 3 17.2855 3.58579 17.8713C4.17157 18.4571 5.1 18.4571 6.95714 18.4571H17.0429C18.9 18.4571 19.8284 18.4571 20.4142 17.8713C21 17.2855 21 16.357 21 14.5V5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M12 18V22M8 22H16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function MoreHorizontalIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M11.992 12H12.001" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M17.992 12H18.001" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+      <path d="M5.99199 12H6.00099" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+    </Icon>
+  );
+}
+
+// --- Priority icons ---
+
+export function LeafIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M4.5 20.5C4.5 20.5 8.5 18 12 12C14.5 7.5 14.5 2 21.5 2C21.5 2 21.5 10 17 15C14 18.5 8 20 4.5 20.5Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M3.5 21.5L8.5 16.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function CalendarIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M18 2V4M6 2V4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M2.5 12.2432C2.5 7.88594 2.5 5.70728 3.75212 4.35364C5.00424 3 7.01949 3 11.05 3H12.95C16.9805 3 18.9958 3 20.2479 4.35364C21.5 5.70728 21.5 7.88594 21.5 12.2432V12.7568C21.5 17.1141 21.5 19.2927 20.2479 20.6464C18.9958 22 16.9805 22 12.95 22H11.05C7.01949 22 5.00424 22 3.75212 20.6464C2.5 19.2927 2.5 17.1141 2.5 12.7568V12.2432Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M3 8H21" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function FireIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M12 22C16.4183 22 20 18.4183 20 14C20 9 16 5 14 2C13 4.5 11 6 9.5 6C8 6 4 9 4 14C4 18.4183 7.58172 22 12 22Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M10 17C10 18.1046 10.8954 19 12 19C13.1046 19 14 18.1046 14 17C14 14.5 12 13 12 13C12 13 10 14.5 10 17Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
+export function SearchIcon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M17.5 17.5L22 22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M20 11C20 6.02944 15.9706 2 11 2C6.02944 2 2 6.02944 2 11C2 15.9706 6.02944 20 11 20C15.9706 20 20 15.9706 20 11Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}

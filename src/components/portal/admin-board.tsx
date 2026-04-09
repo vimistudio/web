@@ -35,7 +35,7 @@ interface Request {
   updated_at: string;
   deliverables: { id: string; file_name: string; file_path: string; mime_type: string | null }[];
   comments: { id: string }[];
-  profiles: { full_name: string | null; avatar_url: string | null } | null;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
 }
 
 type RequestStatus = Request["status"];
