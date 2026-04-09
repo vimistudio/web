@@ -138,6 +138,7 @@ export type Database = {
           file_path: string
           file_size: number | null
           id: string
+          is_hidden: boolean
           mime_type: string | null
           request_id: string
           uploaded_by: string
@@ -148,6 +149,7 @@ export type Database = {
           file_path: string
           file_size?: number | null
           id?: string
+          is_hidden?: boolean
           mime_type?: string | null
           request_id: string
           uploaded_by: string
@@ -158,6 +160,7 @@ export type Database = {
           file_path?: string
           file_size?: number | null
           id?: string
+          is_hidden?: boolean
           mime_type?: string | null
           request_id?: string
           uploaded_by?: string

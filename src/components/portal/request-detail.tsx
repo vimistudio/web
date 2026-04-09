@@ -25,6 +25,7 @@ import {
   SentIcon,
   Download01Icon,
   Upload01Icon,
+  ViewIcon,
 } from "@/components/ui/icons";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -58,6 +59,7 @@ interface Deliverable {
   mime_type: string | null;
   created_at: string;
   url: string | null;
+  is_hidden?: boolean;
 }
 
 interface Request {
@@ -211,26 +213,50 @@ function DeliverableCard({
   d,
   onImageClick,
   onDelete,
+  onToggleHidden,
 }: {
   d: Deliverable;
   onImageClick?: () => void;
   onDelete?: () => void;
+  onToggleHidden?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
 
-  const deleteButton = onDelete ? (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onDelete();
-      }}
-      className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 hover:bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-      aria-label="Delete file"
-    >
-      <Cancel01Icon size={12} />
-    </button>
+  const adminActions = (onDelete || onToggleHidden) ? (
+    <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+      {onToggleHidden && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleHidden();
+          }}
+          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+            d.is_hidden
+              ? "bg-amber-500 text-white"
+              : "bg-black/60 hover:bg-amber-500 text-white"
+          }`}
+          aria-label={d.is_hidden ? "Show to client" : "Hide from client"}
+          title={d.is_hidden ? "Show to client" : "Hide from client"}
+        >
+          <ViewIcon size={12} />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="w-6 h-6 rounded-full bg-black/60 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+          aria-label="Delete file"
+        >
+          <Cancel01Icon size={12} />
+        </button>
+      )}
+    </div>
   ) : null;
 
   if (isImage && d.url) {
@@ -240,8 +266,13 @@ function DeliverableCard({
         onClick={onImageClick}
         className="block w-full text-left"
       >
-        <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
-          {deleteButton}
+        <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+          {adminActions}
+          {d.is_hidden && (
+            <div className="absolute top-8 left-2 z-10 bg-amber-100 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
+              Hidden
+            </div>
+          )}
           <div className="aspect-[4/3] bg-gray-50 relative">
             {!loaded && (
               <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
@@ -288,8 +319,8 @@ function DeliverableCard({
         }
       }}
     >
-      <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
-        {deleteButton}
+      <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+        {adminActions}
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{d.file_name}</p>
@@ -573,6 +604,7 @@ export function RequestDetail({
             file_size: file.size,
             mime_type: file.type || null,
             uploaded_by: currentUserId,
+            is_hidden: true,
           });
 
         if (dbError) {
@@ -585,11 +617,37 @@ export function RequestDetail({
 
       if (successCount > 0) {
         toast.success(
-          `Uploaded ${successCount} ${successCount === 1 ? "file" : "files"}`
+          `Uploaded ${successCount} ${successCount === 1 ? "file" : "files"} (hidden until you reveal ${successCount === 1 ? "it" : "them"})`
         );
         router.refresh();
+        // No notification here — fires when admin reveals (unhides) the files
+      }
 
-        // Fire-and-forget email notification
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [request.id, request.client_id, currentUserId, router]
+  );
+
+  const handleToggleHidden = useCallback(
+    async (deliverable: Deliverable) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .update({ is_hidden: !deliverable.is_hidden })
+        .eq("id", deliverable.id);
+
+      if (error) {
+        toast.error("Couldn't update visibility");
+        return;
+      }
+
+      const wasHidden = deliverable.is_hidden;
+      toast.success(wasHidden ? "File is now visible to client" : "File hidden from client");
+      router.refresh();
+
+      // Notify client when files are revealed (hidden → visible)
+      if (wasHidden) {
         fetch("/api/portal/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -599,11 +657,8 @@ export function RequestDetail({
           }),
         }).catch(() => {});
       }
-
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [request.id, request.client_id, currentUserId, router]
+    [router]
   );
 
   const handleDeleteDeliverable = useCallback(
@@ -806,7 +861,9 @@ export function RequestDetail({
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables.map((d) => {
+            {request.deliverables
+              .filter((d) => isAdmin || !d.is_hidden)
+              .map((d) => {
               const isImage = d.mime_type?.startsWith("image/") && d.url;
               const imageIndex = isImage
                 ? lightboxImages.findIndex((img) => img.url === d.url)
@@ -831,6 +888,11 @@ export function RequestDetail({
                             handleDeleteDeliverable(d);
                           }
                         }
+                      : undefined
+                  }
+                  onToggleHidden={
+                    isAdmin
+                      ? () => handleToggleHidden(d)
                       : undefined
                   }
                 />
