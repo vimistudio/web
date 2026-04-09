@@ -218,13 +218,11 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 
 function DeliverableCard({
   d,
-  version,
   onImageClick,
   onDelete,
   onToggleHidden,
 }: {
   d: Deliverable;
-  version?: number;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
@@ -299,11 +297,6 @@ function DeliverableCard({
                 <Download01Icon size={16} className="text-gray-700" />
               </div>
             </div>
-            {version && (
-              <div className="absolute bottom-2 left-2 z-10 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
-                v{version}
-              </div>
-            )}
           </div>
           <CardContent className="p-2">
             <p className="text-xs font-medium truncate">{d.file_name}</p>
@@ -346,11 +339,6 @@ function DeliverableCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
               {d.file_name}
-              {version && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">
-                  v{version}
-                </span>
-              )}
             </p>
             <p className="text-xs text-muted-foreground">
               {[
@@ -707,19 +695,10 @@ export function RequestDetail({
       toast.success(wasHidden ? "File is now visible to client" : "File hidden from client");
       router.refresh();
 
-      // Notify client when files are revealed (hidden → visible)
-      if (wasHidden) {
-        fetch("/api/portal/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "deliverable_uploaded",
-            request_id: request.id,
-          }),
-        }).catch(() => {});
-      }
+      // Email notification only fires from "Reveal All" to avoid spam
+      // Individual reveals are silent — the client sees it via realtime
     },
-    [router, request.id]
+    [router]
   );
 
   const handleRevealAll = useCallback(async () => {
@@ -790,14 +769,6 @@ export function RequestDetail({
   const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
   const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
 
-  // Build version map: number deliverables by creation order
-  const deliverableVersions = new Map<string, number>();
-  [...request.deliverables]
-    .sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    .forEach((d, i) => deliverableVersions.set(d.id, i + 1));
 
   return (
     <div
@@ -986,7 +957,6 @@ export function RequestDetail({
                 <DeliverableCard
                   key={d.id}
                   d={d}
-                  version={deliverableVersions.get(d.id)}
                   onImageClick={
                     imageIndex >= 0
                       ? () => {
@@ -1305,14 +1275,14 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-[#909af7]/30 focus-within:border-[#909af7]/40 transition-all">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white pl-2 pr-1.5 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
-              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-gray-100 transition-colors"
+              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors mb-0.5"
               aria-label="Attach image"
             >
-              <PlusSignIcon size={16} />
+              <PlusSignIcon size={14} />
             </button>
             <input
               ref={commentFileRef}
@@ -1372,16 +1342,16 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
                 comment.trim() || commentAttachment
-                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white scale-100"
-                  : "bg-gray-100 text-gray-400 scale-90"
+                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white"
+                  : "bg-transparent text-gray-300"
               }`}
             >
               {isSubmitting ? (
-                <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <SentIcon size={14} color={comment.trim() ? "white" : "currentColor"} />
+                <SentIcon size={14} color={comment.trim() || commentAttachment ? "white" : "currentColor"} />
               )}
             </button>
           </div>
