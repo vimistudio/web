@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft01Icon,
+  Cancel01Icon,
   CheckmarkCircle01Icon,
   SentIcon,
   Download01Icon,
@@ -209,12 +210,28 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 function DeliverableCard({
   d,
   onImageClick,
+  onDelete,
 }: {
   d: Deliverable;
   onImageClick?: () => void;
+  onDelete?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
+
+  const deleteButton = onDelete ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onDelete();
+      }}
+      className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/60 hover:bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+      aria-label="Delete file"
+    >
+      <Cancel01Icon size={12} />
+    </button>
+  ) : null;
 
   if (isImage && d.url) {
     return (
@@ -223,7 +240,8 @@ function DeliverableCard({
         onClick={onImageClick}
         className="block w-full text-left"
       >
-        <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
+        <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
+          {deleteButton}
           <div className="aspect-[4/3] bg-gray-50 relative">
             {!loaded && (
               <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
@@ -270,7 +288,8 @@ function DeliverableCard({
         }
       }}
     >
-      <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+      <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative">
+        {deleteButton}
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{d.file_name}</p>
@@ -587,6 +606,30 @@ export function RequestDetail({
     [request.id, request.client_id, currentUserId, router]
   );
 
+  const handleDeleteDeliverable = useCallback(
+    async (deliverable: Deliverable) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .delete()
+        .eq("id", deliverable.id);
+
+      if (error) {
+        toast.error("Couldn't delete file");
+        return;
+      }
+
+      // Also delete from storage
+      await supabase.storage
+        .from("deliverables")
+        .remove([deliverable.file_path]);
+
+      toast.success(`Deleted ${deliverable.file_name}`);
+      router.refresh();
+    },
+    [router]
+  );
+
   // Realtime: live comment updates
   useRealtime({
     table: "comments",
@@ -778,6 +821,15 @@ export function RequestDetail({
                       ? () => {
                           setLightboxIndex(imageIndex);
                           setLightboxOpen(true);
+                        }
+                      : undefined
+                  }
+                  onDelete={
+                    isAdmin && currentStatus !== "done"
+                      ? () => {
+                          if (confirm(`Delete "${d.file_name}"? This can't be undone.`)) {
+                            handleDeleteDeliverable(d);
+                          }
                         }
                       : undefined
                   }
