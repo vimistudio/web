@@ -64,6 +64,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          locale: string
           logo_url: string | null
           name: string
           retainer_amount: number | null
@@ -74,6 +75,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          locale?: string
           logo_url?: string | null
           name: string
           retainer_amount?: number | null
@@ -84,6 +86,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          locale?: string
           logo_url?: string | null
           name?: string
           retainer_amount?: number | null
@@ -322,6 +325,7 @@ export type Database = {
           first_login_at: string | null
           full_name: string | null
           id: string
+          locale: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -333,6 +337,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id: string
+          locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -344,6 +349,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id?: string
+          locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }

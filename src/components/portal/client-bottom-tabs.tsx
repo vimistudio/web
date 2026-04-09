@@ -6,15 +6,18 @@ import { GridViewIcon } from "@/components/ui/icons";
 import { Image01Icon } from "@/components/ui/icons";
 import { UserCircleIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useLocale } from "./locale-provider";
+import { type PortalKey } from "@/lib/portal-i18n";
 
-const clientTabs = [
-  { title: "Board", href: "/portal", icon: GridViewIcon },
-  { title: "Gallery", href: "/portal/gallery", icon: Image01Icon },
-  { title: "Profile", href: "/portal/profile", icon: UserCircleIcon },
+const clientTabs: { titleKey: PortalKey; href: string; icon: typeof GridViewIcon }[] = [
+  { titleKey: "tab.board", href: "/portal", icon: GridViewIcon },
+  { titleKey: "tab.gallery", href: "/portal/gallery", icon: Image01Icon },
+  { titleKey: "tab.profile", href: "/portal/profile", icon: UserCircleIcon },
 ];
 
 export function ClientBottomTabs() {
   const pathname = usePathname();
+  const { t } = useLocale();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
@@ -37,7 +40,7 @@ export function ClientBottomTabs() {
               )}
             >
               <tab.icon size={20} />
-              <span>{tab.title}</span>
+              <span>{t(tab.titleKey)}</span>
             </Link>
           );
         })}
