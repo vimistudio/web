@@ -34,7 +34,7 @@ export default async function RequestDetailPage({
     .select(
       `*,
       clients(name, slug),
-      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden),
+      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden, tags),
       reference_images(id, file_name, file_path, file_size, mime_type, created_at),
       comments(id, body, created_at, author_id, attachment_path, attachment_name, attachment_type, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
     )
@@ -48,13 +48,25 @@ export default async function RequestDetailPage({
     notFound();
   }
 
+  // Fetch deliverable events (views + downloads) with profile names
+  const deliverableIds = (request.deliverables ?? []).map((d) => d.id);
+  const { data: deliverableEvents } = deliverableIds.length > 0
+    ? await supabase
+        .from("deliverable_events")
+        .select("id, deliverable_id, user_id, event_type, created_at, profiles(full_name)")
+        .in("deliverable_id", deliverableIds)
+        .order("created_at", { ascending: false })
+        .limit(100)
+    : { data: [] };
+
   // Generate signed URLs for deliverables (private bucket)
   const deliverableUrls = await Promise.all(
     (request.deliverables ?? []).map(async (d) => {
       const { data } = await supabase.storage
         .from("deliverables")
         .createSignedUrl(d.file_path, 3600);
-      return { ...d, url: data?.signedUrl ?? null };
+      const events = (deliverableEvents ?? []).filter((e) => e.deliverable_id === d.id);
+      return { ...d, url: data?.signedUrl ?? null, deliverable_events: events };
     })
   );
 

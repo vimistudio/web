@@ -57,6 +57,14 @@ interface Comment {
   } | null;
 }
 
+interface DeliverableEvent {
+  id: string;
+  user_id: string;
+  event_type: string;
+  created_at: string;
+  profiles?: { full_name: string | null } | null;
+}
+
 interface Deliverable {
   id: string;
   file_name: string;
@@ -66,6 +74,8 @@ interface Deliverable {
   created_at: string;
   url: string | null;
   is_hidden?: boolean;
+  tags?: string[];
+  deliverable_events?: DeliverableEvent[];
 }
 
 interface Request {
@@ -218,19 +228,137 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 
 function DeliverableCard({
   d,
-  version,
   onImageClick,
   onDelete,
   onToggleHidden,
+  onUpdateTags,
+  onDownload,
 }: {
   d: Deliverable;
-  version?: number;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
+  onUpdateTags?: (tags: string[]) => void;
+  onDownload?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [showViewers, setShowViewers] = useState(false);
+  const tags = d.tags ?? [];
+  const events = d.deliverable_events ?? [];
+  const viewCount = events.filter((e) => e.event_type === "view").length;
+  const downloadCount = events.filter((e) => e.event_type === "download").length;
+
+  const statsSection = events.length > 0 ? (
+    <div className="relative mt-1">
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setShowViewers(!showViewers); }}
+          className="flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <ViewIcon size={12} />
+          {viewCount}
+        </button>
+        <span className="flex items-center gap-1">
+          <Download01Icon size={12} />
+          {downloadCount}
+        </span>
+      </div>
+      {showViewers && events.length > 0 && (
+        <>
+          {/* Click-outside overlay to close */}
+          <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowViewers(false); }} />
+          <div
+            className="absolute z-20 bottom-full mb-1 left-0 bg-background border border-border rounded-lg shadow-lg p-2 min-w-[200px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {events
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, 10)
+              .map((ev) => (
+                <p key={ev.id} className="text-[11px] text-muted-foreground py-0.5">
+                  {ev.profiles?.full_name ?? "Someone"}{" "}
+                  {ev.event_type === "view" ? "viewed" : "downloaded"} on{" "}
+                  {new Date(ev.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+              ))}
+          </div>
+        </>
+      )}
+    </div>
+  ) : null;
+
+  const tagSection = (tags.length > 0 || onUpdateTags) ? (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#909af7]/10 text-[#909af7] px-1.5 py-0.5 rounded"
+        >
+          {tag}
+          {onUpdateTags && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdateTags(tags.filter((t) => t !== tag));
+              }}
+              className="ml-0.5 hover:text-red-500"
+            >
+              ×
+            </button>
+          )}
+        </span>
+      ))}
+      {onUpdateTags && !showTagInput && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowTagInput(true);
+          }}
+          className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
+        >
+          + tag
+        </button>
+      )}
+      {onUpdateTags && showTagInput && (
+        <input
+          autoFocus
+          type="text"
+          value={tagInput}
+          placeholder="e.g. final"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter" && tagInput.trim()) {
+              const newTag = tagInput.trim().toLowerCase();
+              onUpdateTags(tags.includes(newTag) ? tags : [...tags, newTag]);
+              setTagInput("");
+              setShowTagInput(false);
+            }
+            if (e.key === "Escape") {
+              setTagInput("");
+              setShowTagInput(false);
+            }
+          }}
+          onBlur={() => {
+            if (tagInput.trim()) {
+              const newTag = tagInput.trim().toLowerCase();
+              onUpdateTags(tags.includes(newTag) ? tags : [...tags, newTag]);
+            }
+            setTagInput("");
+            setShowTagInput(false);
+          }}
+          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-[#909af7]"
+        />
+      )}
+    </div>
+  ) : null;
 
   const adminActions = (onDelete || onToggleHidden) ? (
     <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -299,11 +427,6 @@ function DeliverableCard({
                 <Download01Icon size={16} className="text-gray-700" />
               </div>
             </div>
-            {version && (
-              <div className="absolute bottom-2 left-2 z-10 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
-                v{version}
-              </div>
-            )}
           </div>
           <CardContent className="p-2">
             <p className="text-xs font-medium truncate">{d.file_name}</p>
@@ -314,6 +437,8 @@ function DeliverableCard({
                 new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
               ].filter(Boolean).join(" · ")}
             </p>
+            {tagSection}
+            {statsSection}
           </CardContent>
         </Card>
       </button>
@@ -321,9 +446,10 @@ function DeliverableCard({
   }
 
   return (
-    <button
-      type="button"
-      className={`block w-full text-left ${!d.url ? "pointer-events-none opacity-50" : ""}`}
+    <div
+      role="button"
+      tabIndex={0}
+      className={`block w-full text-left cursor-pointer ${!d.url ? "pointer-events-none opacity-50" : ""}`}
       onClick={async () => {
         if (!d.url) return;
         try {
@@ -335,6 +461,7 @@ function DeliverableCard({
           a.download = d.file_name;
           a.click();
           URL.revokeObjectURL(url);
+          onDownload?.();
         } catch {
           toast.error("Couldn't download file");
         }
@@ -342,28 +469,26 @@ function DeliverableCard({
     >
       <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
         {adminActions}
-        <CardContent className="p-3 flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {d.file_name}
-              {version && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">
-                  v{version}
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {[
-                d.mime_type?.split("/")[1]?.toUpperCase(),
-                d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
-                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-              ].filter(Boolean).join(" · ")}
-            </p>
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {d.file_name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {[
+                  d.mime_type?.split("/")[1]?.toUpperCase(),
+                  d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
+                  new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <Download01Icon size={16} className="text-muted-foreground shrink-0" />
           </div>
-          <Download01Icon size={16} className="text-muted-foreground shrink-0" />
+          {tagSection}
         </CardContent>
       </Card>
-    </button>
+    </div>
   );
 }
 
@@ -690,6 +815,22 @@ export function RequestDetail({
     [request.id, request.client_id, currentUserId, router]
   );
 
+  const handleUpdateTags = useCallback(
+    async (deliverableId: string, tags: string[]) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .update({ tags })
+        .eq("id", deliverableId);
+      if (error) {
+        toast.error("Couldn't update tags");
+        return;
+      }
+      router.refresh();
+    },
+    [router]
+  );
+
   const handleToggleHidden = useCallback(
     async (deliverable: Deliverable) => {
       const supabase = createClient();
@@ -707,19 +848,10 @@ export function RequestDetail({
       toast.success(wasHidden ? "File is now visible to client" : "File hidden from client");
       router.refresh();
 
-      // Notify client when files are revealed (hidden → visible)
-      if (wasHidden) {
-        fetch("/api/portal/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "deliverable_uploaded",
-            request_id: request.id,
-          }),
-        }).catch(() => {});
-      }
+      // Email notification only fires from "Reveal All" to avoid spam
+      // Individual reveals are silent — the client sees it via realtime
     },
-    [router, request.id]
+    [router]
   );
 
   const handleRevealAll = useCallback(async () => {
@@ -764,6 +896,18 @@ export function RequestDetail({
     [router]
   );
 
+  const logDeliverableEvent = useCallback(
+    (deliverableId: string, eventType: "view" | "download") => {
+      if (!currentUserId) return;
+      const supabase = createClient();
+      supabase
+        .from("deliverable_events")
+        .insert({ deliverable_id: deliverableId, user_id: currentUserId, event_type: eventType })
+        .then(() => {}, () => {});
+    },
+    [currentUserId]
+  );
+
   // Realtime: live comment updates
   useRealtime({
     table: "comments",
@@ -790,14 +934,6 @@ export function RequestDetail({
   const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
   const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
 
-  // Build version map: number deliverables by creation order
-  const deliverableVersions = new Map<string, number>();
-  [...request.deliverables]
-    .sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    .forEach((d, i) => deliverableVersions.set(d.id, i + 1));
 
   return (
     <div
@@ -986,12 +1122,12 @@ export function RequestDetail({
                 <DeliverableCard
                   key={d.id}
                   d={d}
-                  version={deliverableVersions.get(d.id)}
                   onImageClick={
                     imageIndex >= 0
                       ? () => {
                           setLightboxIndex(imageIndex);
                           setLightboxOpen(true);
+                          logDeliverableEvent(d.id, "view");
                         }
                       : undefined
                   }
@@ -1009,6 +1145,12 @@ export function RequestDetail({
                       ? () => handleToggleHidden(d)
                       : undefined
                   }
+                  onUpdateTags={
+                    isAdmin
+                      ? (tags) => handleUpdateTags(d.id, tags)
+                      : undefined
+                  }
+                  onDownload={() => logDeliverableEvent(d.id, "download")}
                 />
               );
             })}
@@ -1305,14 +1447,14 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-[#909af7]/30 focus-within:border-[#909af7]/40 transition-all">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white pl-2 pr-1.5 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
-              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-gray-100 transition-colors"
+              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors mb-0.5"
               aria-label="Attach image"
             >
-              <PlusSignIcon size={16} />
+              <PlusSignIcon size={14} />
             </button>
             <input
               ref={commentFileRef}
@@ -1372,16 +1514,16 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
                 comment.trim() || commentAttachment
-                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white scale-100"
-                  : "bg-gray-100 text-gray-400 scale-90"
+                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white"
+                  : "bg-transparent text-gray-300"
               }`}
             >
               {isSubmitting ? (
-                <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <SentIcon size={14} color={comment.trim() ? "white" : "currentColor"} />
+                <SentIcon size={14} color={comment.trim() || commentAttachment ? "white" : "currentColor"} />
               )}
             </button>
           </div>

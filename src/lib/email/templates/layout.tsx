@@ -52,7 +52,7 @@ export function EmailLayout({
               <tr>
                 <td>
                   <Img
-                    src="https://vimistudio.com/logo-vimi.png"
+                    src="https://vimistudio.com/email-logo-light.png"
                     alt="Vimi Studio"
                     width="120"
                     height="39"
