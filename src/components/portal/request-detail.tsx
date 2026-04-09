@@ -66,6 +66,7 @@ interface Deliverable {
   created_at: string;
   url: string | null;
   is_hidden?: boolean;
+  tags?: string[];
 }
 
 interface Request {
@@ -221,14 +222,86 @@ function DeliverableCard({
   onImageClick,
   onDelete,
   onToggleHidden,
+  onUpdateTags,
 }: {
   d: Deliverable;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
+  onUpdateTags?: (tags: string[]) => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
+  const tags = d.tags ?? [];
+
+  const tagSection = (tags.length > 0 || onUpdateTags) ? (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#909af7]/10 text-[#909af7] px-1.5 py-0.5 rounded"
+        >
+          {tag}
+          {onUpdateTags && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdateTags(tags.filter((t) => t !== tag));
+              }}
+              className="ml-0.5 hover:text-red-500"
+            >
+              ×
+            </button>
+          )}
+        </span>
+      ))}
+      {onUpdateTags && !showTagInput && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowTagInput(true);
+          }}
+          className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
+        >
+          + tag
+        </button>
+      )}
+      {onUpdateTags && showTagInput && (
+        <input
+          autoFocus
+          type="text"
+          value={tagInput}
+          placeholder="e.g. final"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter" && tagInput.trim()) {
+              onUpdateTags([...tags, tagInput.trim().toLowerCase()]);
+              setTagInput("");
+              setShowTagInput(false);
+            }
+            if (e.key === "Escape") {
+              setTagInput("");
+              setShowTagInput(false);
+            }
+          }}
+          onBlur={() => {
+            if (tagInput.trim()) {
+              onUpdateTags([...tags, tagInput.trim().toLowerCase()]);
+            }
+            setTagInput("");
+            setShowTagInput(false);
+          }}
+          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-[#909af7]"
+        />
+      )}
+    </div>
+  ) : null;
 
   const adminActions = (onDelete || onToggleHidden) ? (
     <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -307,6 +380,7 @@ function DeliverableCard({
                 new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
               ].filter(Boolean).join(" · ")}
             </p>
+            {tagSection}
           </CardContent>
         </Card>
       </button>
@@ -335,20 +409,23 @@ function DeliverableCard({
     >
       <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
         {adminActions}
-        <CardContent className="p-3 flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {d.file_name}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {[
-                d.mime_type?.split("/")[1]?.toUpperCase(),
-                d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
-                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-              ].filter(Boolean).join(" · ")}
-            </p>
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {d.file_name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {[
+                  d.mime_type?.split("/")[1]?.toUpperCase(),
+                  d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
+                  new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <Download01Icon size={16} className="text-muted-foreground shrink-0" />
           </div>
-          <Download01Icon size={16} className="text-muted-foreground shrink-0" />
+          {tagSection}
         </CardContent>
       </Card>
     </button>
@@ -678,6 +755,22 @@ export function RequestDetail({
     [request.id, request.client_id, currentUserId, router]
   );
 
+  const handleUpdateTags = useCallback(
+    async (deliverableId: string, tags: string[]) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .update({ tags })
+        .eq("id", deliverableId);
+      if (error) {
+        toast.error("Couldn't update tags");
+        return;
+      }
+      router.refresh();
+    },
+    [router]
+  );
+
   const handleToggleHidden = useCallback(
     async (deliverable: Deliverable) => {
       const supabase = createClient();
@@ -977,6 +1070,11 @@ export function RequestDetail({
                   onToggleHidden={
                     isAdmin
                       ? () => handleToggleHidden(d)
+                      : undefined
+                  }
+                  onUpdateTags={
+                    isAdmin
+                      ? (tags) => handleUpdateTags(d.id, tags)
                       : undefined
                   }
                 />

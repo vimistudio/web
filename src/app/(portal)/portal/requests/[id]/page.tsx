@@ -34,7 +34,7 @@ export default async function RequestDetailPage({
     .select(
       `*,
       clients(name, slug),
-      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden),
+      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden, tags),
       reference_images(id, file_name, file_path, file_size, mime_type, created_at),
       comments(id, body, created_at, author_id, attachment_path, attachment_name, attachment_type, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
     )

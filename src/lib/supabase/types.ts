@@ -150,6 +150,7 @@ export type Database = {
           is_hidden: boolean
           mime_type: string | null
           request_id: string
+          tags: string[]
           uploaded_by: string
         }
         Insert: {
@@ -161,6 +162,7 @@ export type Database = {
           is_hidden?: boolean
           mime_type?: string | null
           request_id: string
+          tags?: string[]
           uploaded_by: string
         }
         Update: {
@@ -172,6 +174,7 @@ export type Database = {
           is_hidden?: boolean
           mime_type?: string | null
           request_id?: string
+          tags?: string[]
           uploaded_by?: string
         }
         Relationships: [
