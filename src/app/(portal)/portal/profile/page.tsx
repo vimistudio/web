@@ -1,10 +1,27 @@
-export default function ProfilePage() {
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { ProfileView } from "@/components/portal/profile-view";
+
+export default async function ProfilePage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/portal/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*, clients(name, slug)")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) redirect("/portal/login");
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Profile</h1>
-      <p className="text-muted-foreground">
-        Profile settings coming soon.
-      </p>
-    </div>
+    <ProfileView
+      user={user}
+      profile={profile}
+    />
   );
 }

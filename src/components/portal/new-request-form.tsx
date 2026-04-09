@@ -15,6 +15,8 @@ import { createClient } from "@/lib/supabase/client";
 interface NewRequestFormProps {
   clientId: string;
   userId: string;
+  clientName?: string;
+  isAdmin?: boolean;
 }
 
 const requestTypes = [
@@ -27,7 +29,7 @@ const requestTypes = [
 
 type RequestType = (typeof requestTypes)[number]["value"];
 
-export function NewRequestForm({ clientId, userId }: NewRequestFormProps) {
+export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewRequestFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [type, setType] = useState<RequestType>("social");
@@ -92,21 +94,32 @@ export function NewRequestForm({ clientId, userId }: NewRequestFormProps) {
     }
 
     setIsSubmitting(false);
-    router.push("/portal");
+    if (isAdmin) {
+      router.back();
+    } else {
+      router.push("/portal");
+    }
     router.refresh();
   };
+
+  const backHref = isAdmin ? "javascript:history.back()" : "/portal";
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link
-          href="/portal"
+        <button
+          onClick={() => router.back()}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <Cancel01Icon size={20} />
-        </Link>
-        <h1 className="font-semibold">New Request</h1>
+        </button>
+        <div className="text-center">
+          <h1 className="font-semibold">New Request</h1>
+          {isAdmin && clientName && (
+            <p className="text-xs text-muted-foreground">for {clientName}</p>
+          )}
+        </div>
         <div className="w-5" />
       </div>
 

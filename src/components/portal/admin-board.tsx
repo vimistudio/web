@@ -147,10 +147,12 @@ export function AdminBoard({ client, requests }: AdminBoardProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <PlusSignIcon size={16} />
-            Add Request
-          </Button>
+          <Link href={`/portal/requests/new?client=${client.id}`}>
+            <Button variant="outline" className="gap-2">
+              <PlusSignIcon size={16} />
+              Add Request
+            </Button>
+          </Link>
         </div>
       </div>
 

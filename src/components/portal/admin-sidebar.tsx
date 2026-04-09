@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { type User } from "@supabase/supabase-js";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -52,9 +53,13 @@ export function AdminSidebar({ user, profile }: AdminSidebarProps) {
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-4">
         <Link href="/portal/admin" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#909af7]/20 flex items-center justify-center">
-            <span className="text-[#909af7] font-bold text-sm">V</span>
-          </div>
+          <Image
+            src="/logo-vimi.png"
+            alt="Vimi Studio"
+            width={32}
+            height={32}
+            className="h-7 w-auto"
+          />
           <span className="font-semibold text-sm">vimi studio</span>
         </Link>
       </SidebarHeader>
