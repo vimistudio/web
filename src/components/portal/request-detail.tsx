@@ -446,8 +446,11 @@ export function RequestDetail({
 
   const allComments = [...request.comments, ...optimisticComments];
 
-  // Build image list for lightbox (only image deliverables with URLs)
-  const lightboxImages = request.deliverables
+  // Build image list for lightbox (only visible image deliverables with URLs)
+  const visibleDeliverables = request.deliverables.filter(
+    (d) => isAdmin || !d.is_hidden
+  );
+  const lightboxImages = visibleDeliverables
     .filter((d) => d.mime_type?.startsWith("image/") && d.url)
     .map((d) => ({
       url: d.url!,
@@ -766,7 +769,7 @@ export function RequestDetail({
       .toUpperCase()
       .slice(0, 2);
 
-  const downloadAllUrls = request.deliverables.filter((d) => d.url);
+  const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
   const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
 
   // Build version map: number deliverables by creation order

@@ -41,6 +41,7 @@ export default async function GalleryPage() {
     .from("deliverables")
     .select("*, requests!inner(title, type, status, client_id)")
     .eq("requests.client_id", clientId)
+    .eq("is_hidden", false)
     .order("created_at", { ascending: false });
 
   // Generate signed URLs for image deliverables
