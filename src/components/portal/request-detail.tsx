@@ -704,6 +704,7 @@ export function RequestDetail({
                     const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
 
                     // Sequential fetch to avoid holding all blobs in memory at once
+                    const usedNames = new Set<string>();
                     for (const d of downloadAllUrls) {
                       try {
                         const res = await fetch(d.url!);
@@ -714,7 +715,18 @@ export function RequestDetail({
                           toast.error("Files are too large to zip. Please download individually.", { id: toastId });
                           return;
                         }
-                        zip.file(d.file_name, blob);
+                        // Deduplicate file names to prevent silent overwrites
+                        let name = d.file_name;
+                        if (usedNames.has(name)) {
+                          const dot = name.lastIndexOf(".");
+                          const base = dot >= 0 ? name.slice(0, dot) : name;
+                          const ext = dot >= 0 ? name.slice(dot) : "";
+                          let n = 2;
+                          while (usedNames.has(`${base}-${n}${ext}`)) n++;
+                          name = `${base}-${n}${ext}`;
+                        }
+                        usedNames.add(name);
+                        zip.file(name, blob);
                       } catch {
                         failed++;
                       }

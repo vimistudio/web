@@ -63,9 +63,16 @@ export async function GET(request: Request) {
 
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
+      // Validate forwarded host against known domains
+      const trustedHosts = ["vimistudio.com", "www.vimistudio.com"];
+      const isTrustedHost =
+        forwardedHost &&
+        (trustedHosts.includes(forwardedHost) ||
+          forwardedHost.endsWith(".vercel.app"));
+
       if (isLocalEnv) {
         return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
+      } else if (isTrustedHost) {
         return NextResponse.redirect(`https://${forwardedHost}${next}`);
       } else {
         return NextResponse.redirect(`${origin}${next}`);
