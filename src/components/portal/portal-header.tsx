@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { type User } from "@supabase/supabase-js";
@@ -16,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Notification03Icon } from "@/components/ui/icons";
 import { Logout01Icon } from "@/components/ui/icons";
+import { NotificationDropdown } from "./notification-dropdown";
+import { SearchCommand } from "./search-command";
 import { Settings02Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -32,6 +34,18 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
   const router = useRouter();
   const isAdmin = profile.role === "admin";
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -57,9 +71,16 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
 
       <div className="flex-1" />
 
-      <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-        <Notification03Icon size={20} />
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+        aria-label="Search"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
+      <SearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
+
+      <NotificationDropdown variant="light" />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

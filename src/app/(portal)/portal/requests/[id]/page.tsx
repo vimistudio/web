@@ -74,6 +74,13 @@ export default async function RequestDetailPage({
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
 
+  // Fetch activity log
+  const { data: activityLog } = await supabase
+    .from("activity_log")
+    .select("*, profiles:actor_id(full_name, avatar_url)")
+    .eq("request_id", params.id)
+    .order("created_at", { ascending: true });
+
   const clientName = request.clients?.name ?? "Client";
 
   return (
@@ -88,6 +95,7 @@ export default async function RequestDetailPage({
       currentUserId={user.id}
       isAdmin={profile.role === "admin"}
       isImpersonating={isImpersonating}
+      activityLog={activityLog ?? []}
     />
   );
 }

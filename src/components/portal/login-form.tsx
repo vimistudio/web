@@ -46,22 +46,9 @@ export function LoginForm() {
         {isLoading ? "Signing in..." : "Continue with Google"}
       </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-700" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-[#0d0f1a] px-2 text-gray-500">or</span>
-        </div>
-      </div>
-
-      <Button
-        variant="outline"
-        disabled
-        className="w-full h-12 rounded-full border-gray-700 text-gray-400 bg-transparent hover:bg-gray-800/50"
-      >
-        Sign in with email
-      </Button>
+      <p className="text-center text-xs text-gray-600">
+        Invite-only access. Your studio will set up your account.
+      </p>
     </div>
   );
 }
