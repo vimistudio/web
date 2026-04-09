@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { GalleryView } from "@/components/portal/gallery-view";
@@ -16,25 +17,35 @@ export default async function GalleryPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile?.client_id && profile?.role !== "admin") {
+  // Check impersonation
+  const cookieStore = cookies();
+  const impersonateClientId = cookieStore.get("impersonate_client")?.value;
+  const clientId =
+    profile?.role === "admin" && impersonateClientId
+      ? impersonateClientId
+      : profile?.client_id;
+
+  if (!clientId) {
     redirect("/portal");
   }
 
-  // Fetch deliverables for this client's completed/review requests
+  // Fetch client name
+  const { data: client } = await supabase
+    .from("clients")
+    .select("name")
+    .eq("id", clientId)
+    .single();
+
+  // Fetch deliverables for this client
   const { data: deliverables } = await supabase
     .from("deliverables")
-    .select(
-      "*, requests!inner(title, type, status, client_id)"
-    )
-    .eq("requests.client_id", profile.client_id!)
+    .select("*, requests!inner(title, type, status, client_id)")
+    .eq("requests.client_id", clientId)
     .order("created_at", { ascending: false });
-
-  const clientName =
-    (profile.clients as { name: string } | null)?.name ?? "Your Project";
 
   return (
     <GalleryView
-      clientName={clientName}
+      clientName={client?.name ?? "Your Project"}
       deliverables={deliverables ?? []}
     />
   );

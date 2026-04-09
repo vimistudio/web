@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClientBoard } from "@/components/portal/client-board";
@@ -16,11 +17,20 @@ export default async function PortalPage() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "admin") {
+  // Check impersonation cookie
+  const cookieStore = cookies();
+  const impersonateClientId = cookieStore.get("impersonate_client")?.value;
+  const isImpersonating = profile?.role === "admin" && !!impersonateClientId;
+
+  // Only redirect admins to dashboard if NOT impersonating
+  if (profile?.role === "admin" && !isImpersonating) {
     redirect("/portal/admin");
   }
 
-  if (!profile?.client_id) {
+  // Determine which client ID to use
+  const clientId = isImpersonating ? impersonateClientId : profile?.client_id;
+
+  if (!clientId) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
         <h1 className="text-2xl font-semibold mb-2">Welcome to Vimi Studio</h1>
@@ -32,15 +42,22 @@ export default async function PortalPage() {
     );
   }
 
+  // Fetch client name
+  const { data: client } = await supabase
+    .from("clients")
+    .select("name")
+    .eq("id", clientId)
+    .single();
+
   // Fetch requests for this client
   const { data: requests } = await supabase
     .from("requests")
     .select("*, deliverables(id, file_path, mime_type), comments(id)")
-    .eq("client_id", profile.client_id)
+    .eq("client_id", clientId)
     .order("priority", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const clientName = (profile.clients as { name: string } | null)?.name ?? "Your Project";
+  const clientName = client?.name ?? "Your Project";
 
   return (
     <ClientBoard
