@@ -70,15 +70,19 @@ const typeGradients: Record<string, string> = {
   other: "from-gray-100 to-gray-50",
 };
 
-function RequestCardContent({ request }: { request: Request }) {
+function RequestCardContent({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
   const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
   const gradient = typeGradients[request.type] ?? typeGradients.other;
+  const isNew = lastVisitedAt && new Date(request.updated_at) > new Date(lastVisitedAt);
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative">
+      {isNew && (
+        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white" />
+      )}
       <div
         className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
       />
@@ -119,10 +123,10 @@ function RequestCardContent({ request }: { request: Request }) {
   );
 }
 
-function RequestCard({ request }: { request: Request }) {
+function RequestCard({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
   return (
     <Link href={`/portal/requests/${request.id}`}>
-      <RequestCardContent request={request} />
+      <RequestCardContent request={request} lastVisitedAt={lastVisitedAt} />
     </Link>
   );
 }
@@ -159,12 +163,14 @@ function DroppableColumn({
   color,
   requests,
   canDrag,
+  lastVisitedAt,
 }: {
   columnKey: string;
   label: string;
   color: string;
   requests: Request[];
   canDrag: boolean;
+  lastVisitedAt?: string | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
 
@@ -189,7 +195,7 @@ function DroppableColumn({
           canDrag ? (
             <DraggableRequestCard key={request.id} request={request} />
           ) : (
-            <RequestCard key={request.id} request={request} />
+            <RequestCard key={request.id} request={request} lastVisitedAt={lastVisitedAt} />
           )
         )}
       </div>
@@ -439,6 +445,7 @@ export function ClientBoard({
                 color={col.color}
                 requests={colRequests}
                 canDrag={isAdmin}
+                lastVisitedAt={lastVisitedAt}
               />
             );
           })}
@@ -470,7 +477,7 @@ export function ClientBoard({
                 </span>
               </div>
               {colRequests.map((request) => (
-                <RequestCard key={request.id} request={request} />
+                <RequestCard key={request.id} request={request} lastVisitedAt={lastVisitedAt} />
               ))}
             </div>
           );

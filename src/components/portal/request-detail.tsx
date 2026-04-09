@@ -1416,6 +1416,30 @@ export function RequestDetail({
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
+          {/* Quick feedback chips — help clients articulate feedback */}
+          {currentStatus === "review" && !isAdmin && !comment.trim() && (
+            <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {[
+                "Love it!",
+                "Can we change the colors?",
+                "Can we change the text?",
+                "Can we try a different layout?",
+                "Almost there, small tweaks needed",
+              ].map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => {
+                    setComment(chip);
+                    commentInputRef.current?.focus();
+                  }}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-[#909af7] hover:text-[#909af7] transition-colors whitespace-nowrap"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Attachment preview */}
           {attachmentPreview && (
             <div className="relative inline-block mb-2">
