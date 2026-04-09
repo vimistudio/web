@@ -391,6 +391,13 @@ export function RequestDetail({
 
     setIsSubmitting(false);
     router.refresh();
+
+    // Fire-and-forget email notification
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "comment_added", request_id: request.id }),
+    }).catch(() => {});
   }, [comment, isSubmitting, currentUserId, isAdmin, request.id, router]);
 
   const handleStatusChange = useCallback(
@@ -422,6 +429,18 @@ export function RequestDetail({
 
       setIsUpdatingStatus(false);
       router.refresh();
+
+      // Fire-and-forget email notification
+      fetch("/api/portal/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "status_changed",
+          request_id: request.id,
+          new_status: newStatus,
+          old_status: previousStatus,
+        }),
+      }).catch(() => {});
     },
     [currentStatus, request.id, router]
   );
@@ -503,6 +522,16 @@ export function RequestDetail({
           `Uploaded ${successCount} ${successCount === 1 ? "file" : "files"}`
         );
         router.refresh();
+
+        // Fire-and-forget email notification
+        fetch("/api/portal/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "deliverable_uploaded",
+            request_id: request.id,
+          }),
+        }).catch(() => {});
       }
 
       setIsUploading(false);
