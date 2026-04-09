@@ -81,6 +81,11 @@ export async function POST(request: Request) {
 
     // Handle client_signed_in — notify admin(s) that a client just signed in
     if (type === "client_signed_in") {
+      // Only clients should trigger this, not admins
+      if (callerProfile.role === "admin") {
+        return NextResponse.json({ success: true, sent: 0 });
+      }
+
       const { data: admins } = await supabase
         .from("profiles")
         .select("id, email")
@@ -88,22 +93,26 @@ export async function POST(request: Request) {
 
       const clientName = client_name || "a project";
       const callerName = callerProfile.full_name || "A client";
-      let sent = 0;
-
-      for (const admin of admins ?? []) {
-        if (!admin.email) continue;
-        const result = await sendEmail({
-          to: admin.email,
-          subject: `\u{1F44B} ${callerName} just signed in to ${clientName}'s portal`,
-          react: ClientSignedInEmail({
-            clientUserName: callerName,
-            clientUserEmail: user.email || "",
-            clientName,
-            portalUrl: "https://vimistudio.com/portal/admin",
-          }),
-        });
-        if (result.success) sent++;
-      }
+      const eligible = (admins ?? []).filter(
+        (a) => a.email && a.id !== user.id
+      );
+      const results = await Promise.allSettled(
+        eligible.map((admin) =>
+          sendEmail({
+            to: admin.email!,
+            subject: `${callerName} just signed in to ${clientName}'s portal`,
+            react: ClientSignedInEmail({
+              clientUserName: callerName,
+              clientUserEmail: user.email || "",
+              clientName,
+              portalUrl: "https://vimistudio.com/portal/admin",
+            }),
+          })
+        )
+      );
+      const sent = results.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
       return NextResponse.json({ success: true, sent });
     }
 
@@ -165,90 +174,94 @@ export async function POST(request: Request) {
 
     const actorName = callerProfile.full_name || "Someone";
     const requestUrl = `https://vimistudio.com/portal/requests/${request_id}`;
-    let sent = 0;
 
-    for (const recipient of filtered) {
-      let subject: string;
-      let react: React.ReactElement;
+    // Pre-fetch data needed for templates (avoid N+1 queries per recipient)
+    let emailSubject: string;
+    let emailReact: React.ReactElement;
 
-      switch (type) {
-        case "comment_added": {
-          const { data: latestComment } = await supabase
-            .from("comments")
-            .select("body")
-            .eq("request_id", request_id)
-            .eq("author_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
+    switch (type) {
+      case "comment_added": {
+        const { data: latestComment } = await supabase
+          .from("comments")
+          .select("body")
+          .eq("request_id", request_id)
+          .eq("author_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-          subject = `\u{1F4AC} ${actorName} commented on "${req.title}"`;
-          react = CommentAddedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            commenterName: actorName,
-            commentBody: latestComment?.body || "New comment",
-            requestType: TYPE_LABELS[req.type] || req.type,
-          });
-          break;
-        }
-        case "status_changed": {
-          const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
-          subject = `\u{1F4CB} "${req.title}" moved to ${newLabel}`;
-          react = StatusChangedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            oldStatus: old_status || req.status,
-            newStatus: new_status || req.status,
-            changedByName: actorName,
-          });
-          break;
-        }
-        case "deliverable_uploaded": {
-          const { data: deliverables } = await supabase
-            .from("deliverables")
-            .select("file_name")
-            .eq("request_id", request_id)
-            .eq("uploaded_by", user.id)
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          const fileNames = deliverables?.map((d) => d.file_name) ?? [];
-          subject = `\u{1F4CE} New files for "${req.title}"`;
-          react = DeliverableUploadedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            uploaderName: actorName,
-            fileNames,
-            fileCount: fileNames.length || 1,
-          });
-          break;
-        }
-        case "request_created": {
-          const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
-          const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
-          subject = `\u{1F4CB} New request from ${clientName}: "${req.title}"`;
-          react = RequestCreatedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            clientName,
-            requestType: TYPE_LABELS[req.type] || req.type,
-            priority: priorityLabels[reqPriority as number] || "Normal",
-            description: (reqDescription as string) || undefined,
-          });
-          break;
-        }
-        default:
-          continue;
+        emailSubject = `${actorName} commented on "${req.title}"`;
+        emailReact = CommentAddedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          commenterName: actorName,
+          commentBody: latestComment?.body || "New comment",
+          requestType: TYPE_LABELS[req.type] || req.type,
+        });
+        break;
       }
+      case "status_changed": {
+        const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
+        emailSubject = `"${req.title}" moved to ${newLabel}`;
+        emailReact = StatusChangedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          oldStatus: old_status || req.status,
+          newStatus: new_status || req.status,
+          changedByName: actorName,
+        });
+        break;
+      }
+      case "deliverable_uploaded": {
+        const { data: deliverables } = await supabase
+          .from("deliverables")
+          .select("file_name")
+          .eq("request_id", request_id)
+          .eq("uploaded_by", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
-      const result = await sendEmail({
-        to: recipient.email!,
-        subject,
-        react,
-      });
-      if (result.success) sent++;
+        const fileNames = deliverables?.map((d) => d.file_name) ?? [];
+        emailSubject = `New files for "${req.title}"`;
+        emailReact = DeliverableUploadedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          uploaderName: actorName,
+          fileNames,
+          fileCount: fileNames.length || 1,
+        });
+        break;
+      }
+      case "request_created": {
+        const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
+        const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
+        emailSubject = `New request from ${clientName}: "${req.title}"`;
+        emailReact = RequestCreatedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          clientName,
+          requestType: TYPE_LABELS[req.type] || req.type,
+          priority: priorityLabels[reqPriority as number] || priorityLabels[req.priority] || "Normal",
+          description: (reqDescription as string) || undefined,
+        });
+        break;
+      }
+      default:
+        return NextResponse.json({ success: true, sent: 0 });
     }
+
+    const results = await Promise.allSettled(
+      filtered.map((recipient) =>
+        sendEmail({
+          to: recipient.email!,
+          subject: emailSubject,
+          react: emailReact,
+        })
+      )
+    );
+    const sent = results.filter(
+      (r) => r.status === "fulfilled" && r.value.success
+    ).length;
 
     return NextResponse.json({ success: true, sent });
   } catch (err) {

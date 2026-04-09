@@ -6,9 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Download01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ImageLightbox } from "@/components/portal/image-lightbox";
 
 interface Deliverable {
   id: string;
+  request_id: string;
   file_name: string;
   file_path: string;
   file_size: number | null;
@@ -45,8 +47,73 @@ const typeGradients: Record<string, string> = {
   other: "from-gray-300/80 to-gray-200/40",
 };
 
+function GalleryImageCard({
+  d,
+  height,
+  gradient,
+  deliveredDate,
+  onImageClick,
+}: {
+  d: Deliverable;
+  height: string;
+  gradient: string;
+  deliveredDate: string;
+  onImageClick?: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  const card = (
+    <Card className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
+      <div
+        className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
+      >
+        {d.url && (
+          <>
+            {!loaded && (
+              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={d.url}
+              alt={d.file_name}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+              onLoad={() => setLoaded(true)}
+            />
+          </>
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          <Download01Icon
+            size={20}
+            className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
+          />
+        </div>
+      </div>
+      <CardContent className="p-3">
+        <p className="text-sm font-medium truncate">{d.requests.title}</p>
+        <p className="text-xs text-muted-foreground">
+          Delivered {deliveredDate}
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  if (onImageClick) {
+    return (
+      <button type="button" className="w-full text-left" onClick={onImageClick}>
+        {card}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={`/portal/requests/${d.request_id}`}>{card}</Link>
+  );
+}
+
 export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
   const [filter, setFilter] = useState("all");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const pathname = usePathname();
 
   const filtered =
@@ -54,8 +121,18 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
       ? deliverables
       : deliverables.filter((d) => d.requests.type === filter);
 
+  // Build image list for lightbox from the current filtered set
+  const lightboxImages = filtered
+    .filter((d) => d.mime_type?.startsWith("image/") && d.url)
+    .map((d) => ({
+      url: d.url!,
+      fileName: d.file_name,
+      fileSize: d.file_size,
+      mimeType: d.mime_type,
+    }));
+
   const deliveredDate = (d: Deliverable) =>
-    new Date(d.created_at).toLocaleDateString("en-US", {
+    new Date(d.created_at).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     });
@@ -158,38 +235,27 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
             const gradient =
               typeGradients[d.requests.type] ?? typeGradients.other;
 
+            const isImage = d.mime_type?.startsWith("image/") && d.url;
+            const imageIndex = isImage
+              ? lightboxImages.findIndex((img) => img.url === d.url)
+              : -1;
+
             return (
-              <Card
+              <GalleryImageCard
                 key={d.id}
-                className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <div
-                  className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
-                >
-                  {d.url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={d.url}
-                      alt={d.file_name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                    <Download01Icon
-                      size={20}
-                      className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
-                    />
-                  </div>
-                </div>
-                <CardContent className="p-3">
-                  <p className="text-sm font-medium truncate">
-                    {d.requests.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Delivered {deliveredDate(d)}
-                  </p>
-                </CardContent>
-              </Card>
+                d={d}
+                height={height}
+                gradient={gradient}
+                deliveredDate={deliveredDate(d)}
+                onImageClick={
+                  imageIndex >= 0
+                    ? () => {
+                        setLightboxIndex(imageIndex);
+                        setLightboxOpen(true);
+                      }
+                    : undefined
+                }
+              />
             );
           })}
         </div>
@@ -201,6 +267,16 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
               : `No ${filter} deliverables yet.`}
           </p>
         </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImages.length > 0 && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       )}
     </div>
   );

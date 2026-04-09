@@ -184,8 +184,8 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
             ))
           ) : (
             <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">You&apos;re all caught up</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">We&apos;ll notify you when there are updates</p>
+              <p className="text-sm text-muted-foreground">All clear</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">We&apos;ll let you know when something needs your eye.</p>
             </div>
           )}
         </div>

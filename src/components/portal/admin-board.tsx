@@ -77,7 +77,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function BoardCardContent({ request }: { request: Request }) {
-  const timeSince = new Date(request.updated_at).toLocaleDateString("en-US", {
+  const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });

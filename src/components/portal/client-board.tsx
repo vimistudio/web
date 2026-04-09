@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusSignIcon, Comment01Icon } from "@/components/ui/icons";
+import { PlusSignIcon, Comment01Icon, Cancel01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -42,6 +42,7 @@ interface ClientBoardProps {
   requests: Request[];
   requestCount: number;
   isAdmin?: boolean;
+  lastVisitedAt?: string | null;
 }
 
 const statusColumns = [
@@ -61,16 +62,16 @@ const typeColors: Record<string, string> = {
 };
 
 const typeGradients: Record<string, string> = {
-  logo: "from-purple-300/60 to-purple-200/40",
-  social: "from-pink-300/60 to-pink-200/40",
-  web: "from-blue-300/60 to-blue-200/40",
-  brand: "from-amber-300/60 to-amber-200/40",
-  presentation: "from-emerald-300/60 to-emerald-200/40",
-  other: "from-gray-300/60 to-gray-200/40",
+  logo: "from-purple-100 to-purple-50",
+  social: "from-pink-100 to-pink-50",
+  web: "from-blue-100 to-blue-50",
+  brand: "from-amber-100 to-amber-50",
+  presentation: "from-emerald-100 to-emerald-50",
+  other: "from-gray-100 to-gray-50",
 };
 
 function RequestCardContent({ request }: { request: Request }) {
-  const timeSince = new Date(request.updated_at).toLocaleDateString("en-US", {
+  const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
@@ -79,12 +80,8 @@ function RequestCardContent({ request }: { request: Request }) {
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
       <div
-        className={`hidden md:flex h-24 bg-gradient-to-br ${gradient} items-center justify-center`}
-      >
-        <span className="text-white/50 text-xs font-medium italic">
-          {request.title.split(" ").slice(0, 2).join(" ")}
-        </span>
-      </div>
+        className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
+      />
       <CardContent className="p-3 md:p-4 space-y-2">
         <div className="flex items-start justify-between">
           <h3 className="font-semibold text-sm leading-tight">
@@ -190,7 +187,7 @@ function DroppableColumn({
       </div>
       {requests.length === 0 && !isOver && (
         <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-xs text-muted-foreground">No requests</p>
+          <p className="text-xs text-muted-foreground">Nothing here yet</p>
         </div>
       )}
       {requests.length === 0 && isOver && canDrag && (
@@ -207,11 +204,33 @@ export function ClientBoard({
   requests: initialRequests,
   requestCount,
   isAdmin = false,
+  lastVisitedAt,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // What's New banner — show when returning after 1+ hours
+  const bannerData = useMemo(() => {
+    const lastVisit = lastVisitedAt ? new Date(lastVisitedAt) : null;
+    const hoursSinceVisit = lastVisit
+      ? (Date.now() - lastVisit.getTime()) / (1000 * 60 * 60)
+      : 0;
+    const updatedSinceVisit = lastVisit
+      ? requests.filter((r) => new Date(r.updated_at) > lastVisit)
+      : [];
+    return {
+      reviewReady: updatedSinceVisit.filter((r) => r.status === "review").length,
+      completed: updatedSinceVisit.filter((r) => r.status === "done").length,
+      totalUpdated: updatedSinceVisit.length,
+      shouldShow: hoursSinceVisit > 1 && updatedSinceVisit.length > 0,
+    };
+  }, [requests, lastVisitedAt]);
+
+  const { reviewReady, completed, totalUpdated, shouldShow } = bannerData;
+  const showBanner = !bannerDismissed && shouldShow;
 
   // Require 8px movement before drag starts — prevents accidental drags on click
   const sensors = useSensors(
@@ -287,8 +306,7 @@ export function ClientBoard({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {requestCount} {requestCount === 1 ? "request" : "requests"} in
-            progress
+            We&apos;re working on {requestCount} design{requestCount === 1 ? "" : "s"} for you
           </p>
         </div>
 
@@ -373,6 +391,28 @@ export function ClientBoard({
         })}
       </div>
 
+      {/* What's New banner */}
+      {showBanner && (
+        <div className="bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+          <div>
+            <p className="text-sm font-medium">Welcome back!</p>
+            <p className="text-xs text-muted-foreground">
+              Since your last visit:{" "}
+              {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for review`}
+              {reviewReady > 0 && completed > 0 && ", "}
+              {completed > 0 && `${completed} completed`}
+              {reviewReady === 0 && completed === 0 && `${totalUpdated} update${totalUpdated > 1 ? "s" : ""} to your requests`}
+            </p>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="text-muted-foreground hover:text-foreground p-1 shrink-0"
+          >
+            <Cancel01Icon size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Desktop: 4-column kanban with drag-and-drop */}
       <DndContext
         sensors={sensors}
@@ -429,16 +469,14 @@ export function ClientBoard({
         })}
 
         {requests.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              No requests yet. Start by submitting your first design request.
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
+              <PlusSignIcon size={24} className="text-[#909af7]" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Your studio is ready</h2>
+            <p className="text-muted-foreground max-w-sm mb-6">
+              What would you like us to design first? Submit a request and your designer will get started.
             </p>
-            <Link href="/portal/requests/new">
-              <Button className="gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
-                <PlusSignIcon size={16} color="white" />
-                New Request
-              </Button>
-            </Link>
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,17 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!submitted) return;
+    const timer = setTimeout(() => {
+      if (isAdmin) router.back();
+      else router.push("/portal");
+      router.refresh();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [submitted, isAdmin, router]);
 
   const goNext = useCallback(() => {
     if (step < TOTAL_STEPS - 1) setStep((s) => s + 1);
@@ -119,13 +130,16 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
     }
 
     if (files.length > 0) {
+      let failedUploads = 0;
       await Promise.all(
         files.map(async (file) => {
           const filePath = `${clientId}/${request.id}/${Date.now()}-${file.name}`;
           const { error: uploadError } = await supabase.storage
             .from("references")
             .upload(filePath, file);
-          if (!uploadError) {
+          if (uploadError) {
+            failedUploads++;
+          } else {
             await supabase.from("reference_images").insert({
               request_id: request.id,
               uploaded_by: userId,
@@ -137,6 +151,11 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           }
         })
       );
+      if (failedUploads > 0) {
+        toast.warning(
+          `${failedUploads} file${failedUploads > 1 ? "s" : ""} failed to upload. Your request was still submitted.`
+        );
+      }
     }
 
     // Notify admin about the new request
@@ -151,11 +170,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
       }),
     }).catch(() => {});
 
-    toast.success("Request submitted! Your designer will see it shortly.");
     setIsSubmitting(false);
-    if (isAdmin) router.back();
-    else router.push("/portal");
-    router.refresh();
+    setSubmitted(true);
   };
 
   const canAdvance =
@@ -167,252 +183,269 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
   return (
     <div className="max-w-lg mx-auto flex flex-col min-h-[calc(100vh-120px)]">
-      {/* Top bar: close + step label */}
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground transition-colors p-1"
-        >
-          <Cancel01Icon size={20} />
-        </button>
-        {clientName && (
-          <span className="text-xs text-muted-foreground">for {clientName}</span>
-        )}
-      </div>
-
-      {/* Progress dots — left aligned */}
-      <div className="flex items-center gap-1.5 mb-8">
-        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-          <div
-            key={i}
-            className={`rounded-full transition-all duration-500 ease-out ${
-              i === step
-                ? "w-6 h-1.5 bg-[#909af7]"
-                : i < step
-                  ? "w-1.5 h-1.5 bg-[#909af7]"
-                  : "w-1.5 h-1.5 bg-gray-200"
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Step content */}
-      <div className="flex-1" key={step}>
-        {/* Step label */}
-        <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
-          {STEP_LABELS[step]}
-        </p>
-
-        {step === 0 && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-              What do you need designed?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              A short name so your designer knows what to expect.
-            </p>
-            <Input
-              placeholder="e.g. Instagram story templates, Logo refresh..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="h-12 text-base"
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && canAdvance && goNext()}
-            />
+      {submitted ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500">
+          {/* Animated checkmark circle */}
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="animate-in zoom-in-50 duration-300 delay-200">
+              <path d="M12 20L18 26L28 14" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-              What kind of project is this?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Pick the closest match. You can always add details later.
-            </p>
-            <div className="space-y-2">
-              {requestTypes.map((t) => {
-                const selected = type === t.value;
-                return (
-                  <button
-                    key={t.value}
-                    onClick={() => setType(t.value)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
-                      selected
-                        ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        selected ? "bg-[#909af7]/10 text-[#909af7]" : "bg-gray-100 text-muted-foreground"
-                      }`}
-                    >
-                      <t.Icon size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-medium ${selected ? "text-[#909af7]" : "text-foreground"}`}>
-                        {t.label}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{t.desc}</div>
-                    </div>
-                    {selected && (
-                      <div className="w-5 h-5 rounded-full bg-[#909af7] flex items-center justify-center shrink-0">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <h2 className="text-2xl font-semibold mb-2">Got it!</h2>
+          <p className="text-muted-foreground max-w-xs">
+            Your request has been submitted. Your designer will start on it soon.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Top bar: close + step label */}
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => router.back()}
+              className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            >
+              <Cancel01Icon size={20} />
+            </button>
+            {clientName && (
+              <span className="text-xs text-muted-foreground">for {clientName}</span>
+            )}
           </div>
-        )}
 
-        {step === 2 && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-              Tell us a bit more
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              What should it feel like? Who&apos;s the audience? Any specific sizes or formats?
-            </p>
-            <Textarea
-              placeholder="I need 3 Instagram story templates for our weekly specials. Warm, appetizing vibe. Brand colors. Include our logo and a spot for food photos..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="min-h-[160px] resize-none text-base"
-              autoFocus
-            />
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                When do you need it?
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Set the pace for your designer.
-              </p>
-            </div>
-            <div className="space-y-2">
-              {priorities.map((p) => {
-                const selected = priority === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    onClick={() => setPriority(p.value)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
-                      selected ? p.activeColor + " shadow-sm" : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        selected ? "bg-white/60" : "bg-gray-100"
-                      } text-muted-foreground`}
-                    >
-                      <p.Icon size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{p.label}</div>
-                      <div className="text-xs text-muted-foreground">{p.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">
-                Due date <span className="opacity-60">(optional)</span>
-              </label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="h-12"
+          {/* Progress dots — left aligned */}
+          <div className="flex items-center gap-1.5 mb-8">
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <div
+                key={i}
+                className={`rounded-full transition-all duration-500 ease-out ${
+                  i === step
+                    ? "w-6 h-1.5 bg-[#909af7]"
+                    : i < step
+                      ? "w-1.5 h-1.5 bg-[#909af7]"
+                      : "w-1.5 h-1.5 bg-gray-200"
+                }`}
               />
-            </div>
+            ))}
           </div>
-        )}
 
-        {step === 4 && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-              Any inspiration?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Upload screenshots, Pinterest pins, or examples you love. Or skip this step.
+          {/* Step content */}
+          <div className="flex-1" key={step}>
+            {/* Step label */}
+            <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
+              {STEP_LABELS[step]}
             </p>
-            <div className="flex flex-wrap gap-3">
-              {files.map((file, i) => (
-                <div
-                  key={i}
-                  className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center group"
-                >
-                  {previews[i] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground">
-                      {file.name.split(".").pop()?.toUpperCase()}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => removeFile(i)}
-                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Cancel01Icon size={16} />
-                  </button>
-                </div>
-              ))}
-              <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#909af7] hover:bg-[#909af7]/5 transition-colors">
-                <PlusSignIcon size={20} className="text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground mt-1">Add file</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
+
+            {step === 0 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  What do you need designed?
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  A short name so your designer knows what to expect.
+                </p>
+                <Input
+                  placeholder="e.g. Instagram story templates, Logo refresh..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="h-12 text-base"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && canAdvance && goNext()}
                 />
-              </label>
-            </div>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  What kind of project is this?
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Pick the closest match. You can always add details later.
+                </p>
+                <div className="space-y-2">
+                  {requestTypes.map((t) => {
+                    const selected = type === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        onClick={() => setType(t.value)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                          selected
+                            ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            selected ? "bg-[#909af7]/10 text-[#909af7]" : "bg-gray-100 text-muted-foreground"
+                          }`}
+                        >
+                          <t.Icon size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm font-medium ${selected ? "text-[#909af7]" : "text-foreground"}`}>
+                            {t.label}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{t.desc}</div>
+                        </div>
+                        {selected && (
+                          <div className="w-5 h-5 rounded-full bg-[#909af7] flex items-center justify-center shrink-0">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  Tell us a bit more
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  What should it feel like? Who&apos;s the audience? Any specific sizes or formats?
+                </p>
+                <Textarea
+                  placeholder="I need 3 Instagram story templates for our weekly specials. Warm, appetizing vibe. Brand colors. Include our logo and a spot for food photos..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[160px] resize-none text-base"
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                    When do you need it?
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set the pace for your designer.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {priorities.map((p) => {
+                    const selected = priority === p.value;
+                    return (
+                      <button
+                        key={p.value}
+                        onClick={() => setPriority(p.value)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                          selected ? p.activeColor + " shadow-sm" : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            selected ? "bg-white/60" : "bg-gray-100"
+                          } text-muted-foreground`}
+                        >
+                          <p.Icon size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{p.label}</div>
+                          <div className="text-xs text-muted-foreground">{p.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">
+                    Due date <span className="opacity-60">(optional)</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="h-12"
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  Any inspiration?
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Upload screenshots, Pinterest pins, or examples you love. Or skip this step.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {files.map((file, i) => (
+                    <div
+                      key={i}
+                      className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center group"
+                    >
+                      {previews[i] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          {file.name.split(".").pop()?.toUpperCase()}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      >
+                        <Cancel01Icon size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#909af7] hover:bg-[#909af7]/5 transition-colors">
+                    <PlusSignIcon size={20} className="text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground mt-1">Add file</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Bottom bar: Back + Continue */}
-      <div className="flex items-center gap-3 pt-6 pb-2 mt-auto">
-        {step > 0 ? (
-          <Button
-            variant="outline"
-            onClick={goBack}
-            className="h-12 px-6 rounded-xl gap-2 text-muted-foreground"
-          >
-            <ArrowLeft01Icon size={16} />
-            Back
-          </Button>
-        ) : (
-          <div />
-        )}
+          {/* Bottom bar: Back + Continue */}
+          <div className="flex items-center gap-3 pt-6 pb-2 mt-auto">
+            {step > 0 ? (
+              <Button
+                variant="outline"
+                onClick={goBack}
+                className="h-12 px-6 rounded-xl gap-2 text-muted-foreground"
+              >
+                <ArrowLeft01Icon size={16} />
+                Back
+              </Button>
+            ) : (
+              <div />
+            )}
 
-        <Button
-          onClick={isLastStep ? handleSubmit : goNext}
-          disabled={!canAdvance || isSubmitting}
-          className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
-        >
-          {isSubmitting
-            ? "Submitting..."
-            : isLastStep
-              ? "Submit Request"
-              : "Continue"}
-          {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
-        </Button>
-      </div>
+            <Button
+              onClick={isLastStep ? handleSubmit : goNext}
+              disabled={!canAdvance || isSubmitting}
+              className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
+            >
+              {isSubmitting
+                ? "Submitting..."
+                : isLastStep
+                  ? "Submit Request"
+                  : "Continue"}
+              {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/portal/login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -57,11 +61,11 @@ export default async function LoginPage() {
                 Welcome to your studio
               </h1>
               <p className="text-sm text-[#6B6F99]">
-                Sign in to manage your projects and explore deliverables
+                Sign in to see your designs and collaborate with your studio
               </p>
             </div>
 
-            <LoginForm />
+            <LoginForm error={searchParams.error} />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

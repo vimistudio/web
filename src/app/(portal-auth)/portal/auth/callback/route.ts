@@ -1,10 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email/send";
+import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/portal";
+  const rawNext = searchParams.get("next") ?? "/portal";
+  // Prevent open redirect — only allow relative paths starting with /
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/portal";
 
   if (code) {
     const supabase = createClient();
@@ -27,26 +31,48 @@ export async function GET(request: Request) {
             (profile as { clients?: { name?: string } | null }).clients?.name || "their project";
 
           // Fire-and-forget: notify admin of first sign-in
-          const baseUrl = request.headers.get("x-forwarded-host")
-            ? `https://${request.headers.get("x-forwarded-host")}`
-            : origin;
-
-          fetch(`${baseUrl}/api/portal/notify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "client_signed_in",
-              client_name: clientName,
-            }),
-          }).catch(() => {});
+          // Entire block is non-blocking — don't delay the redirect
+          const callerName = profile.full_name || "A client";
+          const callerEmail = user.email || "";
+          void (async () => {
+            try {
+              const { data: admins } = await supabase
+                .from("profiles")
+                .select("email")
+                .eq("role", "admin");
+              await Promise.allSettled(
+                (admins ?? [])
+                  .filter((a) => a.email)
+                  .map((admin) =>
+                    sendEmail({
+                      to: admin.email!,
+                      subject: `${callerName} just signed in to ${clientName}'s portal`,
+                      react: ClientSignedInEmail({
+                        clientUserName: callerName,
+                        clientUserEmail: callerEmail,
+                        clientName,
+                        portalUrl: "https://vimistudio.com/portal/admin",
+                      }),
+                    })
+                  )
+              );
+            } catch {}
+          })();
         }
       }
 
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
+      // Validate forwarded host against known domains
+      const trustedHosts = ["vimistudio.com", "www.vimistudio.com"];
+      const isTrustedHost =
+        forwardedHost &&
+        (trustedHosts.includes(forwardedHost) ||
+          forwardedHost.endsWith(".vercel.app"));
+
       if (isLocalEnv) {
         return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
+      } else if (isTrustedHost) {
         return NextResponse.redirect(`https://${forwardedHost}${next}`);
       } else {
         return NextResponse.redirect(`${origin}${next}`);

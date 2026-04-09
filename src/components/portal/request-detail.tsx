@@ -29,7 +29,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
+import { ImageLightbox } from "@/components/portal/image-lightbox";
 
 // --- Types ---
 
@@ -191,7 +195,7 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
         </p>
         <p className="text-xs text-emerald-700">
           Delivered on{" "}
-          {new Date(updatedAt).toLocaleDateString("en-US", {
+          {new Date(updatedAt).toLocaleDateString(undefined, {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -202,26 +206,35 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
   );
 }
 
-function DeliverableCard({ d }: { d: Deliverable }) {
+function DeliverableCard({
+  d,
+  onImageClick,
+}: {
+  d: Deliverable;
+  onImageClick?: () => void;
+}) {
   const isImage = d.mime_type?.startsWith("image/");
+  const [loaded, setLoaded] = useState(false);
 
   if (isImage && d.url) {
     return (
-      <a
-        href={d.url}
-        download={d.file_name}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
+      <button
+        type="button"
+        onClick={onImageClick}
+        className="block w-full text-left"
       >
         <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
           <div className="aspect-[4/3] bg-gray-50 relative">
+            {!loaded && (
+              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={d.url}
               alt={d.file_name}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
               loading="lazy"
+              onLoad={() => setLoaded(true)}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
@@ -233,7 +246,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
             <p className="text-xs font-medium truncate">{d.file_name}</p>
           </CardContent>
         </Card>
-      </a>
+      </button>
     );
   }
 
@@ -330,10 +343,23 @@ export function RequestDetail({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [optimisticComments, setOptimisticComments] = useState<Comment[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const allComments = [...request.comments, ...optimisticComments];
+
+  // Build image list for lightbox (only image deliverables with URLs)
+  const lightboxImages = request.deliverables
+    .filter((d) => d.mime_type?.startsWith("image/") && d.url)
+    .map((d) => ({
+      url: d.url!,
+      fileName: d.file_name,
+      fileSize: d.file_size,
+      mimeType: d.mime_type,
+    }));
 
   const backHref = isImpersonating
     ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
@@ -344,7 +370,7 @@ export function RequestDetail({
   const status = statusConfig[currentStatus];
   const priority = priorityLabels[request.priority];
   const requestedDate = new Date(request.created_at).toLocaleDateString(
-    "en-US",
+    undefined,
     { month: "short", day: "numeric", year: "numeric" }
   );
   const updatedDate = formatDistanceToNow(new Date(request.updated_at), {
@@ -371,6 +397,7 @@ export function RequestDetail({
     setOptimisticComments((prev) => [...prev, optimisticComment]);
     const commentText = comment.trim();
     setComment("");
+    if (commentInputRef.current) commentInputRef.current.style.height = "auto";
 
     const supabase = createClient();
     const { error } = await supabase.from("comments").insert({
@@ -422,7 +449,15 @@ export function RequestDetail({
       }
 
       if (newStatus === "done") {
-        toast.success("Request approved! Your files are ready to download.");
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.7 },
+          colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
+        });
+        toast.success("Approved! Your designs are ready to download.", {
+          duration: 5000,
+        });
       } else {
         toast.success(`Status updated to ${statusConfig[newStatus].label}`);
       }
@@ -648,25 +683,66 @@ export function RequestDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">
-              {currentStatus === "review" || currentStatus === "done"
-                ? `Your Designs (${request.deliverables.length})`
-                : `Deliverables (${request.deliverables.length})`}
+              {`Your Designs (${request.deliverables.length})`}
             </h2>
             {downloadAllUrls.length >= 2 && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs h-7 gap-1"
-                onClick={() => {
-                  downloadAllUrls.forEach((d, i) => {
-                    setTimeout(() => {
-                      const a = document.createElement("a");
-                      a.href = d.url!;
-                      a.download = d.file_name;
-                      a.target = "_blank";
-                      a.click();
-                    }, i * 300);
-                  });
+                onClick={async () => {
+                  // Guard: warn if too many files
+                  if (downloadAllUrls.length > 20) {
+                    toast.error("Too many files to download at once. Please download individually.");
+                    return;
+                  }
+                  const toastId = toast.loading(`Preparing ${downloadAllUrls.length} files...`);
+                  try {
+                    const zip = new JSZip();
+                    let failed = 0;
+                    let totalSize = 0;
+                    const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
+
+                    // Sequential fetch to avoid holding all blobs in memory at once
+                    const usedNames = new Set<string>();
+                    for (const d of downloadAllUrls) {
+                      try {
+                        const res = await fetch(d.url!);
+                        if (!res.ok) { failed++; continue; }
+                        const blob = await res.blob();
+                        totalSize += blob.size;
+                        if (totalSize > MAX_SIZE) {
+                          toast.error("Files are too large to zip. Please download individually.", { id: toastId });
+                          return;
+                        }
+                        // Deduplicate file names to prevent silent overwrites
+                        let name = d.file_name;
+                        if (usedNames.has(name)) {
+                          const dot = name.lastIndexOf(".");
+                          const base = dot >= 0 ? name.slice(0, dot) : name;
+                          const ext = dot >= 0 ? name.slice(dot) : "";
+                          let n = 2;
+                          while (usedNames.has(`${base}-${n}${ext}`)) n++;
+                          name = `${base}-${n}${ext}`;
+                        }
+                        usedNames.add(name);
+                        zip.file(name, blob);
+                      } catch {
+                        failed++;
+                      }
+                    }
+
+                    const content = await zip.generateAsync({ type: "blob" });
+                    saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
+
+                    if (failed > 0) {
+                      toast.warning(`Downloaded, but ${failed} file${failed > 1 ? "s" : ""} couldn't be included.`, { id: toastId });
+                    } else {
+                      toast.success("Download ready!", { id: toastId });
+                    }
+                  } catch {
+                    toast.error("Couldn't prepare the download", { id: toastId });
+                  }
                 }}
               >
                 <Download01Icon size={12} />
@@ -675,16 +751,34 @@ export function RequestDetail({
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables.map((d) => (
-              <DeliverableCard key={d.id} d={d} />
-            ))}
+            {request.deliverables.map((d) => {
+              const isImage = d.mime_type?.startsWith("image/") && d.url;
+              const imageIndex = isImage
+                ? lightboxImages.findIndex((img) => img.url === d.url)
+                : -1;
+
+              return (
+                <DeliverableCard
+                  key={d.id}
+                  d={d}
+                  onImageClick={
+                    imageIndex >= 0
+                      ? () => {
+                          setLightboxIndex(imageIndex);
+                          setLightboxOpen(true);
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       ) : currentStatus === "queued" ? null : (
         <div className="border border-dashed border-muted-foreground/20 rounded-xl p-6 text-center">
           <p className="text-sm text-muted-foreground">
             {currentStatus === "in_progress"
-              ? "Deliverables will appear here once your designer uploads them."
+              ? "Your designs will show up here once they're ready."
               : "No deliverables for this request yet."}
           </p>
         </div>
@@ -906,7 +1000,7 @@ export function RequestDetail({
 
         {allComments.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No comments yet. Start the conversation.
+            No messages yet. Say hi, or we&apos;ll reach out when we have updates.
           </p>
         )}
 
@@ -916,18 +1010,24 @@ export function RequestDetail({
       {/* Comment Input — sticky on mobile */}
       <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-3 md:static md:border-t-0 md:px-0 md:py-0 z-30">
         <div
-          className={`flex items-end gap-2 mx-auto ${
+          className={`flex items-start gap-2 mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
           <div className="flex-1 space-y-1">
             <Textarea
+              ref={commentInputRef}
               aria-label="Add a comment"
               placeholder="Add a comment..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => {
+                setComment(e.target.value);
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = Math.min(el.scrollHeight, 200) + "px";
+              }}
               maxLength={2000}
-              className="min-h-[44px] max-h-32 resize-none"
+              className="min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -951,7 +1051,7 @@ export function RequestDetail({
             aria-label="Send comment"
             onClick={handleSubmitComment}
             disabled={!comment.trim() || isSubmitting}
-            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px] mb-[18px] md:mb-0"
+            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px]"
           >
             {isSubmitting ? (
               <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -961,6 +1061,16 @@ export function RequestDetail({
           </Button>
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {lightboxImages.length > 0 && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
+      )}
     </div>
   );
 }

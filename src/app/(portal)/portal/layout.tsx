@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { NoAccess } from "@/components/portal/no-access";
 import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
+import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
 
 export default async function PortalLayout({

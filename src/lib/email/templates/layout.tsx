@@ -48,13 +48,19 @@ export function EmailLayout({
         <Container style={container}>
           {/* Header */}
           <Section style={header}>
-            <Img
-              src="https://vimistudio.com/logo-vimi.png"
-              alt="Vimi Studio"
-              width="120"
-              height="39"
-              style={logo}
-            />
+            <table cellPadding={0} cellSpacing={0} role="presentation">
+              <tr>
+                <td>
+                  <Img
+                    src="https://vimistudio.com/logo-vimi.png"
+                    alt="Vimi Studio"
+                    width="120"
+                    height="39"
+                    style={logo}
+                  />
+                </td>
+              </tr>
+            </table>
           </Section>
 
           {/* Content */}
@@ -113,9 +119,11 @@ const header: React.CSSProperties = {
 };
 
 const logo: React.CSSProperties = {
+  display: "block",
   width: "120px",
   height: "39px",
-  maxWidth: "120px",
+  border: 0,
+  outline: "none",
 };
 
 const content: React.CSSProperties = {
