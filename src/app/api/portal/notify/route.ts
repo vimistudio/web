@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         if (!admin.email) continue;
         const result = await sendEmail({
           to: admin.email,
-          subject: `\u{1F44B} ${callerName} just signed in to ${clientName}'s portal`,
+          subject: `${callerName} just signed in to ${clientName}'s portal`,
           react: ClientSignedInEmail({
             clientUserName: callerName,
             clientUserEmail: user.email || "",
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
             .limit(1)
             .single();
 
-          subject = `\u{1F4AC} ${actorName} commented on "${req.title}"`;
+          subject = `${actorName} commented on "${req.title}"`;
           react = CommentAddedEmail({
             requestTitle: req.title,
             requestUrl,
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
         }
         case "status_changed": {
           const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
-          subject = `\u{1F4CB} "${req.title}" moved to ${newLabel}`;
+          subject = `"${req.title}" moved to ${newLabel}`;
           react = StatusChangedEmail({
             requestTitle: req.title,
             requestUrl,
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
             .limit(10);
 
           const fileNames = deliverables?.map((d) => d.file_name) ?? [];
-          subject = `\u{1F4CE} New files for "${req.title}"`;
+          subject = `New files for "${req.title}"`;
           react = DeliverableUploadedEmail({
             requestTitle: req.title,
             requestUrl,
@@ -227,7 +227,7 @@ export async function POST(request: Request) {
         case "request_created": {
           const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
           const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
-          subject = `\u{1F4CB} New request from ${clientName}: "${req.title}"`;
+          subject = `New request from ${clientName}: "${req.title}"`;
           react = RequestCreatedEmail({
             requestTitle: req.title,
             requestUrl,
