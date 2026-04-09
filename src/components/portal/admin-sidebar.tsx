@@ -5,6 +5,7 @@ import { type User } from "@supabase/supabase-js";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardSquare01Icon } from "@/components/ui/icons";
+import { Task01Icon } from "@/components/ui/icons";
 import { UserGroupIcon } from "@/components/ui/icons";
 import { PaintBoardIcon } from "@/components/ui/icons";
 import { Settings02Icon } from "@/components/ui/icons";
@@ -27,6 +28,7 @@ import type { Profile } from "./portal-shell";
 
 const adminNavItems = [
   { title: "Dashboard", href: "/portal/admin", icon: DashboardSquare01Icon },
+  { title: "Queue", href: "/portal/admin/queue", icon: Task01Icon },
   { title: "Clients", href: "/portal/admin/clients", icon: UserGroupIcon },
   { title: "Playbook", href: "/portal/admin/playbook", icon: PaintBoardIcon },
   { title: "Settings", href: "/portal/admin/settings", icon: Settings02Icon },

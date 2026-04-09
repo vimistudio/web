@@ -767,6 +767,7 @@ export function RequestDetail({
       .slice(0, 2);
 
   const downloadAllUrls = request.deliverables.filter((d) => d.url);
+  const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
 
   // Build version map: number deliverables by creation order
   const deliverableVersions = new Map<string, number>();
@@ -873,6 +874,33 @@ export function RequestDetail({
             <h2 className="text-sm font-medium">
               {`Your Designs (${request.deliverables.length})`}
             </h2>
+            <div className="flex items-center gap-1">
+            {isAdmin && hiddenDeliverables.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7 gap-1 text-amber-600 hover:text-amber-700"
+                onClick={async () => {
+                  const supabase = createClient();
+                  await Promise.all(
+                    hiddenDeliverables.map((d) =>
+                      supabase.from("deliverables").update({ is_hidden: false }).eq("id", d.id)
+                    )
+                  );
+                  toast.success(`Revealed ${hiddenDeliverables.length} file${hiddenDeliverables.length > 1 ? "s" : ""}`);
+                  router.refresh();
+                  // Notify client
+                  fetch("/api/portal/notify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "deliverable_uploaded", request_id: request.id }),
+                  }).catch(() => {});
+                }}
+              >
+                <ViewIcon size={12} />
+                Reveal All ({hiddenDeliverables.length})
+              </Button>
+            )}
             {downloadAllUrls.length >= 2 && (
               <Button
                 variant="ghost"
@@ -937,6 +965,7 @@ export function RequestDetail({
                 Download All
               </Button>
             )}
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {request.deliverables

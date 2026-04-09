@@ -28,6 +28,8 @@ interface ClientSummary {
     review: number;
     done: number;
   };
+  hotRequests?: { id: string; title: string; status: string }[];
+  lastActiveAt?: string | null;
 }
 
 interface Stats {
@@ -35,6 +37,7 @@ interface Stats {
   openRequests: number;
   needsReview: number;
   monthlyRevenue: number;
+  activeClientCount: number;
 }
 
 interface Activity {
@@ -43,7 +46,7 @@ interface Activity {
   created_at: string;
   request_id: string;
   profiles: { full_name: string | null; avatar_url: string | null } | null;
-  requests: { id: string; title: string; client_id: string } | null;
+  requests: { id: string; title: string; client_id: string; clients: { name: string } | null } | null;
 }
 
 interface AdminDashboardProps {
@@ -119,6 +122,37 @@ function ClientCard({ client }: { client: ClientSummary }) {
               );
             })}
           </div>
+
+          {/* Hot requests */}
+          {client.hotRequests && client.hotRequests.length > 0 && (
+            <div className="mt-2 mb-4 space-y-1">
+              {client.hotRequests.slice(0, 2).map((r) => (
+                <Link key={r.id} href={`/portal/requests/${r.id}`} className="block text-xs text-[#909af7] hover:underline truncate">
+                  {r.title}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Last active indicator */}
+          {client.lastActiveAt && (() => {
+            const daysAgo = Math.floor(
+              (Date.now() - new Date(client.lastActiveAt).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            const isInactive = daysAgo >= 14;
+            const isWarning = daysAgo >= 7 && daysAgo < 14;
+            return (
+              <p className={`text-[11px] mb-4 ${isInactive ? "text-red-500" : isWarning ? "text-amber-500" : "text-muted-foreground"}`}>
+                {daysAgo === 0
+                  ? "Active today"
+                  : daysAgo === 1
+                  ? "Active yesterday"
+                  : isInactive
+                  ? `Inactive ${daysAgo} days`
+                  : `Active ${daysAgo} days ago`}
+              </p>
+            );
+          })()}
 
           {/* Progress bar */}
           {totalRequests > 0 && (
@@ -221,6 +255,11 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
                 <p className={`text-3xl font-semibold mt-2 ${card.color}`}>
                   {display}
                 </p>
+                {card.key === "monthlyRevenue" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.activeClientCount} active {stats.activeClientCount === 1 ? "client" : "clients"}
+                  </p>
+                )}
               </CardContent>
             </Card>
           );
@@ -283,7 +322,16 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
                     <p className="text-sm">
                       <span className="font-medium">
                         {activity.profiles?.full_name ?? "Someone"}
-                      </span>{" "}
+                      </span>
+                      {activity.requests?.clients?.name && (
+                        <>
+                          {" "}
+                          <span className="text-muted-foreground/60 text-xs">
+                            ({activity.requests.clients.name})
+                          </span>
+                        </>
+                      )}
+                      {" "}
                       <span className="text-muted-foreground">on</span>{" "}
                       <span className="font-medium">
                         {activity.requests?.title ?? "a request"}
