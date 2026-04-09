@@ -196,10 +196,12 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{dateStr}</p>
         </div>
-        <Button variant="outline" className="gap-2">
-          <PlusSignIcon size={16} />
-          New Client
-        </Button>
+        <Link href="/portal/admin/clients">
+          <Button variant="outline" className="gap-2">
+            <PlusSignIcon size={16} />
+            New Client
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Grid */}
