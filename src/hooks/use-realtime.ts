@@ -1,6 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 type PostgresEvent = "INSERT" | "UPDATE" | "DELETE" | "*";
 
@@ -9,7 +8,7 @@ interface UseRealtimeOptions {
   schema?: string;
   event?: PostgresEvent;
   filter?: string;
-  onEvent: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void;
+  onEvent: (payload: unknown) => void;
 }
 
 export function useRealtime({
@@ -19,32 +18,35 @@ export function useRealtime({
   filter,
   onEvent,
 }: UseRealtimeOptions) {
+  // Use a ref to avoid re-subscribing when the callback changes
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
+
   useEffect(() => {
     const supabase = createClient();
+    const channelName = `rt-${table}-${filter ?? "all"}-${Date.now()}`;
 
-    const channelConfig: Record<string, string> = {
-      event,
-      schema,
-      table,
-    };
+    const channel = supabase.channel(channelName);
 
-    if (filter) {
-      channelConfig.filter = filter;
-    }
+    channel.on(
+      "postgres_changes" as "system",
+      {
+        event,
+        schema,
+        table,
+        ...(filter ? { filter } : {}),
+      },
+      (payload: unknown) => {
+        onEventRef.current(payload);
+      }
+    );
 
-    const channel = supabase
-      .channel(`realtime-${table}-${filter ?? "all"}`)
-      .on(
-        "postgres_changes" as never,
-        channelConfig,
-        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-          onEvent(payload);
-        }
-      )
-      .subscribe();
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [table, schema, event, filter, onEvent]);
+    // Only re-subscribe when the subscription parameters change, not the callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, schema, event, filter]);
 }

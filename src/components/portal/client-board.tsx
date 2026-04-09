@@ -226,9 +226,7 @@ export function ClientBoard({
   useRealtime({
     table: "requests",
     event: "UPDATE",
-    onEvent: useCallback(() => {
-      router.refresh();
-    }, [router]),
+    onEvent: () => router.refresh(),
   });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
