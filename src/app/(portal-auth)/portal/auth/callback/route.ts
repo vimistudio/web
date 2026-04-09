@@ -10,6 +10,38 @@ export async function GET(request: Request) {
     const supabase = createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Check if this is a client's first sign-in → notify admin
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role, client_id, full_name, clients(name)")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.role === "client" && profile.client_id) {
+          const clientName =
+            (profile as { clients?: { name?: string } | null }).clients?.name || "their project";
+
+          // Fire-and-forget: notify admin of first sign-in
+          const baseUrl = request.headers.get("x-forwarded-host")
+            ? `https://${request.headers.get("x-forwarded-host")}`
+            : origin;
+
+          fetch(`${baseUrl}/api/portal/notify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "client_signed_in",
+              client_name: clientName,
+            }),
+          }).catch(() => {});
+        }
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {

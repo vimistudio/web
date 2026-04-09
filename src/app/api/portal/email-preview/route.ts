@@ -5,6 +5,7 @@ import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
 import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
+import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") {
@@ -31,6 +32,9 @@ export async function GET(request: Request) {
       break;
     case "request":
       element = RequestCreatedEmail(RequestCreatedEmail.PreviewProps);
+      break;
+    case "signed-in":
+      element = ClientSignedInEmail(ClientSignedInEmail.PreviewProps);
       break;
     default:
       return NextResponse.json(

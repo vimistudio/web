@@ -51,8 +51,8 @@ export function EmailLayout({
             <Img
               src="https://vimistudio.com/logo-vimi.png"
               alt="Vimi Studio"
-              width={120}
-              height={39}
+              width="120"
+              height="39"
               style={logo}
             />
           </Section>
@@ -109,12 +109,13 @@ const container: React.CSSProperties = {
 
 const header: React.CSSProperties = {
   backgroundColor: BRAND.dark,
-  padding: "24px 32px",
-  textAlign: "center" as const,
+  padding: "20px 32px",
 };
 
 const logo: React.CSSProperties = {
-  margin: "0 auto",
+  width: "120px",
+  height: "39px",
+  maxWidth: "120px",
 };
 
 const content: React.CSSProperties = {
