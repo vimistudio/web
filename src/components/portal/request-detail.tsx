@@ -916,7 +916,7 @@ export function RequestDetail({
       {/* Comment Input — sticky on mobile */}
       <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-3 md:static md:border-t-0 md:px-0 md:py-0 z-30">
         <div
-          className={`flex items-end gap-2 mx-auto ${
+          className={`flex items-start gap-2 mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
@@ -925,9 +925,15 @@ export function RequestDetail({
               aria-label="Add a comment"
               placeholder="Add a comment..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => {
+                setComment(e.target.value);
+                // Auto-expand textarea
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = Math.min(el.scrollHeight, 200) + "px";
+              }}
               maxLength={2000}
-              className="min-h-[44px] max-h-32 resize-none"
+              className="min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -951,7 +957,7 @@ export function RequestDetail({
             aria-label="Send comment"
             onClick={handleSubmitComment}
             disabled={!comment.trim() || isSubmitting}
-            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px] mb-[18px] md:mb-0"
+            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px]"
           >
             {isSubmitting ? (
               <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
