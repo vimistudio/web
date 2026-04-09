@@ -65,27 +65,29 @@ function GalleryImageCard({
   const card = (
     <Card className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
       <div
-        className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
+        className={`${d.url ? "" : `${height} `}relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
       >
         {d.url && (
           <>
             {!loaded && (
-              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+              <div className="animate-pulse bg-gray-200 rounded-t-lg h-40" />
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={d.url}
               alt={d.file_name}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+              className={`w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
               onLoad={() => setLoaded(true)}
             />
           </>
         )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-          <Download01Icon
-            size={20}
-            className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
-          />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-end p-2 md:items-center md:justify-center">
+          <div className="w-8 h-8 md:w-auto md:h-auto flex items-center justify-center rounded-full bg-black/30 md:bg-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            <Download01Icon
+              size={20}
+              className="text-white drop-shadow-md"
+            />
+          </div>
         </div>
       </div>
       <CardContent className="p-3">
@@ -112,6 +114,7 @@ function GalleryImageCard({
 
 export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
   const [filter, setFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const pathname = usePathname();
@@ -121,8 +124,21 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
       ? deliverables
       : deliverables.filter((d) => d.requests.type === filter);
 
-  // Build image list for lightbox from the current filtered set
-  const lightboxImages = filtered
+  const sorted = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
+  const groups = new Map<string, Deliverable[]>();
+  sorted.forEach(d => {
+    const key = new Date(d.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(d);
+  });
+
+  // Build image list for lightbox from the current sorted set
+  const lightboxImages = sorted
     .filter((d) => d.mime_type?.startsWith("image/") && d.url)
     .map((d) => ({
       url: d.url!,
@@ -198,7 +214,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
         </Link>
       </div>
 
-      {/* Filter Chips */}
+      {/* Filter Chips + Sort Toggle */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
         {filterChips.map((chip) => {
           const isActive = filter === chip.key;
@@ -216,48 +232,61 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
             </button>
           );
         })}
+        <button
+          onClick={() => setSortOrder(s => s === "newest" ? "oldest" : "newest")}
+          className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full bg-[#f0eeec] shrink-0 transition-colors"
+        >
+          {sortOrder === "newest" ? "Newest" : "Oldest"}
+        </button>
       </div>
 
-      {/* Masonry Grid */}
-      {filtered.length > 0 ? (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-          {filtered.map((d, i) => {
-            const heights = [
-              "h-40",
-              "h-52",
-              "h-44",
-              "h-56",
-              "h-48",
-              "h-36",
-              "h-60",
-            ];
-            const height = heights[i % heights.length];
-            const gradient =
-              typeGradients[d.requests.type] ?? typeGradients.other;
+      {/* Masonry Grid — grouped by month */}
+      {sorted.length > 0 ? (
+        <div>
+          {Array.from(groups.entries()).map(([monthLabel, items]) => (
+            <div key={monthLabel}>
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">{monthLabel}</h3>
+              <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mb-8">
+                {items.map((d, i) => {
+                  const heights = [
+                    "h-40",
+                    "h-52",
+                    "h-44",
+                    "h-56",
+                    "h-48",
+                    "h-36",
+                    "h-60",
+                  ];
+                  const height = heights[i % heights.length];
+                  const gradient =
+                    typeGradients[d.requests.type] ?? typeGradients.other;
 
-            const isImage = d.mime_type?.startsWith("image/") && d.url;
-            const imageIndex = isImage
-              ? lightboxImages.findIndex((img) => img.url === d.url)
-              : -1;
+                  const isImage = d.mime_type?.startsWith("image/") && d.url;
+                  const imageIndex = isImage
+                    ? lightboxImages.findIndex((img) => img.url === d.url)
+                    : -1;
 
-            return (
-              <GalleryImageCard
-                key={d.id}
-                d={d}
-                height={height}
-                gradient={gradient}
-                deliveredDate={deliveredDate(d)}
-                onImageClick={
-                  imageIndex >= 0
-                    ? () => {
-                        setLightboxIndex(imageIndex);
-                        setLightboxOpen(true);
+                  return (
+                    <GalleryImageCard
+                      key={d.id}
+                      d={d}
+                      height={height}
+                      gradient={gradient}
+                      deliveredDate={deliveredDate(d)}
+                      onImageClick={
+                        imageIndex >= 0
+                          ? () => {
+                              setLightboxIndex(imageIndex);
+                              setLightboxOpen(true);
+                            }
+                          : undefined
                       }
-                    : undefined
-                }
-              />
-            );
-          })}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="text-center py-16">

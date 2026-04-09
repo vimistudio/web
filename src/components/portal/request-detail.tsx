@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft01Icon,
+  CalendarIcon,
   Cancel01Icon,
   CheckmarkCircle01Icon,
   SentIcon,
@@ -71,6 +72,7 @@ interface Request {
   priority: number;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
   client_id: string;
   clients: { name: string; slug: string } | null;
   deliverables: Deliverable[];
@@ -211,11 +213,13 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 
 function DeliverableCard({
   d,
+  version,
   onImageClick,
   onDelete,
   onToggleHidden,
 }: {
   d: Deliverable;
+  version?: number;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
@@ -290,9 +294,21 @@ function DeliverableCard({
                 <Download01Icon size={16} className="text-gray-700" />
               </div>
             </div>
+            {version && (
+              <div className="absolute bottom-2 left-2 z-10 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                v{version}
+              </div>
+            )}
           </div>
           <CardContent className="p-2">
             <p className="text-xs font-medium truncate">{d.file_name}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {[
+                d.mime_type?.split("/")[1]?.toUpperCase(),
+                d.file_size ? `${(d.file_size / 1024).toFixed(0)} KB` : null,
+                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              ].filter(Boolean).join(" · ")}
+            </p>
           </CardContent>
         </Card>
       </button>
@@ -323,11 +339,20 @@ function DeliverableCard({
         {adminActions}
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{d.file_name}</p>
+            <p className="text-sm font-medium truncate">
+              {d.file_name}
+              {version && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">
+                  v{version}
+                </span>
+              )}
+            </p>
             <p className="text-xs text-muted-foreground">
-              {d.file_size
-                ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB`
-                : ""}
+              {[
+                d.mime_type?.split("/")[1]?.toUpperCase(),
+                d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
+                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              ].filter(Boolean).join(" · ")}
             </p>
           </div>
           <Download01Icon size={16} className="text-muted-foreground shrink-0" />
@@ -710,6 +735,15 @@ export function RequestDetail({
 
   const downloadAllUrls = request.deliverables.filter((d) => d.url);
 
+  // Build version map: number deliverables by creation order
+  const deliverableVersions = new Map<string, number>();
+  [...request.deliverables]
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    .forEach((d, i) => deliverableVersions.set(d.id, i + 1));
+
   return (
     <div
       className={`mx-auto space-y-6 pb-24 md:pb-6 ${
@@ -774,6 +808,17 @@ export function RequestDetail({
           <span className="text-xs text-muted-foreground">
             · Updated {updatedDate}
           </span>
+          {request.due_date && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              · <CalendarIcon size={12} />
+              Due{" "}
+              {new Date(request.due_date).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          )}
         </div>
       </div>
 
@@ -873,6 +918,7 @@ export function RequestDetail({
                 <DeliverableCard
                   key={d.id}
                   d={d}
+                  version={deliverableVersions.get(d.id)}
                   onImageClick={
                     imageIndex >= 0
                       ? () => {
