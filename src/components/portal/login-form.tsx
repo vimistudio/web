@@ -1,7 +1,6 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 export function LoginForm() {
@@ -19,13 +18,13 @@ export function LoginForm() {
   };
 
   return (
-    <div className="space-y-4">
-      <Button
+    <div className="space-y-3">
+      <button
         onClick={handleGoogleLogin}
         disabled={isLoading}
-        className="w-full h-12 bg-white text-[#111111] border border-gray-300 hover:bg-gray-50 rounded-full font-medium text-sm"
+        className="w-full h-12 flex items-center justify-center gap-3 bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] hover:border-white/[0.15] text-white rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
+        <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
             fill="#4285F4"
@@ -43,12 +42,15 @@ export function LoginForm() {
             fill="#EA4335"
           />
         </svg>
-        {isLoading ? "Signing in..." : "Continue with Google"}
-      </Button>
-
-      <p className="text-center text-xs text-gray-600">
-        Invite-only access. Your studio will set up your account.
-      </p>
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Signing in...
+          </span>
+        ) : (
+          "Continue with Google"
+        )}
+      </button>
     </div>
   );
 }
