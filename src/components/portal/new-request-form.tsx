@@ -182,7 +182,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   const isLastStep = step === TOTAL_STEPS - 1;
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col min-h-[calc(100vh-120px)]">
+    <div className="max-w-lg mx-auto flex flex-col min-h-[calc(100dvh-120px)] pb-20 md:pb-0">
       {submitted ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500">
           {/* Animated checkmark circle */}
@@ -416,8 +416,9 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
           </div>
 
-          {/* Bottom bar: Back + Continue */}
-          <div className="flex items-center gap-3 pt-6 pb-2 mt-auto">
+          {/* Bottom bar: Back + Continue — sticky on mobile above bottom tabs */}
+          <div className="fixed bottom-14 left-0 right-0 bg-[#FAF9F7]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
+            <div className="flex items-center gap-3 max-w-lg mx-auto md:max-w-none">
             {step > 0 ? (
               <Button
                 variant="outline"
@@ -443,6 +444,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   : "Continue"}
               {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
             </Button>
+            </div>
           </div>
         </>
       )}
