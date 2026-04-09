@@ -1411,7 +1411,7 @@ export function RequestDetail({
       </div>
 
       {/* Comment Input — WhatsApp-style, sticky on mobile */}
-      <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 z-30">
+      <div className="fixed bottom-14 left-0 right-0 bg-background/95 backdrop-blur-sm border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 md:bg-background md:backdrop-blur-none z-30">
         <div
           className={`mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"
@@ -1486,7 +1486,7 @@ export function RequestDetail({
               }}
               maxLength={2000}
               rows={1}
-              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/60"
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

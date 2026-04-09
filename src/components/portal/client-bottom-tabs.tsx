@@ -17,8 +17,8 @@ export function ClientBottomTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 pb-safe">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center justify-around h-14">
         {clientTabs.map((tab) => {
           const isActive =
             tab.href === "/portal"

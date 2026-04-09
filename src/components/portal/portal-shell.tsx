@@ -47,9 +47,9 @@ export function PortalShell({ user, profile, children }: PortalShellProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
+    <div className="min-h-dvh flex flex-col bg-[#FAF9F7]">
       <ClientHeader user={user} profile={profile} />
-      <main className="flex-1 p-4 pb-20 md:pb-8 md:px-12">{children}</main>
+      <main className="flex-1 p-4 pb-18 md:pb-8 md:px-12">{children}</main>
       {/* Bottom tabs only on mobile */}
       <div className="md:hidden">
         <ClientBottomTabs />
