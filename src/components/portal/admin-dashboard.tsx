@@ -179,7 +179,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
 export function AdminDashboard({ stats, clients, recentActivity, adminName }: AdminDashboardProps) {
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString("en-US", {
+  const dateStr = now.toLocaleDateString(undefined, {
     weekday: "long",
     year: "numeric",
     month: "long",

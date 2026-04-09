@@ -70,7 +70,7 @@ const typeGradients: Record<string, string> = {
 };
 
 function RequestCardContent({ request }: { request: Request }) {
-  const timeSince = new Date(request.updated_at).toLocaleDateString("en-US", {
+  const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });

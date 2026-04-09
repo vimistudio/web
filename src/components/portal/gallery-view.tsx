@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Download01Icon } from "@/components/ui/icons";
@@ -47,6 +47,69 @@ const typeGradients: Record<string, string> = {
   other: "from-gray-300/80 to-gray-200/40",
 };
 
+function GalleryImageCard({
+  d,
+  height,
+  gradient,
+  deliveredDate,
+  onImageClick,
+}: {
+  d: Deliverable;
+  height: string;
+  gradient: string;
+  deliveredDate: string;
+  onImageClick?: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  const card = (
+    <Card className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
+      <div
+        className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
+      >
+        {d.url && (
+          <>
+            {!loaded && (
+              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={d.url}
+              alt={d.file_name}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+              onLoad={() => setLoaded(true)}
+            />
+          </>
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          <Download01Icon
+            size={20}
+            className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
+          />
+        </div>
+      </div>
+      <CardContent className="p-3">
+        <p className="text-sm font-medium truncate">{d.requests.title}</p>
+        <p className="text-xs text-muted-foreground">
+          Delivered {deliveredDate}
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  if (onImageClick) {
+    return (
+      <button type="button" className="w-full text-left" onClick={onImageClick}>
+        {card}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={`/portal/requests/${d.request_id}`}>{card}</Link>
+  );
+}
+
 export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
   const [filter, setFilter] = useState("all");
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -69,7 +132,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
     }));
 
   const deliveredDate = (d: Deliverable) =>
-    new Date(d.created_at).toLocaleDateString("en-US", {
+    new Date(d.created_at).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
     });
@@ -177,60 +240,22 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
               ? lightboxImages.findIndex((img) => img.url === d.url)
               : -1;
 
-            const cardContent = (
-              <Card
-                className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <div
-                  className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
-                >
-                  {d.url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={d.url}
-                      alt={d.file_name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                    <Download01Icon
-                      size={20}
-                      className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
-                    />
-                  </div>
-                </div>
-                <CardContent className="p-3">
-                  <p className="text-sm font-medium truncate">
-                    {d.requests.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Delivered {deliveredDate(d)}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-
-            // Image deliverables open in lightbox; non-images link to request detail
-            if (imageIndex >= 0) {
-              return (
-                <button
-                  type="button"
-                  key={d.id}
-                  className="w-full text-left"
-                  onClick={() => {
-                    setLightboxIndex(imageIndex);
-                    setLightboxOpen(true);
-                  }}
-                >
-                  {cardContent}
-                </button>
-              );
-            }
-
             return (
-              <Link href={`/portal/requests/${d.request_id}`} key={d.id}>
-                {cardContent}
-              </Link>
+              <GalleryImageCard
+                key={d.id}
+                d={d}
+                height={height}
+                gradient={gradient}
+                deliveredDate={deliveredDate(d)}
+                onImageClick={
+                  imageIndex >= 0
+                    ? () => {
+                        setLightboxIndex(imageIndex);
+                        setLightboxOpen(true);
+                      }
+                    : undefined
+                }
+              />
             );
           })}
         </div>

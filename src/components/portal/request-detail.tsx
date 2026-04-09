@@ -193,7 +193,7 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
         </p>
         <p className="text-xs text-emerald-700">
           Delivered on{" "}
-          {new Date(updatedAt).toLocaleDateString("en-US", {
+          {new Date(updatedAt).toLocaleDateString(undefined, {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -212,6 +212,7 @@ function DeliverableCard({
   onImageClick?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
+  const [loaded, setLoaded] = useState(false);
 
   if (isImage && d.url) {
     return (
@@ -222,12 +223,16 @@ function DeliverableCard({
       >
         <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
           <div className="aspect-[4/3] bg-gray-50 relative">
+            {!loaded && (
+              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={d.url}
               alt={d.file_name}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
               loading="lazy"
+              onLoad={() => setLoaded(true)}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
@@ -363,7 +368,7 @@ export function RequestDetail({
   const status = statusConfig[currentStatus];
   const priority = priorityLabels[request.priority];
   const requestedDate = new Date(request.created_at).toLocaleDateString(
-    "en-US",
+    undefined,
     { month: "short", day: "numeric", year: "numeric" }
   );
   const updatedDate = formatDistanceToNow(new Date(request.updated_at), {

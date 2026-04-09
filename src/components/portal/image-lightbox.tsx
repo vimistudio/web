@@ -189,7 +189,14 @@ export function ImageLightbox({
               />
               {!imageLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-8 w-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <div
+                    className="animate-pulse bg-white/5 rounded-lg"
+                    style={{
+                      width: "80vw",
+                      maxWidth: "800px",
+                      aspectRatio: "16/9",
+                    }}
+                  />
                 </div>
               )}
             </div>

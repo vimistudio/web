@@ -3,7 +3,11 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 
-export function LoginForm() {
+interface LoginFormProps {
+  error?: string;
+}
+
+export function LoginForm({ error }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -19,6 +23,13 @@ export function LoginForm() {
 
   return (
     <div className="space-y-3">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
+          <p className="text-sm text-red-400">
+            Something went wrong signing in. Please try again.
+          </p>
+        </div>
+      )}
       <button
         onClick={handleGoogleLogin}
         disabled={isLoading}
