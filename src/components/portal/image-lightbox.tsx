@@ -317,16 +317,26 @@ export function ImageLightbox({
                 </svg>
                 <span className="hidden sm:inline">Copy</span>
               </button>
-              <a
-                href={current.url}
-                download={current.fileName}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(current.url);
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = current.fileName;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    toast.error("Couldn't download file");
+                  }
+                }}
                 className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 <Download01Icon size={16} />
                 <span className="hidden sm:inline">Download</span>
-              </a>
+              </button>
             </div>
           </div>
 

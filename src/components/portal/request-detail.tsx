@@ -251,12 +251,24 @@ function DeliverableCard({
   }
 
   return (
-    <a
-      href={d.url ?? "#"}
-      download={d.file_name}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={d.url ? "block" : "block pointer-events-none opacity-50"}
+    <button
+      type="button"
+      className={`block w-full text-left ${!d.url ? "pointer-events-none opacity-50" : ""}`}
+      onClick={async () => {
+        if (!d.url) return;
+        try {
+          const res = await fetch(d.url);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = d.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch {
+          toast.error("Couldn't download file");
+        }
+      }}
     >
       <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
         <CardContent className="p-3 flex items-center gap-3">
@@ -271,7 +283,7 @@ function DeliverableCard({
           <Download01Icon size={16} className="text-muted-foreground shrink-0" />
         </CardContent>
       </Card>
-    </a>
+    </button>
   );
 }
 
