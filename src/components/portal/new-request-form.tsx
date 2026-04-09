@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Cancel01Icon } from "@/components/ui/icons";
-import { PlusSignIcon } from "@/components/ui/icons";
-import { Image01Icon } from "@/components/ui/icons";
-import Link from "next/link";
+import {
+  Cancel01Icon,
+  PlusSignIcon,
+  PenToolIcon,
+  SmartPhoneIcon,
+  BrowserIcon,
+  ColourSwatchIcon,
+  PresentationIcon,
+  MoreHorizontalIcon,
+  LeafIcon,
+  CalendarIcon,
+  FireIcon,
+} from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface NewRequestFormProps {
   clientId: string;
@@ -20,11 +29,18 @@ interface NewRequestFormProps {
 }
 
 const requestTypes = [
-  { value: "logo" as const, label: "Logo", icon: "◇" },
-  { value: "social" as const, label: "Social", icon: "◻" },
-  { value: "web" as const, label: "Web", icon: "◎" },
-  { value: "brand" as const, label: "Brand", icon: "♦" },
-  { value: "other" as const, label: "Other", icon: "•••" },
+  { value: "logo" as const, label: "Logo", Icon: PenToolIcon },
+  { value: "social" as const, label: "Social", Icon: SmartPhoneIcon },
+  { value: "web" as const, label: "Web", Icon: BrowserIcon },
+  { value: "brand" as const, label: "Brand", Icon: ColourSwatchIcon },
+  { value: "presentation" as const, label: "Deck", Icon: PresentationIcon },
+  { value: "other" as const, label: "Other", Icon: MoreHorizontalIcon },
+] as const;
+
+const priorities = [
+  { value: 1, label: "Whenever", hint: "No rush", Icon: LeafIcon, color: "border-gray-200 text-muted-foreground", activeBg: "border-gray-400 bg-gray-50 text-foreground" },
+  { value: 2, label: "This week", hint: "Normal", Icon: CalendarIcon, color: "border-gray-200 text-muted-foreground", activeBg: "border-[#909af7] bg-[#909af7]/10 text-[#909af7]" },
+  { value: 3, label: "Urgent", hint: "ASAP", Icon: FireIcon, color: "border-gray-200 text-muted-foreground", activeBg: "border-red-400 bg-red-50 text-red-600" },
 ] as const;
 
 type RequestType = (typeof requestTypes)[number]["value"];
@@ -34,17 +50,35 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   const [title, setTitle] = useState("");
   const [type, setType] = useState<RequestType>("social");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState(2);
+  const [dueDate, setDueDate] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+      const newFiles = Array.from(e.target.files);
+      setFiles((prev) => [...prev, ...newFiles]);
+
+      // Generate thumbnail previews
+      newFiles.forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPreviews((prev) => [...prev, reader.result as string]);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          setPreviews((prev) => [...prev, ""]);
+        }
+      });
     }
   };
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -53,7 +87,6 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
     const supabase = createClient();
 
-    // Create the request
     const { data: request, error } = await supabase
       .from("requests")
       .insert({
@@ -62,38 +95,45 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
         title: title.trim(),
         description: description.trim() || null,
         type,
+        priority,
+        due_date: dueDate || null,
         status: "queued",
       })
       .select()
       .single();
 
     if (error || !request) {
+      toast.error("Couldn't submit your request. Please try again.");
       setIsSubmitting(false);
       return;
     }
 
-    // Upload reference images if any
+    // Upload reference images
     if (files.length > 0) {
-      for (const file of files) {
-        const filePath = `${clientId}/${request.id}/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("references")
-          .upload(filePath, file);
+      await Promise.all(
+        files.map(async (file) => {
+          const filePath = `${clientId}/${request.id}/${Date.now()}-${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from("references")
+            .upload(filePath, file);
 
-        if (!uploadError) {
-          await supabase.from("reference_images").insert({
-            request_id: request.id,
-            uploaded_by: userId,
-            file_name: file.name,
-            file_path: filePath,
-            file_size: file.size,
-            mime_type: file.type,
-          });
-        }
-      }
+          if (!uploadError) {
+            await supabase.from("reference_images").insert({
+              request_id: request.id,
+              uploaded_by: userId,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              mime_type: file.type,
+            });
+          }
+        })
+      );
     }
 
+    toast.success("Request submitted! Your designer will see it shortly.");
     setIsSubmitting(false);
+
     if (isAdmin) {
       router.back();
     } else {
@@ -102,100 +142,163 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
     router.refresh();
   };
 
-  const backHref = isAdmin ? "javascript:history.back()" : "/portal";
-
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-lg mx-auto space-y-8 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors p-1"
         >
           <Cancel01Icon size={20} />
         </button>
         <div className="text-center">
-          <h1 className="font-semibold">New Request</h1>
-          {isAdmin && clientName && (
+          <h1 className="font-semibold text-lg">New Request</h1>
+          {clientName && (
             <p className="text-xs text-muted-foreground">for {clientName}</p>
           )}
         </div>
-        <div className="w-5" />
+        <div className="w-7" />
       </div>
 
-      {/* Title */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-          TITLE
-        </Label>
+      {/* Step 1: What do you need? */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">
+            What do you need?
+          </label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            A short name for your request
+          </p>
+        </div>
         <Input
-          placeholder="e.g. Email newsletter header"
+          placeholder="e.g. Instagram story templates, Logo refresh..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="h-12"
         />
       </div>
 
-      {/* Type */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-          TYPE
-        </Label>
-        <div className="flex flex-wrap gap-2">
+      {/* Step 2: What kind? */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium">
+          What kind of project?
+        </label>
+        <div className="grid grid-cols-3 gap-2">
           {requestTypes.map((t) => (
             <button
               key={t.value}
               onClick={() => setType(t.value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-colors ${
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
                 type === t.value
-                  ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                  ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7] shadow-sm"
                   : "border-gray-200 text-muted-foreground hover:border-gray-300"
               }`}
             >
-              <span>{t.icon}</span>
-              {t.label}
+              <t.Icon size={20} />
+              <span className="text-xs font-medium">{t.label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Description */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-          DESCRIPTION
-        </Label>
+      {/* Step 3: Tell us more */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">
+            Tell us more
+          </label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            What should it feel like? Who&apos;s the audience? Any specific sizes?
+          </p>
+        </div>
         <Textarea
-          placeholder="Describe what you need..."
+          placeholder="I need 3 Instagram story templates for our weekly specials. Warm, appetizing vibe. Brand colors. Include our logo and a spot for food photos..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="min-h-[120px] resize-none"
         />
       </div>
 
-      {/* Reference Images */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-          REFERENCES
-        </Label>
+      {/* Step 4: How urgent? */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium">
+          How urgent is this?
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {priorities.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setPriority(p.value)}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all ${
+                priority === p.value ? p.activeBg : p.color
+              }`}
+            >
+              <p.Icon size={18} />
+              <span className="text-xs font-medium">{p.label}</span>
+              <span className="text-[10px] opacity-60">{p.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 5: Due date (optional) */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">
+            Due date
+          </label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Optional. Leave blank if flexible.
+          </p>
+        </div>
+        <Input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          min={new Date().toISOString().split("T")[0]}
+          className="h-12"
+        />
+      </div>
+
+      {/* Step 6: Inspiration */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">
+            Any inspiration?
+          </label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Upload screenshots, Pinterest pins, or examples you love
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           {files.map((file, i) => (
             <div
               key={i}
-              className="relative w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center group"
+              className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center group"
             >
-              <span className="text-[10px] text-muted-foreground">
-                {file.name.split(".").pop()?.toUpperCase()}
-              </span>
+              {previews[i] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previews[i]}
+                  alt={file.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-[10px] text-muted-foreground">
+                  {file.name.split(".").pop()?.toUpperCase()}
+                </span>
+              )}
               <button
                 onClick={() => removeFile(i)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <Cancel01Icon size={10} />
+                <Cancel01Icon size={16} />
               </button>
             </div>
           ))}
-          <label className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors">
-            <PlusSignIcon size={16} className="text-muted-foreground" />
+          <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#909af7] hover:bg-[#909af7]/5 transition-colors">
+            <PlusSignIcon size={18} className="text-muted-foreground" />
             <span className="text-[10px] text-muted-foreground mt-0.5">
               Add
             </span>
@@ -214,7 +317,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
       <Button
         onClick={handleSubmit}
         disabled={!title.trim() || isSubmitting}
-        className="w-full h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium"
+        className="w-full h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl"
       >
         {isSubmitting ? "Submitting..." : "Submit Request"}
       </Button>
