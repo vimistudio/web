@@ -650,9 +650,7 @@ export function RequestDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">
-              {currentStatus === "review" || currentStatus === "done"
-                ? `Your Designs (${request.deliverables.length})`
-                : `Deliverables (${request.deliverables.length})`}
+              {`Your Designs (${request.deliverables.length})`}
             </h2>
             {downloadAllUrls.length >= 2 && (
               <Button
@@ -686,7 +684,7 @@ export function RequestDetail({
         <div className="border border-dashed border-muted-foreground/20 rounded-xl p-6 text-center">
           <p className="text-sm text-muted-foreground">
             {currentStatus === "in_progress"
-              ? "Deliverables will appear here once your designer uploads them."
+              ? "Your designs will show up here once they're ready."
               : "No deliverables for this request yet."}
           </p>
         </div>
@@ -908,7 +906,7 @@ export function RequestDetail({
 
         {allComments.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No comments yet. Start the conversation.
+            No messages yet. Say hi, or we&apos;ll reach out when we have updates.
           </p>
         )}
 

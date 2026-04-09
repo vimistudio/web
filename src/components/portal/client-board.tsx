@@ -79,7 +79,7 @@ function RequestCardContent({ request }: { request: Request }) {
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
       <div
-        className={`hidden md:block h-20 bg-gradient-to-br ${gradient}`}
+        className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
       />
       <CardContent className="p-3 md:p-4 space-y-2">
         <div className="flex items-start justify-between">
@@ -186,7 +186,7 @@ function DroppableColumn({
       </div>
       {requests.length === 0 && !isOver && (
         <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-xs text-muted-foreground">No requests</p>
+          <p className="text-xs text-muted-foreground">Nothing here yet</p>
         </div>
       )}
       {requests.length === 0 && isOver && canDrag && (
@@ -283,8 +283,7 @@ export function ClientBoard({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {requestCount} {requestCount === 1 ? "request" : "requests"} in
-            progress
+            We&apos;re working on {requestCount} design{requestCount === 1 ? "" : "s"} for you
           </p>
         </div>
 
@@ -425,16 +424,14 @@ export function ClientBoard({
         })}
 
         {requests.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              No requests yet. Start by submitting your first design request.
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
+              <PlusSignIcon size={24} className="text-[#909af7]" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Your studio is ready</h2>
+            <p className="text-muted-foreground max-w-sm mb-6">
+              What would you like us to design first? Submit a request and your designer will get started.
             </p>
-            <Link href="/portal/requests/new">
-              <Button className="gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
-                <PlusSignIcon size={16} color="white" />
-                New Request
-              </Button>
-            </Link>
           </div>
         )}
       </div>

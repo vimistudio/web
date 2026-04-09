@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 
 interface Deliverable {
   id: string;
+  request_id: string;
   file_name: string;
   file_path: string;
   file_size: number | null;
@@ -159,8 +160,8 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
               typeGradients[d.requests.type] ?? typeGradients.other;
 
             return (
+              <Link href={`/portal/requests/${d.request_id}`} key={d.id}>
               <Card
-                key={d.id}
                 className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow"
               >
                 <div
@@ -190,6 +191,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                   </p>
                 </CardContent>
               </Card>
+              </Link>
             );
           })}
         </div>

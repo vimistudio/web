@@ -45,7 +45,15 @@ export function StatusChangedEmail({
       ctaUrl={requestUrl}
       ctaLabel={getCta(newStatus)}
     >
-      <Heading style={heading}>Status Updated</Heading>
+      <Heading style={heading}>
+        {newStatus === "in_progress"
+          ? "Your Designer Started Working"
+          : newStatus === "review"
+            ? "Your Designs Are Ready for Review"
+            : newStatus === "done"
+              ? "Your Designs Are Delivered"
+              : "Status Updated"}
+      </Heading>
       <Text style={meta}>{requestTitle}</Text>
 
       {/* Status stepper */}

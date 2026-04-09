@@ -22,7 +22,7 @@ export function ClientBottomTabs() {
         {clientTabs.map((tab) => {
           const isActive =
             tab.href === "/portal"
-              ? pathname === "/portal"
+              ? pathname === "/portal" || pathname.startsWith("/portal/requests")
               : pathname.startsWith(tab.href);
 
           return (

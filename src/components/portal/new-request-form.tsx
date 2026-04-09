@@ -371,9 +371,9 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   )}
                   <button
                     onClick={() => removeFile(i)}
-                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   >
-                    <Cancel01Icon size={16} />
+                    <Cancel01Icon size={12} />
                   </button>
                 </div>
               ))}

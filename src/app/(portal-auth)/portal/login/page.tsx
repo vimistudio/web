@@ -57,7 +57,7 @@ export default async function LoginPage() {
                 Welcome to your studio
               </h1>
               <p className="text-sm text-[#6B6F99]">
-                Sign in to manage your projects and explore deliverables
+                Sign in to see your designs and collaborate with your studio
               </p>
             </div>
 
