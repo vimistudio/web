@@ -71,6 +71,18 @@ export function AdminSettingsView({
       return;
     }
 
+    // Send invite email (fire-and-forget)
+    const clientName = clients.find((c) => c.id === clientId)?.name || "your project";
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "invite",
+        invite_email: email.trim().toLowerCase(),
+        client_name: clientName,
+      }),
+    }).catch(() => {});
+
     setEmail("");
     setClientId("");
     setIsInviting(false);

@@ -43,10 +43,23 @@ export default async function GalleryPage() {
     .eq("requests.client_id", clientId)
     .order("created_at", { ascending: false });
 
+  // Generate signed URLs for image deliverables
+  const withUrls = await Promise.all(
+    (deliverables ?? []).map(async (d) => {
+      if (d.mime_type?.startsWith("image/")) {
+        const { data } = await supabase.storage
+          .from("deliverables")
+          .createSignedUrl(d.file_path, 3600);
+        return { ...d, url: data?.signedUrl ?? null };
+      }
+      return { ...d, url: null };
+    })
+  );
+
   return (
     <GalleryView
       clientName={client?.name ?? "Your Project"}
-      deliverables={deliverables ?? []}
+      deliverables={withUrls}
     />
   );
 }

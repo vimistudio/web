@@ -265,6 +265,18 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
       } else {
         toast.success(`Moved to ${columns.find((c) => c.key === newStatus)?.label}`);
         router.refresh();
+
+        // Fire-and-forget email notification
+        fetch("/api/portal/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "status_changed",
+            request_id: requestId,
+            new_status: newStatus,
+            old_status: request.status,
+          }),
+        }).catch(() => {});
       }
     },
     [requests, router]

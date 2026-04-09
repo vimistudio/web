@@ -45,9 +45,14 @@ export async function GET(request: Request) {
   const { data: requests } = await requestsQuery;
 
   // Search comments
+  // Use !inner join so .eq on the joined table works as a WHERE clause
   let commentsQuery = supabase
     .from("comments")
-    .select("id, body, created_at, request_id, requests(id, title)")
+    .select(
+      isAdmin
+        ? "id, body, created_at, request_id, requests(id, title)"
+        : "id, body, created_at, request_id, requests!inner(id, title, client_id)"
+    )
     .ilike("body", pattern)
     .limit(5);
 
@@ -60,7 +65,11 @@ export async function GET(request: Request) {
   // Search deliverables
   let deliverablesQuery = supabase
     .from("deliverables")
-    .select("id, file_name, mime_type, request_id, requests(id, title)")
+    .select(
+      isAdmin
+        ? "id, file_name, mime_type, request_id, requests(id, title)"
+        : "id, file_name, mime_type, request_id, requests!inner(id, title, client_id)"
+    )
     .ilike("file_name", pattern)
     .limit(5);
 
