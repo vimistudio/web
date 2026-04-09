@@ -287,11 +287,12 @@ export function ImageLightbox({
                   // Safari requires clipboard.write in the same gesture tick.
                   // Passing a Promise to ClipboardItem avoids the async gap.
                   if (navigator.clipboard && window.ClipboardItem) {
+                    const mimeType = current.mimeType || "image/png";
                     const blobPromise = fetch(current.url).then((res) => res.blob());
                     navigator.clipboard
                       .write([
                         new ClipboardItem({
-                          "image/png": blobPromise,
+                          [mimeType]: blobPromise,
                         }),
                       ])
                       .then(() => toast.success("Copied to clipboard"))

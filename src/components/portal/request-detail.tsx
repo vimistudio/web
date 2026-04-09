@@ -703,24 +703,21 @@ export function RequestDetail({
                     let totalSize = 0;
                     const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
 
-                    await Promise.all(
-                      downloadAllUrls.map(async (d) => {
-                        try {
-                          const res = await fetch(d.url!);
-                          if (!res.ok) { failed++; return; }
-                          const blob = await res.blob();
-                          totalSize += blob.size;
-                          if (totalSize > MAX_SIZE) return;
-                          zip.file(d.file_name, blob);
-                        } catch {
-                          failed++;
+                    // Sequential fetch to avoid holding all blobs in memory at once
+                    for (const d of downloadAllUrls) {
+                      try {
+                        const res = await fetch(d.url!);
+                        if (!res.ok) { failed++; continue; }
+                        const blob = await res.blob();
+                        totalSize += blob.size;
+                        if (totalSize > MAX_SIZE) {
+                          toast.error("Files are too large to zip. Please download individually.", { id: toastId });
+                          return;
                         }
-                      })
-                    );
-
-                    if (totalSize > MAX_SIZE) {
-                      toast.error("Files are too large to zip. Please download individually.", { id: toastId });
-                      return;
+                        zip.file(d.file_name, blob);
+                      } catch {
+                        failed++;
+                      }
                     }
 
                     const content = await zip.generateAsync({ type: "blob" });

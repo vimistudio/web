@@ -31,25 +31,33 @@ export async function GET(request: Request) {
             (profile as { clients?: { name?: string } | null }).clients?.name || "their project";
 
           // Fire-and-forget: notify admin of first sign-in
-          // Send directly — no HTTP roundtrip needed since we're server-side
-          const { data: admins } = await supabase
-            .from("profiles")
-            .select("email")
-            .eq("role", "admin");
-
-          for (const admin of admins ?? []) {
-            if (!admin.email) continue;
-            sendEmail({
-              to: admin.email,
-              subject: `${profile.full_name || "A client"} just signed in to ${clientName}'s portal`,
-              react: ClientSignedInEmail({
-                clientUserName: profile.full_name || "A client",
-                clientUserEmail: user.email || "",
-                clientName,
-                portalUrl: "https://vimistudio.com/portal/admin",
-              }),
-            }).catch(() => {});
-          }
+          // Entire block is non-blocking — don't delay the redirect
+          const callerName = profile.full_name || "A client";
+          const callerEmail = user.email || "";
+          void (async () => {
+            try {
+              const { data: admins } = await supabase
+                .from("profiles")
+                .select("email")
+                .eq("role", "admin");
+              await Promise.allSettled(
+                (admins ?? [])
+                  .filter((a) => a.email)
+                  .map((admin) =>
+                    sendEmail({
+                      to: admin.email!,
+                      subject: `${callerName} just signed in to ${clientName}'s portal`,
+                      react: ClientSignedInEmail({
+                        clientUserName: callerName,
+                        clientUserEmail: callerEmail,
+                        clientName,
+                        portalUrl: "https://vimistudio.com/portal/admin",
+                      }),
+                    })
+                  )
+              );
+            } catch {}
+          })();
         }
       }
 

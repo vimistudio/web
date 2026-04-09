@@ -93,22 +93,26 @@ export async function POST(request: Request) {
 
       const clientName = client_name || "a project";
       const callerName = callerProfile.full_name || "A client";
-      let sent = 0;
-
-      for (const admin of admins ?? []) {
-        if (!admin.email || admin.id === user.id) continue;
-        const result = await sendEmail({
-          to: admin.email,
-          subject: `${callerName} just signed in to ${clientName}'s portal`,
-          react: ClientSignedInEmail({
-            clientUserName: callerName,
-            clientUserEmail: user.email || "",
-            clientName,
-            portalUrl: "https://vimistudio.com/portal/admin",
-          }),
-        });
-        if (result.success) sent++;
-      }
+      const eligible = (admins ?? []).filter(
+        (a) => a.email && a.id !== user.id
+      );
+      const results = await Promise.allSettled(
+        eligible.map((admin) =>
+          sendEmail({
+            to: admin.email!,
+            subject: `${callerName} just signed in to ${clientName}'s portal`,
+            react: ClientSignedInEmail({
+              clientUserName: callerName,
+              clientUserEmail: user.email || "",
+              clientName,
+              portalUrl: "https://vimistudio.com/portal/admin",
+            }),
+          })
+        )
+      );
+      const sent = results.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
       return NextResponse.json({ success: true, sent });
     }
 
