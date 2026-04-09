@@ -14,6 +14,7 @@ interface Deliverable {
   file_size: number | null;
   mime_type: string | null;
   created_at: string;
+  url: string | null;
   requests: {
     title: string;
     type: string;
@@ -163,8 +164,16 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                 className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow"
               >
                 <div
-                  className={`${height} bg-gradient-to-b ${gradient} relative`}
+                  className={`${height} relative overflow-hidden ${d.url ? "" : `bg-gradient-to-b ${gradient}`}`}
                 >
+                  {d.url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={d.url}
+                      alt={d.file_name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                     <Download01Icon
                       size={20}

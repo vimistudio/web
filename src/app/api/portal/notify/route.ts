@@ -95,13 +95,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
+    // Ownership check: clients can only notify for their own client's requests
+    const isCallerAdmin = callerProfile.role === "admin";
+    if (!isCallerAdmin && req.client_id !== callerProfile.client_id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Determine recipients (email from profiles table)
     interface Recipient {
       id: string;
       email: string | null;
     }
     let recipients: Recipient[] = [];
-    const isCallerAdmin = callerProfile.role === "admin";
 
     if (isCallerAdmin) {
       // Admin action → notify client users for this request's client
