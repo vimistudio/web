@@ -516,9 +516,7 @@ export function RequestDetail({
     table: "comments",
     event: "INSERT",
     filter: `request_id=eq.${request.id}`,
-    onEvent: useCallback(() => {
-      router.refresh();
-    }, [router]),
+    onEvent: () => router.refresh(),
   });
 
   // Scroll to bottom of comments after posting

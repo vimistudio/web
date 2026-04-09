@@ -66,16 +66,13 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
   useRealtime({
     table: "notifications",
     event: "INSERT",
-    onEvent: useCallback(
-      (payload) => {
-        const newNotif = payload.new as Record<string, unknown>;
-        if (newNotif) {
-          fetchNotifications();
-          toast(newNotif.title as string, { duration: 4000 });
-        }
-      },
-      [fetchNotifications]
-    ),
+    onEvent: (payload) => {
+      const newNotif = (payload as { new?: Record<string, unknown> }).new;
+      if (newNotif) {
+        fetchNotifications();
+        toast(newNotif.title as string, { duration: 4000 });
+      }
+    },
   });
 
   const markAllRead = async () => {

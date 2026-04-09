@@ -32,10 +32,11 @@ export default async function AdminClientBoardPage({
   if (!client) notFound();
 
   // Fetch requests with related data
+  // Note: no profiles:created_by join — created_by FK points to auth.users, not profiles
   const { data: requests } = await supabase
     .from("requests")
     .select(
-      "*, deliverables(id, file_name, file_path, mime_type), comments(id), profiles:created_by(full_name, avatar_url)"
+      "*, deliverables(id, file_name, file_path, mime_type), comments(id)"
     )
     .eq("client_id", client.id)
     .order("priority", { ascending: false })

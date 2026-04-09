@@ -221,9 +221,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
   useRealtime({
     table: "requests",
     event: "UPDATE",
-    onEvent: useCallback(() => {
-      router.refresh();
-    }, [router]),
+    onEvent: () => router.refresh(),
   });
 
   const openCount = requests.filter((r) => r.status !== "done").length;

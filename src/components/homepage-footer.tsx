@@ -165,7 +165,7 @@ export function HomepageFooter() {
               className="flex-shrink-0 cursor-pointer"
             >
               <Image
-                src="/vimi-logo-dark.svg"
+                src="/vimi-logo-light.svg"
                 alt="Vimi Studio"
                 width={160}
                 height={52}
