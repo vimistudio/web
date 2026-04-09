@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Download01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ImageLightbox } from "@/components/portal/image-lightbox";
 
 interface Deliverable {
   id: string;
@@ -48,12 +49,24 @@ const typeGradients: Record<string, string> = {
 
 export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
   const [filter, setFilter] = useState("all");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const pathname = usePathname();
 
   const filtered =
     filter === "all"
       ? deliverables
       : deliverables.filter((d) => d.requests.type === filter);
+
+  // Build image list for lightbox from the current filtered set
+  const lightboxImages = filtered
+    .filter((d) => d.mime_type?.startsWith("image/") && d.url)
+    .map((d) => ({
+      url: d.url!,
+      fileName: d.file_name,
+      fileSize: d.file_size,
+      mimeType: d.mime_type,
+    }));
 
   const deliveredDate = (d: Deliverable) =>
     new Date(d.created_at).toLocaleDateString("en-US", {
@@ -159,8 +172,12 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
             const gradient =
               typeGradients[d.requests.type] ?? typeGradients.other;
 
-            return (
-              <Link href={`/portal/requests/${d.request_id}`} key={d.id}>
+            const isImage = d.mime_type?.startsWith("image/") && d.url;
+            const imageIndex = isImage
+              ? lightboxImages.findIndex((img) => img.url === d.url)
+              : -1;
+
+            const cardContent = (
               <Card
                 className="break-inside-avoid overflow-hidden group cursor-pointer hover:shadow-md transition-shadow"
               >
@@ -191,6 +208,28 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                   </p>
                 </CardContent>
               </Card>
+            );
+
+            // Image deliverables open in lightbox; non-images link to request detail
+            if (imageIndex >= 0) {
+              return (
+                <button
+                  type="button"
+                  key={d.id}
+                  className="w-full text-left"
+                  onClick={() => {
+                    setLightboxIndex(imageIndex);
+                    setLightboxOpen(true);
+                  }}
+                >
+                  {cardContent}
+                </button>
+              );
+            }
+
+            return (
+              <Link href={`/portal/requests/${d.request_id}`} key={d.id}>
+                {cardContent}
               </Link>
             );
           })}
@@ -203,6 +242,16 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
               : `No ${filter} deliverables yet.`}
           </p>
         </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImages.length > 0 && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       )}
     </div>
   );

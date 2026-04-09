@@ -29,7 +29,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import { useRealtime } from "@/hooks/use-realtime";
+import { ImageLightbox } from "@/components/portal/image-lightbox";
 
 // --- Types ---
 
@@ -202,17 +204,21 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
   );
 }
 
-function DeliverableCard({ d }: { d: Deliverable }) {
+function DeliverableCard({
+  d,
+  onImageClick,
+}: {
+  d: Deliverable;
+  onImageClick?: () => void;
+}) {
   const isImage = d.mime_type?.startsWith("image/");
 
   if (isImage && d.url) {
     return (
-      <a
-        href={d.url}
-        download={d.file_name}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
+      <button
+        type="button"
+        onClick={onImageClick}
+        className="block w-full text-left"
       >
         <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
           <div className="aspect-[4/3] bg-gray-50 relative">
@@ -233,7 +239,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
             <p className="text-xs font-medium truncate">{d.file_name}</p>
           </CardContent>
         </Card>
-      </a>
+      </button>
     );
   }
 
@@ -330,11 +336,23 @@ export function RequestDetail({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [optimisticComments, setOptimisticComments] = useState<Comment[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const allComments = [...request.comments, ...optimisticComments];
+
+  // Build image list for lightbox (only image deliverables with URLs)
+  const lightboxImages = request.deliverables
+    .filter((d) => d.mime_type?.startsWith("image/") && d.url)
+    .map((d) => ({
+      url: d.url!,
+      fileName: d.file_name,
+      fileSize: d.file_size,
+      mimeType: d.mime_type,
+    }));
 
   const backHref = isImpersonating
     ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
@@ -424,7 +442,15 @@ export function RequestDetail({
       }
 
       if (newStatus === "done") {
-        toast.success("Request approved! Your files are ready to download.");
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.7 },
+          colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
+        });
+        toast.success("Approved! Your designs are ready to download.", {
+          duration: 5000,
+        });
       } else {
         toast.success(`Status updated to ${statusConfig[newStatus].label}`);
       }
@@ -675,9 +701,27 @@ export function RequestDetail({
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables.map((d) => (
-              <DeliverableCard key={d.id} d={d} />
-            ))}
+            {request.deliverables.map((d) => {
+              const isImage = d.mime_type?.startsWith("image/") && d.url;
+              const imageIndex = isImage
+                ? lightboxImages.findIndex((img) => img.url === d.url)
+                : -1;
+
+              return (
+                <DeliverableCard
+                  key={d.id}
+                  d={d}
+                  onImageClick={
+                    imageIndex >= 0
+                      ? () => {
+                          setLightboxIndex(imageIndex);
+                          setLightboxOpen(true);
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       ) : currentStatus === "queued" ? null : (
@@ -967,6 +1011,16 @@ export function RequestDetail({
           </Button>
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {lightboxImages.length > 0 && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
+      )}
     </div>
   );
 }
