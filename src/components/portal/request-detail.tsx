@@ -719,8 +719,26 @@ export function RequestDetail({
         }).catch(() => {});
       }
     },
-    [router]
+    [router, request.id]
   );
+
+  const handleRevealAll = useCallback(async () => {
+    const hidden = request.deliverables.filter((d) => d.is_hidden);
+    if (hidden.length === 0) return;
+    const supabase = createClient();
+    await Promise.all(
+      hidden.map((d) =>
+        supabase.from("deliverables").update({ is_hidden: false }).eq("id", d.id)
+      )
+    );
+    toast.success(`Revealed ${hidden.length} file${hidden.length > 1 ? "s" : ""}`);
+    router.refresh();
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "deliverable_uploaded", request_id: request.id }),
+    }).catch(() => {});
+  }, [request.deliverables, request.id, router]);
 
   const handleDeleteDeliverable = useCallback(
     async (deliverable: Deliverable) => {
@@ -883,22 +901,7 @@ export function RequestDetail({
                 variant="ghost"
                 size="sm"
                 className="text-xs h-7 gap-1 text-amber-600 hover:text-amber-700"
-                onClick={async () => {
-                  const supabase = createClient();
-                  await Promise.all(
-                    hiddenDeliverables.map((d) =>
-                      supabase.from("deliverables").update({ is_hidden: false }).eq("id", d.id)
-                    )
-                  );
-                  toast.success(`Revealed ${hiddenDeliverables.length} file${hiddenDeliverables.length > 1 ? "s" : ""}`);
-                  router.refresh();
-                  // Notify client
-                  fetch("/api/portal/notify", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ type: "deliverable_uploaded", request_id: request.id }),
-                  }).catch(() => {});
-                }}
+                onClick={handleRevealAll}
               >
                 <ViewIcon size={12} />
                 Reveal All ({hiddenDeliverables.length})

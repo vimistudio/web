@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import {
   FireIcon,
@@ -174,10 +175,12 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
       {/* Tabs + Sort */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Status tabs */}
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 flex-wrap" role="tablist" aria-label="Filter by status">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
+              role="tab"
+              aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`
                 px-3 py-1.5 rounded-full text-sm font-medium transition-colors
@@ -249,13 +252,14 @@ function QueueRow({
   request: QueueRequest;
   adminId: string;
 }) {
+  const router = useRouter();
   const newComment = hasNewComment(request, adminId);
   const deliverableCount = request.deliverables.length;
   const commentCount = request.comments.length;
 
   return (
-    <Link
-      href={`/portal/requests/${request.id}`}
+    <div
+      onClick={() => router.push(`/portal/requests/${request.id}`)}
       className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors group cursor-pointer"
     >
       {/* Status dot */}
@@ -386,7 +390,7 @@ function QueueRow({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

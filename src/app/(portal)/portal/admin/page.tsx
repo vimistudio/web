@@ -39,11 +39,14 @@ export default async function AdminDashboardPage() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  // Get all comments for last-active calculation (just timestamps + request for client mapping)
+  // Get recent comments for last-active calculation (last 90 days, capped at 500)
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: allComments } = await supabase
     .from("comments")
     .select("created_at, request_id, requests(client_id)")
-    .order("created_at", { ascending: false });
+    .gte("created_at", ninetyDaysAgo)
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   // Aggregate stats
   const totalClients = clients?.length ?? 0;
