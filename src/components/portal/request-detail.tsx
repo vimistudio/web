@@ -1133,14 +1133,14 @@ export function RequestDetail({
         <div ref={commentsEndRef} />
       </div>
 
-      {/* Comment Input — sticky on mobile */}
-      <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-3 md:static md:border-t-0 md:px-0 md:py-0 z-30">
+      {/* Comment Input — WhatsApp-style, sticky on mobile */}
+      <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 z-30">
         <div
-          className={`flex items-start gap-2 mx-auto ${
+          className={`mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
-          <div className="flex-1 space-y-1">
+          <div className="flex items-end gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-[#909af7]/30 focus-within:border-[#909af7]/40 transition-all">
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
@@ -1153,7 +1153,8 @@ export function RequestDetail({
                 el.style.height = Math.min(el.scrollHeight, 200) + "px";
               }}
               maxLength={2000}
-              className="min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
+              rows={1}
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/60"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -1161,30 +1162,33 @@ export function RequestDetail({
                 }
               }}
             />
-            <div className="hidden md:flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground">
-                Enter to send, Shift+Enter for new line
-              </p>
-              {comment.length > 1500 && (
-                <p className="text-[10px] text-muted-foreground">
-                  {comment.length}/2000
-                </p>
+            <button
+              aria-label="Send comment"
+              onClick={handleSubmitComment}
+              disabled={!comment.trim() || isSubmitting}
+              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                comment.trim()
+                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white scale-100"
+                  : "bg-gray-100 text-gray-400 scale-90"
+              }`}
+            >
+              {isSubmitting ? (
+                <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <SentIcon size={14} color={comment.trim() ? "white" : "currentColor"} />
               )}
-            </div>
+            </button>
           </div>
-          <Button
-            size="icon"
-            aria-label="Send comment"
-            onClick={handleSubmitComment}
-            disabled={!comment.trim() || isSubmitting}
-            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px]"
-          >
-            {isSubmitting ? (
-              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <SentIcon size={18} color="white" />
+          <div className="hidden md:flex items-center justify-between px-1 mt-1">
+            <p className="text-[10px] text-muted-foreground/50">
+              Enter to send, Shift+Enter for new line
+            </p>
+            {comment.length > 1500 && (
+              <p className="text-[10px] text-muted-foreground">
+                {comment.length}/2000
+              </p>
             )}
-          </Button>
+          </div>
         </div>
       </div>
 
