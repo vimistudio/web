@@ -256,23 +256,29 @@ export function ImageLightbox({
             {/* Action buttons */}
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch(current.url);
-                    const blob = await res.blob();
-                    if (navigator.clipboard && window.ClipboardItem) {
-                      await navigator.clipboard.write([
-                        new ClipboardItem({ [blob.type]: blob }),
-                      ]);
-                      toast.success("Copied to clipboard");
-                    } else if (navigator.share) {
-                      const file = new File([blob], current.fileName, { type: blob.type });
-                      await navigator.share({ files: [file] });
-                    } else {
-                      toast.error("Clipboard not supported in this browser");
-                    }
-                  } catch {
-                    toast.error("Couldn't copy image");
+                onClick={() => {
+                  // Safari requires clipboard.write in the same gesture tick.
+                  // Passing a Promise to ClipboardItem avoids the async gap.
+                  if (navigator.clipboard && window.ClipboardItem) {
+                    const blobPromise = fetch(current.url).then((res) => res.blob());
+                    navigator.clipboard
+                      .write([
+                        new ClipboardItem({
+                          "image/png": blobPromise,
+                        }),
+                      ])
+                      .then(() => toast.success("Copied to clipboard"))
+                      .catch(() => toast.error("Couldn't copy image"));
+                  } else if (navigator.share) {
+                    fetch(current.url)
+                      .then((res) => res.blob())
+                      .then((blob) => {
+                        const file = new File([blob], current.fileName, { type: blob.type });
+                        return navigator.share({ files: [file] });
+                      })
+                      .catch(() => toast.error("Couldn't share image"));
+                  } else {
+                    toast.error("Clipboard not supported in this browser");
                   }
                 }}
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"

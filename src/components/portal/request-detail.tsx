@@ -691,19 +691,46 @@ export function RequestDetail({
                 size="sm"
                 className="text-xs h-7 gap-1"
                 onClick={async () => {
-                  const toastId = toast.loading("Preparing your files...");
+                  // Guard: warn if too many files
+                  if (downloadAllUrls.length > 20) {
+                    toast.error("Too many files to download at once. Please download individually.");
+                    return;
+                  }
+                  const toastId = toast.loading(`Preparing ${downloadAllUrls.length} files...`);
                   try {
                     const zip = new JSZip();
+                    let failed = 0;
+                    let totalSize = 0;
+                    const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
+
                     await Promise.all(
                       downloadAllUrls.map(async (d) => {
-                        const res = await fetch(d.url!);
-                        const blob = await res.blob();
-                        zip.file(d.file_name, blob);
+                        try {
+                          const res = await fetch(d.url!);
+                          if (!res.ok) { failed++; return; }
+                          const blob = await res.blob();
+                          totalSize += blob.size;
+                          if (totalSize > MAX_SIZE) return;
+                          zip.file(d.file_name, blob);
+                        } catch {
+                          failed++;
+                        }
                       })
                     );
+
+                    if (totalSize > MAX_SIZE) {
+                      toast.error("Files are too large to zip. Please download individually.", { id: toastId });
+                      return;
+                    }
+
                     const content = await zip.generateAsync({ type: "blob" });
                     saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
-                    toast.success("Download ready!", { id: toastId });
+
+                    if (failed > 0) {
+                      toast.warning(`Downloaded, but ${failed} file${failed > 1 ? "s" : ""} couldn't be included.`, { id: toastId });
+                    } else {
+                      toast.success("Download ready!", { id: toastId });
+                    }
                   } catch {
                     toast.error("Couldn't prepare the download", { id: toastId });
                   }
