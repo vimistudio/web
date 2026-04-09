@@ -40,9 +40,9 @@ type StatusTab = "all" | "queued" | "in_progress" | "review";
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "queued", label: "Queued" },
+  { key: "queued", label: "Up Next" },
   { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Review" },
+  { key: "review", label: "Ready for Review" },
 ];
 
 type SortOption = "priority" | "newest" | "oldest" | "due_date";
@@ -61,9 +61,9 @@ const statusDotColor: Record<string, string> = {
 };
 
 const statusLabel: Record<string, string> = {
-  queued: "Queued",
+  queued: "Up Next",
   in_progress: "In Progress",
-  review: "Review",
+  review: "Ready for Review",
 };
 
 const typeColors: Record<string, string> = {

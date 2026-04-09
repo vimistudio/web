@@ -10,10 +10,10 @@ interface StatusChangedEmailProps {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  queued: "Queued",
+  queued: "Up Next",
   in_progress: "In Progress",
-  review: "Review",
-  done: "Done",
+  review: "Ready for You",
+  done: "Delivered",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,8 +24,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function getCta(newStatus: string) {
-  if (newStatus === "review") return "Review & Approve";
-  if (newStatus === "done") return "Download Your Files";
+  if (newStatus === "review") return "See Your Designs";
+  if (newStatus === "done") return "Download Your Designs";
   return "View Request";
 }
 
@@ -51,7 +51,7 @@ export function StatusChangedEmail({
           : newStatus === "review"
             ? "Your Designs Are Ready for Review"
             : newStatus === "done"
-              ? "Your Designs Are Delivered"
+              ? "Your Designs Have Been Delivered"
               : "Status Updated"}
       </Heading>
       <Text style={meta}>{requestTitle}</Text>

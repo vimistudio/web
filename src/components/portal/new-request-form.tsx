@@ -31,12 +31,12 @@ interface NewRequestFormProps {
 }
 
 const requestTypes = [
-  { value: "logo" as const, label: "Logo Design", desc: "Logos, wordmarks, icons", Icon: PenToolIcon },
-  { value: "social" as const, label: "Social Media", desc: "Posts, stories, reels", Icon: SmartPhoneIcon },
-  { value: "web" as const, label: "Website", desc: "Pages, banners, UI", Icon: BrowserIcon },
-  { value: "brand" as const, label: "Branding", desc: "Identity, guidelines", Icon: ColourSwatchIcon },
-  { value: "presentation" as const, label: "Presentation", desc: "Decks, slides", Icon: PresentationIcon },
-  { value: "other" as const, label: "Something Else", desc: "Tell us what you need", Icon: MoreHorizontalIcon },
+  { value: "logo" as const, label: "Logo Design", desc: "A logo or icon for your brand", Icon: PenToolIcon },
+  { value: "social" as const, label: "Social Media", desc: "Posts for Instagram, Facebook, TikTok...", Icon: SmartPhoneIcon },
+  { value: "web" as const, label: "Website", desc: "Web pages, banners, landing pages", Icon: BrowserIcon },
+  { value: "brand" as const, label: "Branding", desc: "Colors, fonts, brand guidelines", Icon: ColourSwatchIcon },
+  { value: "presentation" as const, label: "Presentation", desc: "Pitch decks, slides, one-pagers", Icon: PresentationIcon },
+  { value: "other" as const, label: "Something Else", desc: "Anything else you need designed", Icon: MoreHorizontalIcon },
 ] as const;
 
 const priorities = [
@@ -193,7 +193,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           </div>
           <h2 className="text-2xl font-semibold mb-2">Got it!</h2>
           <p className="text-muted-foreground max-w-xs">
-            Your request has been submitted. Your designer will start on it soon.
+            Your designer will take it from here. We&apos;ll let you know when there&apos;s something to see.
           </p>
         </div>
       ) : (
@@ -307,10 +307,10 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   Tell us a bit more
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  What should it feel like? Who&apos;s the audience? Any specific sizes or formats?
+                  Don&apos;t worry about design terms — just describe what you&apos;re picturing.
                 </p>
                 <Textarea
-                  placeholder="I need 3 Instagram story templates for our weekly specials. Warm, appetizing vibe. Brand colors. Include our logo and a spot for food photos..."
+                  placeholder="What's it for? (e.g. weekly specials on Instagram)&#10;&#10;Any colors or style you like? (e.g. warm, appetizing, our brand colors)&#10;&#10;Anything to avoid? (e.g. no blue, keep it simple)"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="min-h-[160px] resize-none text-base"
@@ -376,7 +376,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   Any inspiration?
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Upload screenshots, Pinterest pins, or examples you love. Or skip this step.
+                  Screenshots from Pinterest, Instagram, or anywhere work great. Or skip this step.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {files.map((file, i) => (
@@ -438,9 +438,9 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
             >
               {isSubmitting
-                ? "Submitting..."
+                ? "Sending..."
                 : isLastStep
-                  ? "Submit Request"
+                  ? "Send to Designer"
                   : "Continue"}
               {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
             </Button>

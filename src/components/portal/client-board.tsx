@@ -46,10 +46,10 @@ interface ClientBoardProps {
 }
 
 const statusColumns = [
-  { key: "queued" as const, label: "Queued", color: "bg-gray-400" },
+  { key: "queued" as const, label: "Up Next", color: "bg-gray-400" },
   { key: "in_progress" as const, label: "In Progress", color: "bg-blue-500" },
-  { key: "review" as const, label: "Review", color: "bg-amber-500" },
-  { key: "done" as const, label: "Done", color: "bg-emerald-500" },
+  { key: "review" as const, label: "Ready for You", color: "bg-amber-500" },
+  { key: "done" as const, label: "Delivered", color: "bg-emerald-500" },
 ];
 
 const typeColors: Record<string, string> = {
@@ -406,10 +406,10 @@ export function ClientBoard({
             <p className="text-sm font-medium">Welcome back!</p>
             <p className="text-xs text-muted-foreground">
               Since your last visit:{" "}
-              {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for review`}
+              {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for you`}
               {reviewReady > 0 && completed > 0 && ", "}
-              {completed > 0 && `${completed} completed`}
-              {reviewReady === 0 && completed === 0 && `${totalUpdated} update${totalUpdated > 1 ? "s" : ""} to your requests`}
+              {completed > 0 && `${completed} delivered`}
+              {reviewReady === 0 && completed === 0 && `${totalUpdated} update${totalUpdated > 1 ? "s" : ""} on your designs`}
             </p>
           </div>
           <button

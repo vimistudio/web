@@ -117,17 +117,17 @@ interface RequestDetailProps {
 // --- Config ---
 
 const statusSteps = [
-  { key: "queued", label: "Queued" },
+  { key: "queued", label: "Up Next" },
   { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Review" },
-  { key: "done", label: "Done" },
+  { key: "review", label: "Ready for You" },
+  { key: "done", label: "Delivered" },
 ] as const;
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  queued: { label: "Queued", color: "bg-gray-100 text-gray-700" },
+  queued: { label: "Up Next", color: "bg-gray-100 text-gray-700" },
   in_progress: { label: "In Progress", color: "bg-blue-100 text-blue-700" },
-  review: { label: "Review", color: "bg-amber-100 text-amber-700" },
-  done: { label: "Done", color: "bg-emerald-100 text-emerald-700" },
+  review: { label: "Ready for You", color: "bg-amber-100 text-amber-700" },
+  done: { label: "Delivered", color: "bg-emerald-100 text-emerald-700" },
 };
 
 const priorityLabels: Record<number, { label: string; color: string }> = {
@@ -731,7 +731,7 @@ export function RequestDetail({
   const handleRequestChanges = useCallback(() => {
     if (!comment.trim()) {
       toast(
-        "Add a comment explaining what you'd like changed, then tap Request Changes again.",
+        "Add a comment explaining what you'd like changed, then tap Ask for Changes again.",
         { duration: 5000 }
       );
       const textarea = document.querySelector("textarea");
@@ -972,8 +972,7 @@ export function RequestDetail({
       {currentStatus === "queued" && !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-800">
-            Your request is in the queue! Your designer will start working on it
-            soon.
+            You're up next! Your designer will start working on this soon.
           </p>
         </div>
       )}
@@ -1216,7 +1215,7 @@ export function RequestDetail({
             disabled={isUpdatingStatus || isSubmitting}
             className="flex-1 h-11"
           >
-            Request Changes
+            Ask for Changes
           </Button>
         </div>
       )}

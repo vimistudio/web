@@ -48,10 +48,10 @@ const typeColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  queued: "Queued",
+  queued: "Up Next",
   in_progress: "In Progress",
-  review: "Review",
-  done: "Done",
+  review: "Ready for You",
+  done: "Delivered",
 };
 
 export function SearchCommand({
