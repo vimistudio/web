@@ -64,9 +64,36 @@ export function ImageLightbox({
     }
   }, [open, initialIndex]);
 
+  // Close lightbox if images array becomes empty (e.g. realtime deletion)
+  useEffect(() => {
+    if (open && images.length === 0) {
+      onOpenChange(false);
+    }
+  }, [open, images.length, onOpenChange]);
+
+  // Clamp currentIndex if images array shrinks
+  useEffect(() => {
+    if (currentIndex >= images.length && images.length > 0) {
+      setCurrentIndex(images.length - 1);
+    }
+  }, [currentIndex, images.length]);
+
   const total = images.length;
   const current = images[currentIndex] ?? images[0];
   const hasMultiple = total > 1;
+
+  // Preload adjacent images for smoother navigation
+  useEffect(() => {
+    if (!open || total <= 1) return;
+    const toPreload = [
+      images[(currentIndex + 1) % total]?.url,
+      images[(currentIndex - 1 + total) % total]?.url,
+    ].filter(Boolean);
+    toPreload.forEach((url) => {
+      const img = new Image();
+      img.src = url!;
+    });
+  }, [open, currentIndex, total, images]);
 
   // --- Navigation ---
 

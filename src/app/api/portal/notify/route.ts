@@ -246,15 +246,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, sent: 0 });
     }
 
-    let sent = 0;
-    for (const recipient of filtered) {
-      const result = await sendEmail({
-        to: recipient.email!,
-        subject: emailSubject,
-        react: emailReact,
-      });
-      if (result.success) sent++;
-    }
+    const results = await Promise.allSettled(
+      filtered.map((recipient) =>
+        sendEmail({
+          to: recipient.email!,
+          subject: emailSubject,
+          react: emailReact,
+        })
+      )
+    );
+    const sent = results.filter(
+      (r) => r.status === "fulfilled" && r.value.success
+    ).length;
 
     return NextResponse.json({ success: true, sent });
   } catch (err) {

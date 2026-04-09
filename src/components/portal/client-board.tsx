@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -213,19 +213,24 @@ export function ClientBoard({
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // What's New banner — show when returning after 1+ hours
-  const lastVisit = lastVisitedAt ? new Date(lastVisitedAt) : null;
-  const hoursSinceVisit = lastVisit
-    ? (Date.now() - lastVisit.getTime()) / (1000 * 60 * 60)
-    : 0;
-  const updatedSinceVisit = lastVisit
-    ? requests.filter((r) => new Date(r.updated_at) > lastVisit)
-    : [];
-  const reviewReady = updatedSinceVisit.filter((r) => r.status === "review").length;
-  const completed = updatedSinceVisit.filter((r) => r.status === "done").length;
-  const showBanner =
-    !bannerDismissed &&
-    hoursSinceVisit > 1 &&
-    updatedSinceVisit.length > 0;
+  const bannerData = useMemo(() => {
+    const lastVisit = lastVisitedAt ? new Date(lastVisitedAt) : null;
+    const hoursSinceVisit = lastVisit
+      ? (Date.now() - lastVisit.getTime()) / (1000 * 60 * 60)
+      : 0;
+    const updatedSinceVisit = lastVisit
+      ? requests.filter((r) => new Date(r.updated_at) > lastVisit)
+      : [];
+    return {
+      reviewReady: updatedSinceVisit.filter((r) => r.status === "review").length,
+      completed: updatedSinceVisit.filter((r) => r.status === "done").length,
+      totalUpdated: updatedSinceVisit.length,
+      shouldShow: hoursSinceVisit > 1 && updatedSinceVisit.length > 0,
+    };
+  }, [requests, lastVisitedAt]);
+
+  const { reviewReady, completed, totalUpdated, shouldShow } = bannerData;
+  const showBanner = !bannerDismissed && shouldShow;
 
   // Require 8px movement before drag starts — prevents accidental drags on click
   const sensors = useSensors(
@@ -396,7 +401,7 @@ export function ClientBoard({
               {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for review`}
               {reviewReady > 0 && completed > 0 && ", "}
               {completed > 0 && `${completed} completed`}
-              {reviewReady === 0 && completed === 0 && `${updatedSinceVisit.length} update${updatedSinceVisit.length > 1 ? "s" : ""} to your requests`}
+              {reviewReady === 0 && completed === 0 && `${totalUpdated} update${totalUpdated > 1 ? "s" : ""} to your requests`}
             </p>
           </div>
           <button
