@@ -3,9 +3,10 @@ import { sendEmail } from "@/lib/email/send";
 import { CommentAddedEmail } from "@/lib/email/templates/comment";
 import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
+import { InviteEmail } from "@/lib/email/templates/invite";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -26,18 +27,11 @@ const TYPE_LABELS: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, request_id, new_status, old_status } = body;
+    const { type, request_id, new_status, old_status, invite_email, client_name } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json(
         { error: "Invalid type" },
-        { status: 400 }
-      );
-    }
-
-    if (!request_id) {
-      return NextResponse.json(
-        { error: "request_id required" },
         { status: 400 }
       );
     }
@@ -60,6 +54,34 @@ export async function POST(request: Request) {
 
     if (!callerProfile) {
       return NextResponse.json({ error: "No profile" }, { status: 403 });
+    }
+
+    // Handle invite separately — no request_id needed
+    if (type === "invite") {
+      if (!invite_email || !client_name) {
+        return NextResponse.json(
+          { error: "invite_email and client_name required" },
+          { status: 400 }
+        );
+      }
+      const actorName = callerProfile.full_name || "Vimi Studio";
+      const result = await sendEmail({
+        to: invite_email,
+        subject: `You're invited to your ${client_name} design portal`,
+        react: InviteEmail({
+          clientName: client_name,
+          portalUrl: "https://vimistudio.com/portal/login",
+          invitedByName: actorName,
+        }),
+      });
+      return NextResponse.json({ success: result.success, sent: result.success ? 1 : 0 });
+    }
+
+    if (!request_id) {
+      return NextResponse.json(
+        { error: "request_id required" },
+        { status: 400 }
+      );
     }
 
     // Load request with client info

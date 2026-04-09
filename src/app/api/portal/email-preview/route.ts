@@ -3,6 +3,7 @@ import { render } from "@react-email/components";
 import { CommentAddedEmail } from "@/lib/email/templates/comment";
 import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
+import { InviteEmail } from "@/lib/email/templates/invite";
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") {
@@ -24,9 +25,12 @@ export async function GET(request: Request) {
     case "deliverable":
       element = DeliverableUploadedEmail(DeliverableUploadedEmail.PreviewProps);
       break;
+    case "invite":
+      element = InviteEmail(InviteEmail.PreviewProps);
+      break;
     default:
       return NextResponse.json(
-        { error: `Unknown template: ${template}. Use: comment, status, deliverable` },
+        { error: `Unknown template: ${template}. Use: comment, status, deliverable, invite` },
         { status: 400 }
       );
   }

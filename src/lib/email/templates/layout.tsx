@@ -80,8 +80,8 @@ export function EmailLayout({
             </Text>
             <Text style={footerMuted}>
               You received this because you&apos;re part of a Vimi Studio
-              project. If you believe this was sent in error, please reply to
-              this email.
+              project. Visit your portal at vimistudio.com to manage your
+              notification preferences.
             </Text>
           </Section>
         </Container>
