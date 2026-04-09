@@ -5,9 +5,10 @@ import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
 import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
+import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created", "client_signed_in"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -76,6 +77,34 @@ export async function POST(request: Request) {
         }),
       });
       return NextResponse.json({ success: result.success, sent: result.success ? 1 : 0 });
+    }
+
+    // Handle client_signed_in — notify admin(s) that a client just signed in
+    if (type === "client_signed_in") {
+      const { data: admins } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("role", "admin");
+
+      const clientName = client_name || "a project";
+      const callerName = callerProfile.full_name || "A client";
+      let sent = 0;
+
+      for (const admin of admins ?? []) {
+        if (!admin.email) continue;
+        const result = await sendEmail({
+          to: admin.email,
+          subject: `\u{1F44B} ${callerName} just signed in to ${clientName}'s portal`,
+          react: ClientSignedInEmail({
+            clientUserName: callerName,
+            clientUserEmail: user.email || "",
+            clientName,
+            portalUrl: "https://vimistudio.com/portal/admin",
+          }),
+        });
+        if (result.success) sent++;
+      }
+      return NextResponse.json({ success: true, sent });
     }
 
     if (!request_id) {
