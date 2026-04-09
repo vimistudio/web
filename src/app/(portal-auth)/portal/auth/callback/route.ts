@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email/send";
+import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -27,18 +29,25 @@ export async function GET(request: Request) {
             (profile as { clients?: { name?: string } | null }).clients?.name || "their project";
 
           // Fire-and-forget: notify admin of first sign-in
-          const baseUrl = request.headers.get("x-forwarded-host")
-            ? `https://${request.headers.get("x-forwarded-host")}`
-            : origin;
+          // Send directly — no HTTP roundtrip needed since we're server-side
+          const { data: admins } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("role", "admin");
 
-          fetch(`${baseUrl}/api/portal/notify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "client_signed_in",
-              client_name: clientName,
-            }),
-          }).catch(() => {});
+          for (const admin of admins ?? []) {
+            if (!admin.email) continue;
+            sendEmail({
+              to: admin.email,
+              subject: `${profile.full_name || "A client"} just signed in to ${clientName}'s portal`,
+              react: ClientSignedInEmail({
+                clientUserName: profile.full_name || "A client",
+                clientUserEmail: user.email || "",
+                clientName,
+                portalUrl: "https://vimistudio.com/portal/admin",
+              }),
+            }).catch(() => {});
+          }
         }
       }
 

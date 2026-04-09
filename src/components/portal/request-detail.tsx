@@ -332,6 +332,7 @@ export function RequestDetail({
   const [optimisticComments, setOptimisticComments] = useState<Comment[]>([]);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const allComments = [...request.comments, ...optimisticComments];
 
@@ -371,6 +372,7 @@ export function RequestDetail({
     setOptimisticComments((prev) => [...prev, optimisticComment]);
     const commentText = comment.trim();
     setComment("");
+    if (commentInputRef.current) commentInputRef.current.style.height = "auto";
 
     const supabase = createClient();
     const { error } = await supabase.from("comments").insert({
@@ -922,12 +924,12 @@ export function RequestDetail({
         >
           <div className="flex-1 space-y-1">
             <Textarea
+              ref={commentInputRef}
               aria-label="Add a comment"
               placeholder="Add a comment..."
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
-                // Auto-expand textarea
                 const el = e.target;
                 el.style.height = "auto";
                 el.style.height = Math.min(el.scrollHeight, 200) + "px";

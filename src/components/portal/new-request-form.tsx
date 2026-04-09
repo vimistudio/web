@@ -119,13 +119,16 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
     }
 
     if (files.length > 0) {
+      let failedUploads = 0;
       await Promise.all(
         files.map(async (file) => {
           const filePath = `${clientId}/${request.id}/${Date.now()}-${file.name}`;
           const { error: uploadError } = await supabase.storage
             .from("references")
             .upload(filePath, file);
-          if (!uploadError) {
+          if (uploadError) {
+            failedUploads++;
+          } else {
             await supabase.from("reference_images").insert({
               request_id: request.id,
               uploaded_by: userId,
@@ -137,6 +140,11 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           }
         })
       );
+      if (failedUploads > 0) {
+        toast.warning(
+          `${failedUploads} file${failedUploads > 1 ? "s" : ""} failed to upload. Your request was still submitted.`
+        );
+      }
     }
 
     // Notify admin about the new request

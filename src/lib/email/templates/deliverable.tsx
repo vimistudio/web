@@ -36,7 +36,7 @@ export function DeliverableUploadedEmail({
         </Text>
         {displayFiles.map((name, i) => (
           <Text key={i} style={fileName}>
-            📎 {name}
+            {name}
           </Text>
         ))}
         {remaining > 0 && (

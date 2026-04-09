@@ -81,6 +81,11 @@ export async function POST(request: Request) {
 
     // Handle client_signed_in — notify admin(s) that a client just signed in
     if (type === "client_signed_in") {
+      // Only clients should trigger this, not admins
+      if (callerProfile.role === "admin") {
+        return NextResponse.json({ success: true, sent: 0 });
+      }
+
       const { data: admins } = await supabase
         .from("profiles")
         .select("id, email")
@@ -91,7 +96,7 @@ export async function POST(request: Request) {
       let sent = 0;
 
       for (const admin of admins ?? []) {
-        if (!admin.email) continue;
+        if (!admin.email || admin.id === user.id) continue;
         const result = await sendEmail({
           to: admin.email,
           subject: `${callerName} just signed in to ${clientName}'s portal`,
@@ -165,87 +170,88 @@ export async function POST(request: Request) {
 
     const actorName = callerProfile.full_name || "Someone";
     const requestUrl = `https://vimistudio.com/portal/requests/${request_id}`;
-    let sent = 0;
 
-    for (const recipient of filtered) {
-      let subject: string;
-      let react: React.ReactElement;
+    // Pre-fetch data needed for templates (avoid N+1 queries per recipient)
+    let emailSubject: string;
+    let emailReact: React.ReactElement;
 
-      switch (type) {
-        case "comment_added": {
-          const { data: latestComment } = await supabase
-            .from("comments")
-            .select("body")
-            .eq("request_id", request_id)
-            .eq("author_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
+    switch (type) {
+      case "comment_added": {
+        const { data: latestComment } = await supabase
+          .from("comments")
+          .select("body")
+          .eq("request_id", request_id)
+          .eq("author_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-          subject = `${actorName} commented on "${req.title}"`;
-          react = CommentAddedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            commenterName: actorName,
-            commentBody: latestComment?.body || "New comment",
-            requestType: TYPE_LABELS[req.type] || req.type,
-          });
-          break;
-        }
-        case "status_changed": {
-          const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
-          subject = `"${req.title}" moved to ${newLabel}`;
-          react = StatusChangedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            oldStatus: old_status || req.status,
-            newStatus: new_status || req.status,
-            changedByName: actorName,
-          });
-          break;
-        }
-        case "deliverable_uploaded": {
-          const { data: deliverables } = await supabase
-            .from("deliverables")
-            .select("file_name")
-            .eq("request_id", request_id)
-            .eq("uploaded_by", user.id)
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          const fileNames = deliverables?.map((d) => d.file_name) ?? [];
-          subject = `New files for "${req.title}"`;
-          react = DeliverableUploadedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            uploaderName: actorName,
-            fileNames,
-            fileCount: fileNames.length || 1,
-          });
-          break;
-        }
-        case "request_created": {
-          const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
-          const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
-          subject = `New request from ${clientName}: "${req.title}"`;
-          react = RequestCreatedEmail({
-            requestTitle: req.title,
-            requestUrl,
-            clientName,
-            requestType: TYPE_LABELS[req.type] || req.type,
-            priority: priorityLabels[reqPriority as number] || "Normal",
-            description: (reqDescription as string) || undefined,
-          });
-          break;
-        }
-        default:
-          continue;
+        emailSubject = `${actorName} commented on "${req.title}"`;
+        emailReact = CommentAddedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          commenterName: actorName,
+          commentBody: latestComment?.body || "New comment",
+          requestType: TYPE_LABELS[req.type] || req.type,
+        });
+        break;
       }
+      case "status_changed": {
+        const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
+        emailSubject = `"${req.title}" moved to ${newLabel}`;
+        emailReact = StatusChangedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          oldStatus: old_status || req.status,
+          newStatus: new_status || req.status,
+          changedByName: actorName,
+        });
+        break;
+      }
+      case "deliverable_uploaded": {
+        const { data: deliverables } = await supabase
+          .from("deliverables")
+          .select("file_name")
+          .eq("request_id", request_id)
+          .eq("uploaded_by", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
 
+        const fileNames = deliverables?.map((d) => d.file_name) ?? [];
+        emailSubject = `New files for "${req.title}"`;
+        emailReact = DeliverableUploadedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          uploaderName: actorName,
+          fileNames,
+          fileCount: fileNames.length || 1,
+        });
+        break;
+      }
+      case "request_created": {
+        const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
+        const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
+        emailSubject = `New request from ${clientName}: "${req.title}"`;
+        emailReact = RequestCreatedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          clientName,
+          requestType: TYPE_LABELS[req.type] || req.type,
+          priority: priorityLabels[reqPriority as number] || priorityLabels[req.priority] || "Normal",
+          description: (reqDescription as string) || undefined,
+        });
+        break;
+      }
+      default:
+        return NextResponse.json({ success: true, sent: 0 });
+    }
+
+    let sent = 0;
+    for (const recipient of filtered) {
       const result = await sendEmail({
         to: recipient.email!,
-        subject,
-        react,
+        subject: emailSubject,
+        react: emailReact,
       });
       if (result.success) sent++;
     }
