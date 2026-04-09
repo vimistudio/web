@@ -34,9 +34,9 @@ export default async function RequestDetailPage({
     .select(
       `*,
       clients(name, slug),
-      deliverables(id, file_name, file_path, file_size, mime_type, created_at),
+      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden),
       reference_images(id, file_name, file_path, file_size, mime_type, created_at),
-      comments(id, body, created_at, author_id, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
+      comments(id, body, created_at, author_id, attachment_path, attachment_name, attachment_type, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
     )
     .eq("id", params.id)
     .single();
@@ -68,10 +68,22 @@ export default async function RequestDetailPage({
     })
   );
 
-  // Sort comments chronologically
-  const sortedComments = [...(request.comments ?? [])].sort(
-    (a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  // Sort comments chronologically + generate signed URLs for attachments
+  const sortedComments = await Promise.all(
+    [...(request.comments ?? [])]
+      .sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+      .map(async (c) => {
+        if (c.attachment_path) {
+          const { data } = await supabase.storage
+            .from("references")
+            .createSignedUrl(c.attachment_path, 3600);
+          return { ...c, attachment_url: data?.signedUrl ?? null };
+        }
+        return { ...c, attachment_url: null };
+      })
   );
 
   // Fetch activity log

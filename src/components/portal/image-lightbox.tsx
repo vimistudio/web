@@ -54,6 +54,7 @@ export function ImageLightbox({
   const [imageLoaded, setImageLoaded] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
 
   // Sync initialIndex when dialog opens
   useEffect(() => {
@@ -183,6 +184,20 @@ export function ImageLightbox({
           <div
             ref={containerRef}
             className="relative flex-1 flex items-center justify-center w-full px-4 md:px-16"
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              const delta = e.changedTouches[0].clientX - touchStartX.current;
+              if (Math.abs(delta) > 50) {
+                if (delta > 0) {
+                  goPrev();
+                } else {
+                  goNext();
+                }
+                resetHideTimer();
+              }
+            }}
           >
             {/* Left arrow */}
             {hasMultiple && (
@@ -282,6 +297,28 @@ export function ImageLightbox({
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 shrink-0">
+              {typeof navigator !== "undefined" && navigator.share && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(current.url);
+                      const blob = await res.blob();
+                      const file = new File([blob], current.fileName, { type: blob.type });
+                      await navigator.share({ files: [file] });
+                    } catch {
+                      // User cancelled share — not an error
+                    }
+                  }}
+                  className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors sm:hidden"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                  Share
+                </button>
+              )}
               <button
                 onClick={() => {
                   // Safari requires clipboard.write in the same gesture tick.
@@ -317,16 +354,26 @@ export function ImageLightbox({
                 </svg>
                 <span className="hidden sm:inline">Copy</span>
               </button>
-              <a
-                href={current.url}
-                download={current.fileName}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(current.url);
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = current.fileName;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    toast.error("Couldn't download file");
+                  }
+                }}
                 className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 <Download01Icon size={16} />
                 <span className="hidden sm:inline">Download</span>
-              </a>
+              </button>
             </div>
           </div>
 

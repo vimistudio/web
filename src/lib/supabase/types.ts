@@ -94,6 +94,9 @@ export type Database = {
       }
       comments: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_type: string | null
           author_id: string
           body: string
           created_at: string
@@ -101,6 +104,9 @@ export type Database = {
           request_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           author_id: string
           body: string
           created_at?: string
@@ -108,6 +114,9 @@ export type Database = {
           request_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           author_id?: string
           body?: string
           created_at?: string
@@ -138,6 +147,7 @@ export type Database = {
           file_path: string
           file_size: number | null
           id: string
+          is_hidden: boolean
           mime_type: string | null
           request_id: string
           uploaded_by: string
@@ -148,6 +158,7 @@ export type Database = {
           file_path: string
           file_size?: number | null
           id?: string
+          is_hidden?: boolean
           mime_type?: string | null
           request_id: string
           uploaded_by: string
@@ -158,6 +169,7 @@ export type Database = {
           file_path?: string
           file_size?: number | null
           id?: string
+          is_hidden?: boolean
           mime_type?: string | null
           request_id?: string
           uploaded_by?: string

@@ -20,10 +20,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft01Icon,
+  CalendarIcon,
+  Cancel01Icon,
   CheckmarkCircle01Icon,
   SentIcon,
   Download01Icon,
   Upload01Icon,
+  ViewIcon,
+  PlusSignIcon,
 } from "@/components/ui/icons";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +46,10 @@ interface Comment {
   body: string;
   created_at: string;
   author_id: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  attachment_url?: string | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -57,6 +65,7 @@ interface Deliverable {
   mime_type: string | null;
   created_at: string;
   url: string | null;
+  is_hidden?: boolean;
 }
 
 interface Request {
@@ -68,6 +77,7 @@ interface Request {
   priority: number;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
   client_id: string;
   clients: { name: string; slug: string } | null;
   deliverables: Deliverable[];
@@ -208,13 +218,55 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 
 function DeliverableCard({
   d,
+  version,
   onImageClick,
+  onDelete,
+  onToggleHidden,
 }: {
   d: Deliverable;
+  version?: number;
   onImageClick?: () => void;
+  onDelete?: () => void;
+  onToggleHidden?: () => void;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
+
+  const adminActions = (onDelete || onToggleHidden) ? (
+    <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+      {onToggleHidden && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleHidden();
+          }}
+          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+            d.is_hidden
+              ? "bg-amber-500 text-white"
+              : "bg-black/60 hover:bg-amber-500 text-white"
+          }`}
+          aria-label={d.is_hidden ? "Show to client" : "Hide from client"}
+          title={d.is_hidden ? "Show to client" : "Hide from client"}
+        >
+          <ViewIcon size={12} />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="w-6 h-6 rounded-full bg-black/60 hover:bg-red-500 text-white flex items-center justify-center transition-colors"
+          aria-label="Delete file"
+        >
+          <Cancel01Icon size={12} />
+        </button>
+      )}
+    </div>
+  ) : null;
 
   if (isImage && d.url) {
     return (
@@ -223,7 +275,13 @@ function DeliverableCard({
         onClick={onImageClick}
         className="block w-full text-left"
       >
-        <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
+        <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+          {adminActions}
+          {d.is_hidden && (
+            <div className="absolute top-8 left-2 z-10 bg-amber-100 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
+              Hidden
+            </div>
+          )}
           <div className="aspect-[4/3] bg-gray-50 relative">
             {!loaded && (
               <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
@@ -241,9 +299,21 @@ function DeliverableCard({
                 <Download01Icon size={16} className="text-gray-700" />
               </div>
             </div>
+            {version && (
+              <div className="absolute bottom-2 left-2 z-10 bg-black/50 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                v{version}
+              </div>
+            )}
           </div>
           <CardContent className="p-2">
             <p className="text-xs font-medium truncate">{d.file_name}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {[
+                d.mime_type?.split("/")[1]?.toUpperCase(),
+                d.file_size ? `${(d.file_size / 1024).toFixed(0)} KB` : null,
+                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              ].filter(Boolean).join(" · ")}
+            </p>
           </CardContent>
         </Card>
       </button>
@@ -251,27 +321,49 @@ function DeliverableCard({
   }
 
   return (
-    <a
-      href={d.url ?? "#"}
-      download={d.file_name}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={d.url ? "block" : "block pointer-events-none opacity-50"}
+    <button
+      type="button"
+      className={`block w-full text-left ${!d.url ? "pointer-events-none opacity-50" : ""}`}
+      onClick={async () => {
+        if (!d.url) return;
+        try {
+          const res = await fetch(d.url);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = d.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch {
+          toast.error("Couldn't download file");
+        }
+      }}
     >
-      <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+      <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+        {adminActions}
         <CardContent className="p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{d.file_name}</p>
+            <p className="text-sm font-medium truncate">
+              {d.file_name}
+              {version && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">
+                  v{version}
+                </span>
+              )}
+            </p>
             <p className="text-xs text-muted-foreground">
-              {d.file_size
-                ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB`
-                : ""}
+              {[
+                d.mime_type?.split("/")[1]?.toUpperCase(),
+                d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
+                new Date(d.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              ].filter(Boolean).join(" · ")}
             </p>
           </div>
           <Download01Icon size={16} className="text-muted-foreground shrink-0" />
         </CardContent>
       </Card>
-    </a>
+    </button>
   );
 }
 
@@ -345,14 +437,20 @@ export function RequestDetail({
   const [optimisticComments, setOptimisticComments] = useState<Comment[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [commentAttachment, setCommentAttachment] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const commentFileRef = useRef<HTMLInputElement>(null);
 
   const allComments = [...request.comments, ...optimisticComments];
 
-  // Build image list for lightbox (only image deliverables with URLs)
-  const lightboxImages = request.deliverables
+  // Build image list for lightbox (only visible image deliverables with URLs)
+  const visibleDeliverables = request.deliverables.filter(
+    (d) => isAdmin || !d.is_hidden
+  );
+  const lightboxImages = visibleDeliverables
     .filter((d) => d.mime_type?.startsWith("image/") && d.url)
     .map((d) => ({
       url: d.url!,
@@ -383,27 +481,53 @@ export function RequestDetail({
   }, [request.comments.length]);
 
   const handleSubmitComment = useCallback(async () => {
-    if (!comment.trim() || isSubmitting) return;
+    if ((!comment.trim() && !commentAttachment) || isSubmitting) return;
     setIsSubmitting(true);
 
-    // Optimistic: show comment immediately
     const optimisticComment: Comment = {
       id: `optimistic-${Date.now()}`,
       body: comment.trim(),
       created_at: new Date().toISOString(),
       author_id: currentUserId,
+      attachment_path: null,
+      attachment_name: commentAttachment?.name ?? null,
+      attachment_type: commentAttachment?.type ?? null,
+      attachment_url: attachmentPreview,
       profiles: { full_name: "You", avatar_url: null, role: isAdmin ? "admin" : "client" },
     };
     setOptimisticComments((prev) => [...prev, optimisticComment]);
     const commentText = comment.trim();
+    const file = commentAttachment;
     setComment("");
+    setCommentAttachment(null);
+    setAttachmentPreview(null);
     if (commentInputRef.current) commentInputRef.current.style.height = "auto";
 
     const supabase = createClient();
+
+    // Upload attachment if present
+    let attachmentPath: string | null = null;
+    let attachmentName: string | null = null;
+    let attachmentType: string | null = null;
+    if (file) {
+      const filePath = `${request.client_id}/${request.id}/comments/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("references")
+        .upload(filePath, file);
+      if (!uploadError) {
+        attachmentPath = filePath;
+        attachmentName = file.name;
+        attachmentType = file.type;
+      }
+    }
+
     const { error } = await supabase.from("comments").insert({
       request_id: request.id,
       author_id: currentUserId,
-      body: commentText,
+      body: commentText || (attachmentName ? `Attached ${attachmentName}` : ""),
+      attachment_path: attachmentPath,
+      attachment_name: attachmentName,
+      attachment_type: attachmentType,
     });
 
     if (error) {
@@ -419,13 +543,12 @@ export function RequestDetail({
     setIsSubmitting(false);
     router.refresh();
 
-    // Fire-and-forget email notification
     fetch("/api/portal/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "comment_added", request_id: request.id }),
     }).catch(() => {});
-  }, [comment, isSubmitting, currentUserId, isAdmin, request.id, router]);
+  }, [comment, commentAttachment, attachmentPreview, isSubmitting, currentUserId, isAdmin, request.id, request.client_id, router]);
 
   const handleStatusChange = useCallback(
     async (newStatus: "queued" | "in_progress" | "review" | "done") => {
@@ -542,6 +665,7 @@ export function RequestDetail({
             file_size: file.size,
             mime_type: file.type || null,
             uploaded_by: currentUserId,
+            is_hidden: true,
           });
 
         if (dbError) {
@@ -554,11 +678,37 @@ export function RequestDetail({
 
       if (successCount > 0) {
         toast.success(
-          `Uploaded ${successCount} ${successCount === 1 ? "file" : "files"}`
+          `Uploaded ${successCount} ${successCount === 1 ? "file" : "files"} (hidden until you reveal ${successCount === 1 ? "it" : "them"})`
         );
         router.refresh();
+        // No notification here — fires when admin reveals (unhides) the files
+      }
 
-        // Fire-and-forget email notification
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [request.id, request.client_id, currentUserId, router]
+  );
+
+  const handleToggleHidden = useCallback(
+    async (deliverable: Deliverable) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .update({ is_hidden: !deliverable.is_hidden })
+        .eq("id", deliverable.id);
+
+      if (error) {
+        toast.error("Couldn't update visibility");
+        return;
+      }
+
+      const wasHidden = deliverable.is_hidden;
+      toast.success(wasHidden ? "File is now visible to client" : "File hidden from client");
+      router.refresh();
+
+      // Notify client when files are revealed (hidden → visible)
+      if (wasHidden) {
         fetch("/api/portal/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -568,11 +718,50 @@ export function RequestDetail({
           }),
         }).catch(() => {});
       }
-
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [request.id, request.client_id, currentUserId, router]
+    [router, request.id]
+  );
+
+  const handleRevealAll = useCallback(async () => {
+    const hidden = request.deliverables.filter((d) => d.is_hidden);
+    if (hidden.length === 0) return;
+    const supabase = createClient();
+    await Promise.all(
+      hidden.map((d) =>
+        supabase.from("deliverables").update({ is_hidden: false }).eq("id", d.id)
+      )
+    );
+    toast.success(`Revealed ${hidden.length} file${hidden.length > 1 ? "s" : ""}`);
+    router.refresh();
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "deliverable_uploaded", request_id: request.id }),
+    }).catch(() => {});
+  }, [request.deliverables, request.id, router]);
+
+  const handleDeleteDeliverable = useCallback(
+    async (deliverable: Deliverable) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deliverables")
+        .delete()
+        .eq("id", deliverable.id);
+
+      if (error) {
+        toast.error("Couldn't delete file");
+        return;
+      }
+
+      // Also delete from storage
+      await supabase.storage
+        .from("deliverables")
+        .remove([deliverable.file_path]);
+
+      toast.success(`Deleted ${deliverable.file_name}`);
+      router.refresh();
+    },
+    [router]
   );
 
   // Realtime: live comment updates
@@ -598,7 +787,17 @@ export function RequestDetail({
       .toUpperCase()
       .slice(0, 2);
 
-  const downloadAllUrls = request.deliverables.filter((d) => d.url);
+  const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
+  const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
+
+  // Build version map: number deliverables by creation order
+  const deliverableVersions = new Map<string, number>();
+  [...request.deliverables]
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    .forEach((d, i) => deliverableVersions.set(d.id, i + 1));
 
   return (
     <div
@@ -664,6 +863,17 @@ export function RequestDetail({
           <span className="text-xs text-muted-foreground">
             · Updated {updatedDate}
           </span>
+          {request.due_date && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              · <CalendarIcon size={12} />
+              Due{" "}
+              {new Date(request.due_date).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          )}
         </div>
       </div>
 
@@ -685,6 +895,18 @@ export function RequestDetail({
             <h2 className="text-sm font-medium">
               {`Your Designs (${request.deliverables.length})`}
             </h2>
+            <div className="flex items-center gap-1">
+            {isAdmin && hiddenDeliverables.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7 gap-1 text-amber-600 hover:text-amber-700"
+                onClick={handleRevealAll}
+              >
+                <ViewIcon size={12} />
+                Reveal All ({hiddenDeliverables.length})
+              </Button>
+            )}
             {downloadAllUrls.length >= 2 && (
               <Button
                 variant="ghost"
@@ -749,9 +971,12 @@ export function RequestDetail({
                 Download All
               </Button>
             )}
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables.map((d) => {
+            {request.deliverables
+              .filter((d) => isAdmin || !d.is_hidden)
+              .map((d) => {
               const isImage = d.mime_type?.startsWith("image/") && d.url;
               const imageIndex = isImage
                 ? lightboxImages.findIndex((img) => img.url === d.url)
@@ -761,12 +986,27 @@ export function RequestDetail({
                 <DeliverableCard
                   key={d.id}
                   d={d}
+                  version={deliverableVersions.get(d.id)}
                   onImageClick={
                     imageIndex >= 0
                       ? () => {
                           setLightboxIndex(imageIndex);
                           setLightboxOpen(true);
                         }
+                      : undefined
+                  }
+                  onDelete={
+                    isAdmin && currentStatus !== "done"
+                      ? () => {
+                          if (confirm(`Delete "${d.file_name}"? This can't be undone.`)) {
+                            handleDeleteDeliverable(d);
+                          }
+                        }
+                      : undefined
+                  }
+                  onToggleHidden={
+                    isAdmin
+                      ? () => handleToggleHidden(d)
                       : undefined
                   }
                 />
@@ -990,9 +1230,30 @@ export function RequestDetail({
                         })}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                  {c.body}
-                </p>
+                {c.body && (
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                    {c.body}
+                  </p>
+                )}
+                {c.attachment_url && c.attachment_type?.startsWith("image/") && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.attachment_url}
+                    alt={c.attachment_name ?? "attachment"}
+                    className="mt-2 rounded-lg max-w-[280px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  />
+                )}
+                {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
+                  <a
+                    href={c.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#909af7] hover:underline"
+                  >
+                    <Download01Icon size={12} />
+                    {c.attachment_name ?? "Attachment"}
+                  </a>
+                )}
               </div>
             </div>
           );
@@ -1007,14 +1268,69 @@ export function RequestDetail({
         <div ref={commentsEndRef} />
       </div>
 
-      {/* Comment Input — sticky on mobile */}
-      <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-3 md:static md:border-t-0 md:px-0 md:py-0 z-30">
+      {/* Comment Input — WhatsApp-style, sticky on mobile */}
+      <div className="fixed bottom-16 left-0 right-0 bg-background border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 z-30">
         <div
-          className={`flex items-start gap-2 mx-auto ${
+          className={`mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
-          <div className="flex-1 space-y-1">
+          {/* Attachment preview */}
+          {attachmentPreview && (
+            <div className="relative inline-block mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={attachmentPreview}
+                alt="attachment"
+                className="h-20 rounded-lg object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => { setCommentAttachment(null); setAttachmentPreview(null); }}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
+              >
+                <Cancel01Icon size={10} />
+              </button>
+            </div>
+          )}
+          {commentAttachment && !attachmentPreview && (
+            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground bg-gray-50 rounded-lg px-3 py-2">
+              <span className="truncate">{commentAttachment.name}</span>
+              <button
+                type="button"
+                onClick={() => { setCommentAttachment(null); setAttachmentPreview(null); }}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                <Cancel01Icon size={12} />
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2 rounded-2xl border bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-[#909af7]/30 focus-within:border-[#909af7]/40 transition-all">
+            <button
+              type="button"
+              onClick={() => commentFileRef.current?.click()}
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-gray-100 transition-colors"
+              aria-label="Attach image"
+            >
+              <PlusSignIcon size={16} />
+            </button>
+            <input
+              ref={commentFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setCommentAttachment(file);
+                if (file.type.startsWith("image/")) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => setAttachmentPreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+                e.target.value = "";
+              }}
+            />
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
@@ -1027,38 +1343,58 @@ export function RequestDetail({
                 el.style.height = Math.min(el.scrollHeight, 200) + "px";
               }}
               maxLength={2000}
-              className="min-h-[44px] max-h-[200px] resize-none overflow-y-auto"
+              rows={1}
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/60"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmitComment();
                 }
               }}
+              onPaste={(e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (const item of Array.from(items)) {
+                  if (item.type.startsWith("image/")) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (!file) return;
+                    setCommentAttachment(file);
+                    const reader = new FileReader();
+                    reader.onloadend = () => setAttachmentPreview(reader.result as string);
+                    reader.readAsDataURL(file);
+                    return;
+                  }
+                }
+              }}
             />
-            <div className="hidden md:flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground">
-                Enter to send, Shift+Enter for new line
-              </p>
-              {comment.length > 1500 && (
-                <p className="text-[10px] text-muted-foreground">
-                  {comment.length}/2000
-                </p>
+            <button
+              aria-label="Send comment"
+              onClick={handleSubmitComment}
+              disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
+              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                comment.trim() || commentAttachment
+                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white scale-100"
+                  : "bg-gray-100 text-gray-400 scale-90"
+              }`}
+            >
+              {isSubmitting ? (
+                <div className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <SentIcon size={14} color={comment.trim() ? "white" : "currentColor"} />
               )}
-            </div>
+            </button>
           </div>
-          <Button
-            size="icon"
-            aria-label="Send comment"
-            onClick={handleSubmitComment}
-            disabled={!comment.trim() || isSubmitting}
-            className="shrink-0 bg-[#909af7] hover:bg-[#7b85e8] h-[44px] w-[44px]"
-          >
-            {isSubmitting ? (
-              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <SentIcon size={18} color="white" />
+          <div className="hidden md:flex items-center justify-between px-1 mt-1">
+            <p className="text-[10px] text-muted-foreground/50">
+              Enter to send, Shift+Enter for new line
+            </p>
+            {comment.length > 1500 && (
+              <p className="text-[10px] text-muted-foreground">
+                {comment.length}/2000
+              </p>
             )}
-          </Button>
+          </div>
         </div>
       </div>
 

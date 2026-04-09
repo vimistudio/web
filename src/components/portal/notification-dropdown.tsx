@@ -131,7 +131,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden">
+      <PopoverContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden bg-white border shadow-lg z-50">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-sm font-semibold">Notifications</h3>
           {unreadCount > 0 && (

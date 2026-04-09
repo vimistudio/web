@@ -33,6 +33,7 @@ interface Request {
   priority: number;
   created_at: string;
   updated_at: string;
+  due_date: string | null;
   deliverables: { id: string; file_name: string; file_path: string; mime_type: string | null }[];
   comments: { id: string }[];
   profiles?: { full_name: string | null; avatar_url: string | null } | null;
@@ -109,7 +110,21 @@ function BoardCardContent({ request }: { request: Request }) {
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{timeSince}</span>
+          <div className="flex items-center gap-2">
+            <span>{timeSince}</span>
+            {request.due_date && (() => {
+              const due = new Date(request.due_date);
+              const now = new Date();
+              const daysUntil = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              const isOverdue = daysUntil < 0;
+              const isDueSoon = daysUntil >= 0 && daysUntil <= 2;
+              return (
+                <span className={`text-[10px] font-medium ${isOverdue ? "text-red-600" : isDueSoon ? "text-amber-600" : "text-muted-foreground"}`}>
+                  {isOverdue ? `Overdue ${Math.abs(daysUntil)}d` : daysUntil === 0 ? "Due today" : `Due in ${daysUntil}d`}
+                </span>
+              );
+            })()}
+          </div>
           <div className="flex items-center gap-3">
             {request.deliverables.length > 0 && (
               <div className="flex items-center gap-1">
@@ -332,7 +347,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-4 gap-4 min-h-[60vh]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[60vh]">
           {columns.map((col) => {
             const colRequests = requests.filter((r) => r.status === col.key);
             return (

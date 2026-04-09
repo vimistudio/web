@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PlusSignIcon, Comment01Icon, Cancel01Icon } from "@/components/ui/icons";
+import { PlusSignIcon, Comment01Icon, Cancel01Icon, Download01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -87,12 +87,20 @@ function RequestCardContent({ request }: { request: Request }) {
           <h3 className="font-semibold text-sm leading-tight">
             {request.title}
           </h3>
-          {request.comments.length > 0 && (
-            <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
-              <Comment01Icon size={14} />
-              <span className="text-xs">{request.comments.length}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            {request.comments.length > 0 && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Comment01Icon size={14} />
+                <span className="text-xs">{request.comments.length}</span>
+              </div>
+            )}
+            {request.deliverables.length > 0 && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Download01Icon size={14} />
+                <span className="text-xs">{request.deliverables.length}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

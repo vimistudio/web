@@ -28,15 +28,25 @@ export default async function AdminDashboardPage() {
   // Get request counts per status
   const { data: requests } = await supabase
     .from("requests")
-    .select("id, client_id, status, updated_at, title");
+    .select("id, client_id, status, updated_at, created_at, title");
 
-  // Get recent comments for activity feed
+  // Get recent comments for activity feed (exclude admin's own)
   // Uses explicit FK hint since author_id has FKs to both auth.users and profiles
   const { data: recentComments } = await supabase
     .from("comments")
-    .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id)")
+    .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id, clients(name))")
+    .neq("author_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  // Get recent comments for last-active calculation (last 90 days, capped at 500)
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: allComments } = await supabase
+    .from("comments")
+    .select("created_at, request_id, requests(client_id)")
+    .gte("created_at", ninetyDaysAgo)
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   // Aggregate stats
   const totalClients = clients?.length ?? 0;
@@ -51,11 +61,32 @@ export default async function AdminDashboardPage() {
     0
   ) ?? 0;
 
-  // Build per-client request summaries
+  // Build per-client request summaries with hot requests and last-active
   const clientSummaries = (clients ?? []).map((client) => {
     const clientRequests = (requests ?? []).filter(
       (r) => r.client_id === client.id
     );
+
+    // Hot requests: "review" status, most recently updated, top 2
+    const hotRequests = clientRequests
+      .filter((r) => r.status === "review")
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 2)
+      .map((r) => ({ id: r.id, title: r.title, status: r.status }));
+
+    // Last active: max of request updated_at, request created_at, and comment created_at for this client
+    const requestTimestamps = clientRequests.flatMap((r) => [r.updated_at, r.created_at]);
+    const commentTimestamps = (allComments ?? [])
+      .filter((c) => {
+        const req = c.requests as { client_id: string } | null;
+        return req?.client_id === client.id;
+      })
+      .map((c) => c.created_at);
+    const allTimestamps = [...requestTimestamps, ...commentTimestamps].filter(Boolean);
+    const lastActiveAt = allTimestamps.length > 0
+      ? allTimestamps.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+      : null;
+
     return {
       ...client,
       counts: {
@@ -64,6 +95,8 @@ export default async function AdminDashboardPage() {
         review: clientRequests.filter((r) => r.status === "review").length,
         done: clientRequests.filter((r) => r.status === "done").length,
       },
+      hotRequests,
+      lastActiveAt,
     };
   });
 
@@ -74,6 +107,7 @@ export default async function AdminDashboardPage() {
         openRequests,
         needsReview,
         monthlyRevenue,
+        activeClientCount: totalClients,
       }}
       clients={clientSummaries}
       recentActivity={recentComments ?? []}
