@@ -170,11 +170,7 @@ export function ImageLightbox({
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
-            className={`absolute top-4 right-4 z-50 rounded-full bg-white/10 hover:bg-white/20 p-2.5 transition-all duration-300 ${
-              controlsVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-2 pointer-events-none"
-            }`}
+            className="absolute top-4 right-4 z-50 rounded-full bg-white/10 hover:bg-white/20 p-2.5 transition-colors"
             aria-label="Close lightbox"
           >
             <Cancel01Icon size={20} className="text-white" />

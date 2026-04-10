@@ -408,7 +408,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                     <span className="text-[10px] text-muted-foreground mt-1">{t("form.inspiration.addFile")}</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.pdf"
                       multiple
                       onChange={handleFileChange}
                       className="hidden"

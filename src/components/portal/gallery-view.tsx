@@ -230,7 +230,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors ${
+              className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
                 isActive
                   ? "bg-foreground text-white"
                   : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
