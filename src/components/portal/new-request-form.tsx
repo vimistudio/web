@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useLocale } from "@/components/portal/locale-provider";
+import { type PortalKey } from "@/lib/portal-i18n";
 
 interface NewRequestFormProps {
   clientId: string;
@@ -31,27 +33,28 @@ interface NewRequestFormProps {
 }
 
 const requestTypes = [
-  { value: "logo" as const, label: "Logo Design", desc: "A logo or icon for your brand", Icon: PenToolIcon },
-  { value: "social" as const, label: "Social Media", desc: "Posts for Instagram, Facebook, TikTok...", Icon: SmartPhoneIcon },
-  { value: "web" as const, label: "Website", desc: "Web pages, banners, landing pages", Icon: BrowserIcon },
-  { value: "brand" as const, label: "Branding", desc: "Colors, fonts, brand guidelines", Icon: ColourSwatchIcon },
-  { value: "presentation" as const, label: "Presentation", desc: "Pitch decks, slides, one-pagers", Icon: PresentationIcon },
-  { value: "other" as const, label: "Something Else", desc: "Anything else you need designed", Icon: MoreHorizontalIcon },
-] as const;
+  { value: "logo" as const, labelKey: "form.type.logo" as PortalKey, descKey: "form.type.logo.desc" as PortalKey, Icon: PenToolIcon },
+  { value: "social" as const, labelKey: "form.type.social" as PortalKey, descKey: "form.type.social.desc" as PortalKey, Icon: SmartPhoneIcon },
+  { value: "web" as const, labelKey: "form.type.web" as PortalKey, descKey: "form.type.web.desc" as PortalKey, Icon: BrowserIcon },
+  { value: "brand" as const, labelKey: "form.type.brand" as PortalKey, descKey: "form.type.brand.desc" as PortalKey, Icon: ColourSwatchIcon },
+  { value: "presentation" as const, labelKey: "form.type.presentation" as PortalKey, descKey: "form.type.presentation.desc" as PortalKey, Icon: PresentationIcon },
+  { value: "other" as const, labelKey: "form.type.other" as PortalKey, descKey: "form.type.other.desc" as PortalKey, Icon: MoreHorizontalIcon },
+];
 
 const priorities = [
-  { value: 1, label: "Whenever", desc: "No rush, take your time", Icon: LeafIcon, activeColor: "border-gray-400 bg-gray-50" },
-  { value: 2, label: "This Week", desc: "Normal turnaround", Icon: CalendarIcon, activeColor: "border-[#909af7] bg-[#909af7]/5" },
-  { value: 3, label: "Urgent", desc: "Need it ASAP", Icon: FireIcon, activeColor: "border-red-400 bg-red-50" },
-] as const;
+  { value: 1, labelKey: "form.priority.whenever" as PortalKey, descKey: "form.priority.whenever.desc" as PortalKey, Icon: LeafIcon, activeColor: "border-gray-400 bg-gray-50" },
+  { value: 2, labelKey: "form.priority.thisWeek" as PortalKey, descKey: "form.priority.thisWeek.desc" as PortalKey, Icon: CalendarIcon, activeColor: "border-[#909af7] bg-[#909af7]/5" },
+  { value: 3, labelKey: "form.priority.urgent" as PortalKey, descKey: "form.priority.urgent.desc" as PortalKey, Icon: FireIcon, activeColor: "border-red-400 bg-red-50" },
+];
 
 type RequestType = (typeof requestTypes)[number]["value"];
 
 const TOTAL_STEPS = 5;
-const STEP_LABELS = ["Name", "Type", "Details", "Timeline", "Inspiration"];
+const STEP_LABEL_KEYS: PortalKey[] = ["form.step.name", "form.step.type", "form.step.details", "form.step.timeline", "form.step.inspiration"];
 
 export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewRequestFormProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<RequestType | null>(null);
@@ -191,9 +194,9 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               <path d="M12 20L18 26L28 14" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-2">Got it!</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t("form.success.title")}</h2>
           <p className="text-muted-foreground max-w-xs">
-            Your designer will take it from here. We&apos;ll let you know when there&apos;s something to see.
+            {t("form.success.body")}
           </p>
         </div>
       ) : (
@@ -231,19 +234,19 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           <div className="flex-1" key={step}>
             {/* Step label */}
             <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
-              {STEP_LABELS[step]}
+              {t(STEP_LABEL_KEYS[step])}
             </p>
 
             {step === 0 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                  What do you need designed?
+                  {t("form.name.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  A short name so your designer knows what to expect.
+                  {t("form.name.subtitle")}
                 </p>
                 <Input
-                  placeholder="e.g. Instagram story templates, Logo refresh..."
+                  placeholder={t("form.name.placeholder")}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="h-12 text-base"
@@ -256,18 +259,18 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             {step === 1 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                  What kind of project is this?
+                  {t("form.type.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Pick the closest match. You can always add details later.
+                  {t("form.type.subtitle")}
                 </p>
                 <div className="space-y-2">
-                  {requestTypes.map((t) => {
-                    const selected = type === t.value;
+                  {requestTypes.map((rt) => {
+                    const selected = type === rt.value;
                     return (
                       <button
-                        key={t.value}
-                        onClick={() => setType(t.value)}
+                        key={rt.value}
+                        onClick={() => setType(rt.value)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                           selected
                             ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
@@ -279,13 +282,13 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                             selected ? "bg-[#909af7]/10 text-[#909af7]" : "bg-gray-100 text-muted-foreground"
                           }`}
                         >
-                          <t.Icon size={20} />
+                          <rt.Icon size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm font-medium ${selected ? "text-[#909af7]" : "text-foreground"}`}>
-                            {t.label}
+                            {t(rt.labelKey)}
                           </div>
-                          <div className="text-xs text-muted-foreground">{t.desc}</div>
+                          <div className="text-xs text-muted-foreground">{t(rt.descKey)}</div>
                         </div>
                         {selected && (
                           <div className="w-5 h-5 rounded-full bg-[#909af7] flex items-center justify-center shrink-0">
@@ -304,13 +307,13 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             {step === 2 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                  Tell us a bit more
+                  {t("form.details.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Don&apos;t worry about design terms — just describe what you&apos;re picturing.
+                  {t("form.details.subtitle")}
                 </p>
                 <Textarea
-                  placeholder="What's it for? (e.g. weekly specials on Instagram)&#10;&#10;Any colors or style you like? (e.g. warm, appetizing, our brand colors)&#10;&#10;Anything to avoid? (e.g. no blue, keep it simple)"
+                  placeholder={t("form.details.placeholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="min-h-[160px] resize-none text-base"
@@ -323,10 +326,10 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div>
                   <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                    When do you need it?
+                    {t("form.timeline.title")}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Set the pace for your designer.
+                    {t("form.timeline.subtitle")}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -348,8 +351,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                           <p.Icon size={20} />
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium">{p.label}</div>
-                          <div className="text-xs text-muted-foreground">{p.desc}</div>
+                          <div className="text-sm font-medium">{t(p.labelKey)}</div>
+                          <div className="text-xs text-muted-foreground">{t(p.descKey)}</div>
                         </div>
                       </button>
                     );
@@ -357,7 +360,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">
-                    Due date <span className="opacity-60">(optional)</span>
+                    {t("form.timeline.dueDate")} <span className="opacity-60">({t("form.timeline.optional")})</span>
                   </label>
                   <Input
                     type="date"
@@ -373,10 +376,10 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             {step === 4 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                  Any inspiration?
+                  {t("form.inspiration.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Screenshots from Pinterest, Instagram, or anywhere work great. Or skip this step.
+                  {t("form.inspiration.subtitle")}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {files.map((file, i) => (
@@ -402,7 +405,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   ))}
                   <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#909af7] hover:bg-[#909af7]/5 transition-colors">
                     <PlusSignIcon size={20} className="text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground mt-1">Add file</span>
+                    <span className="text-[10px] text-muted-foreground mt-1">{t("form.inspiration.addFile")}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -426,7 +429,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                 className="h-12 px-6 rounded-xl gap-2 text-muted-foreground"
               >
                 <ArrowLeft01Icon size={16} />
-                Back
+                {t("form.back")}
               </Button>
             ) : (
               <div />
@@ -438,10 +441,10 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
             >
               {isSubmitting
-                ? "Sending..."
+                ? t("form.submitting")
                 : isLastStep
-                  ? "Send to Designer"
-                  : "Continue"}
+                  ? t("form.submit")
+                  : t("form.continue")}
               {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
             </Button>
             </div>
