@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import { useLocale } from "@/components/portal/locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 
@@ -68,11 +69,13 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
   useEffect(() => {
     if (!submitted) return;
+    // Celebration confetti
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ["#909af7", "#10b981", "#f9a8d4"] });
     const timer = setTimeout(() => {
       if (isAdmin) router.back();
       else router.push("/portal");
       router.refresh();
-    }, 2000);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [submitted, isAdmin, router]);
 
@@ -491,7 +494,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             <Button
               onClick={isLastStep ? handleSubmit : goNext}
               disabled={!canAdvance || isSubmitting}
-              className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
+              className="flex-1 h-14 md:h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
             >
               {isSubmitting
                 ? t("form.submitting")

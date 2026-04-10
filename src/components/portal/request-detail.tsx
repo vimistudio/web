@@ -1017,6 +1017,14 @@ export function RequestDetail({
         <CompletionBanner updatedAt={request.updated_at} />
       )}
 
+      {/* Review hero moment */}
+      {currentStatus === "review" && !isAdmin && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center space-y-1">
+          <p className="font-semibold text-amber-900">{t("detail.reviewHero")}</p>
+          <p className="text-sm text-amber-700">{t("detail.reviewHeroSub")}</p>
+        </div>
+      )}
+
       {/* Queued status reassurance */}
       {currentStatus === "queued" && !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
@@ -1339,23 +1347,22 @@ export function RequestDetail({
 
       {/* Action Buttons — above comments when in review (the decision point) */}
       {currentStatus === "review" && !isAdmin && (
-        <div className="flex gap-3">
+        <div className="space-y-2">
           <Button
             onClick={() => handleStatusChange("done")}
             disabled={isUpdatingStatus}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2 h-11"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2 h-14 text-base font-semibold rounded-xl"
           >
-            <CheckmarkCircle01Icon size={16} color="white" />
+            <CheckmarkCircle01Icon size={20} color="white" />
             {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
           </Button>
-          <Button
-            variant="outline"
+          <button
             onClick={handleRequestChanges}
             disabled={isUpdatingStatus || isSubmitting}
-            className="flex-1 h-11"
+            className="w-full py-2 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
           >
             {t("detail.askForChanges")}
-          </Button>
+          </button>
         </div>
       )}
 
