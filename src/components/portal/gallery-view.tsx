@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
 import { useLocale } from "./locale-provider";
+import { SocialPostCard } from "./social/social-post-card";
 
 interface Deliverable {
   id: string;
@@ -26,9 +27,17 @@ interface Deliverable {
   };
 }
 
+interface SocialPostData {
+  handle: string;
+  caption: string;
+  slides: { url: string; alt?: string }[];
+  coverUrl: string | null;
+}
+
 interface GalleryViewProps {
   clientName: string;
   deliverables: Deliverable[];
+  socialPostsMap?: Record<string, SocialPostData>;
 }
 
 const filterChipKeys = ["all", "logo", "social", "web", "brand", "presentation", "other"] as const;
@@ -109,7 +118,7 @@ function GalleryImageCard({
   );
 }
 
-export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
+export function GalleryView({ clientName, deliverables, socialPostsMap = {} }: GalleryViewProps) {
   const { t } = useLocale();
   const [filter, setFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -256,6 +265,30 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
               <h3 className="text-sm font-medium text-muted-foreground mb-3">{monthLabel}</h3>
               <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mb-8">
                 {items.map((d, i) => {
+                  // Social post carousel card
+                  const socialData = socialPostsMap[d.id];
+                  if (d.mime_type === "application/vnd.vimi.social-post" && socialData && socialData.slides.length > 0) {
+                    return (
+                      <div key={d.id} className="break-inside-avoid">
+                        <SocialPostCard
+                          slides={socialData.slides}
+                          handle={socialData.handle}
+                          caption={socialData.caption}
+                          coverUrl={socialData.coverUrl}
+                          title={d.requests.title}
+                        />
+                        <div className="px-1 pt-2 pb-1">
+                          <p className="text-sm font-medium truncate">
+                            {d.requests.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("gallery.delivered")} {deliveredDate(d)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const heights = [
                     "h-40",
                     "h-52",

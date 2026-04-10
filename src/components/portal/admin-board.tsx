@@ -77,7 +77,7 @@ const statusLabels: Record<string, string> = {
   done: "DELIVERED",
 };
 
-function BoardCardContent({ request }: { request: Request }) {
+function BoardCardContent({ request, clientSlug }: { request: Request; clientSlug: string }) {
   const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -140,12 +140,27 @@ function BoardCardContent({ request }: { request: Request }) {
             )}
           </div>
         </div>
+
+        {request.type === "social" && (
+          <Link
+            href={`/portal/admin/clients/${clientSlug}/social/new?requestId=${request.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block mt-1"
+          >
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-pink-600 hover:text-pink-700 transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+              </svg>
+              Build Carousel
+            </span>
+          </Link>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function DraggableBoardCard({ request }: { request: Request }) {
+function DraggableBoardCard({ request, clientSlug }: { request: Request; clientSlug: string }) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: request.id });
@@ -165,7 +180,7 @@ function DraggableBoardCard({ request }: { request: Request }) {
         }}
         className="cursor-grab active:cursor-grabbing"
       >
-        <BoardCardContent request={request} />
+        <BoardCardContent request={request} clientSlug={clientSlug} />
       </div>
     </div>
   );
@@ -176,11 +191,13 @@ function DroppableColumn({
   label,
   color,
   requests,
+  clientSlug,
 }: {
   columnKey: string;
   label: string;
   color: string;
   requests: Request[];
+  clientSlug: string;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
 
@@ -202,7 +219,7 @@ function DroppableColumn({
       </div>
       <div className="space-y-3 min-h-[60px]">
         {requests.map((request) => (
-          <DraggableBoardCard key={request.id} request={request} />
+          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} />
         ))}
       </div>
       {requests.length === 0 && !isOver && (
@@ -357,6 +374,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
                 label={col.label}
                 color={col.color}
                 requests={colRequests}
+                clientSlug={client.slug}
               />
             );
           })}
@@ -365,7 +383,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
         <DragOverlay dropAnimation={null}>
           {activeRequest ? (
             <div className="opacity-90 rotate-2 scale-105 shadow-xl">
-              <BoardCardContent request={activeRequest} />
+              <BoardCardContent request={activeRequest} clientSlug={client.slug} />
             </div>
           ) : null}
         </DragOverlay>

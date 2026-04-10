@@ -40,6 +40,7 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "./locale-provider";
+import { InstagramCarouselPreview } from "./social/instagram-carousel-preview";
 
 // --- Types ---
 
@@ -107,6 +108,20 @@ interface ActivityEntry {
   profiles: { full_name: string | null; avatar_url: string | null } | null;
 }
 
+interface SocialPost {
+  id: string;
+  ig_handle: string | null;
+  ig_caption: string | null;
+  status: string;
+  social_slides: {
+    id: string;
+    slide_order: number;
+    image_path: string | null;
+    alt_text: string | null;
+    url: string | null;
+  }[];
+}
+
 interface RequestDetailProps {
   request: Request;
   clientName: string;
@@ -114,6 +129,7 @@ interface RequestDetailProps {
   isAdmin: boolean;
   isImpersonating: boolean;
   activityLog?: ActivityEntry[];
+  socialPosts?: SocialPost[];
 }
 
 // --- Config ---
@@ -554,6 +570,7 @@ export function RequestDetail({
   isAdmin,
   isImpersonating,
   activityLog = [],
+  socialPosts = [],
 }: RequestDetailProps) {
   const router = useRouter();
   const [comment, setComment] = useState("");
@@ -1167,6 +1184,27 @@ export function RequestDetail({
           )}
         </>
       )}
+
+      {/* Social Post Preview */}
+      {socialPosts.length > 0 && socialPosts.map((post) => {
+        const slides = post.social_slides
+          .filter((s) => s.url)
+          .map((s) => ({ url: s.url!, alt: s.alt_text || undefined }));
+        if (slides.length === 0) return null;
+        return (
+          <div key={post.id} className="space-y-3">
+            <h2 className="text-sm font-medium">Instagram Carousel</h2>
+            <div className="flex justify-center">
+              <InstagramCarouselPreview
+                slides={slides}
+                handle={post.ig_handle || "@handle"}
+                caption={post.ig_caption || undefined}
+                subtitle="Instagram Carousel"
+              />
+            </div>
+          </div>
+        );
+      })}
 
       {/* Deliverables */}
       {request.deliverables.length > 0 ? (

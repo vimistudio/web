@@ -57,10 +57,47 @@ export default async function GalleryPage() {
     })
   );
 
+  // Fetch social post data for social-post deliverables
+  const socialPostDeliverables = withUrls.filter(
+    (d) => d.mime_type === "application/vnd.vimi.social-post"
+  );
+
+  const socialPostsMap: Record<string, { handle: string; caption: string; slides: { url: string; alt?: string }[]; coverUrl: string | null }> = {};
+
+  for (const d of socialPostDeliverables) {
+    const postId = d.file_path.replace("social-posts/", "");
+    const { data: post } = await supabase
+      .from("social_posts")
+      .select("ig_handle, ig_caption")
+      .eq("id", postId)
+      .single();
+
+    const { data: slides } = await supabase
+      .from("social_slides")
+      .select("image_path, alt_text, slide_order")
+      .eq("post_id", postId)
+      .order("slide_order");
+
+    const slideUrls = (slides || [])
+      .filter((s) => s.image_path)
+      .map((s) => ({
+        url: supabase.storage.from("social-slides").getPublicUrl(s.image_path!).data.publicUrl,
+        alt: s.alt_text || undefined,
+      }));
+
+    socialPostsMap[d.id] = {
+      handle: post?.ig_handle || "@handle",
+      caption: post?.ig_caption || "",
+      slides: slideUrls,
+      coverUrl: slideUrls[0]?.url || null,
+    };
+  }
+
   return (
     <GalleryView
       clientName={client?.name ?? "Your Project"}
       deliverables={withUrls}
+      socialPostsMap={socialPostsMap}
     />
   );
 }
