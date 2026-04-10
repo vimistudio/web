@@ -35,6 +35,7 @@ interface Request {
   updated_at: string;
   deliverables: { id: string; file_path: string; mime_type: string | null }[];
   comments: { id: string }[];
+  previewUrl?: string | null;
 }
 
 type RequestStatus = Request["status"];
@@ -63,13 +64,13 @@ const typeColors: Record<string, string> = {
   other: "bg-gray-100 text-gray-700",
 };
 
-const typeGradients: Record<string, string> = {
-  logo: "from-purple-100 to-purple-50",
-  social: "from-pink-100 to-pink-50",
-  web: "from-blue-100 to-blue-50",
-  brand: "from-amber-100 to-amber-50",
-  presentation: "from-emerald-100 to-emerald-50",
-  other: "from-gray-100 to-gray-50",
+const typeAccentBg: Record<string, string> = {
+  logo: "bg-purple-400",
+  social: "bg-pink-400",
+  web: "bg-blue-400",
+  brand: "bg-amber-400",
+  presentation: "bg-emerald-400",
+  other: "bg-gray-300",
 };
 
 function RequestCardContent({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
@@ -77,8 +78,9 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
     month: "short",
     day: "numeric",
   });
-  const gradient = typeGradients[request.type] ?? typeGradients.other;
+  const accent = typeAccentBg[request.type] ?? typeAccentBg.other;
   const isNew = lastVisitedAt && new Date(request.updated_at) > new Date(lastVisitedAt);
+  const hasPreview = !!request.previewUrl;
 
   return (
     <Card className={`hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer overflow-hidden relative touch-manipulation ${
@@ -87,9 +89,25 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
       {isNew && (
         <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white animate-pulse" />
       )}
-      <div
-        className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
-      />
+      {/* Type accent stripe */}
+      <div className={`h-[3px] w-full ${accent}`} />
+      {/* Smart preview area */}
+      {hasPreview ? (
+        <div className="relative h-28 md:h-32 overflow-hidden bg-gray-50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={request.previewUrl!}
+            alt={request.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : request.description ? (
+        <div className="px-3 pt-2.5 pb-1">
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+            {request.description}
+          </p>
+        </div>
+      ) : null}
       <CardContent className="p-3 md:p-4 space-y-2">
         <div className="flex items-start justify-between">
           <h3 className="font-semibold text-sm leading-tight">

@@ -72,13 +72,29 @@ export default async function PortalPage() {
 
   const clientName = client?.name ?? "Your Project";
 
+  // Generate preview URLs for the first image deliverable of each request
+  const requestsWithPreviews = await Promise.all(
+    (requests ?? []).map(async (r) => {
+      const firstImage = r.deliverables?.find(
+        (d: { mime_type: string | null }) => d.mime_type?.startsWith("image/")
+      );
+      if (firstImage && (r.status === "review" || r.status === "done")) {
+        const { data } = await supabase.storage
+          .from("deliverables")
+          .createSignedUrl(firstImage.file_path, 3600);
+        return { ...r, previewUrl: data?.signedUrl ?? null };
+      }
+      return { ...r, previewUrl: null };
+    })
+  );
+
   return (
     <>
       <SetLastVisited />
       <ClientBoard
         clientName={clientName}
-        requests={requests ?? []}
-        requestCount={(requests ?? []).filter((r) => r.status !== "done").length}
+        requests={requestsWithPreviews}
+        requestCount={requestsWithPreviews.filter((r) => r.status !== "done").length}
         isAdmin={isImpersonating}
         lastVisitedAt={lastVisitedAt}
       />

@@ -137,7 +137,7 @@ export default async function RequestDetailPage({
       }}
       clientName={clientName}
       currentUserId={user.id}
-      isAdmin={profile.role === "admin"}
+      isAdmin={profile.role === "admin" && !isImpersonating}
       isImpersonating={isImpersonating}
       activityLog={activityLog ?? []}
       socialPosts={socialPostsWithUrls}
