@@ -30,16 +30,16 @@ export const form = {
   "form.details.placeholder": { en: "What's it for? (e.g. weekly specials on Instagram)\n\nAny colors or style you like? (e.g. warm, appetizing, our brand colors)\n\nAnything to avoid? (e.g. no blue, keep it simple)", es: "¿Para qué es? (ej. especiales semanales en Instagram)\n\n¿Algún color o estilo que te guste? (ej. cálido, apetitoso, colores de nuestra marca)\n\n¿Algo que evitar? (ej. sin azul, mantenerlo simple)" },
 
   "form.timeline.title": { en: "When do you need it?", es: "¿Cuándo lo necesitas?" },
-  "form.timeline.subtitle": { en: "Set the pace for your designer.", es: "Marca el ritmo para tu diseñador." },
+  "form.timeline.subtitle": { en: "Let your designer know how soon you need it.", es: "Dile a tu diseñador qué tan pronto lo necesitas." },
   "form.timeline.dueDate": { en: "Due date", es: "Fecha límite" },
   "form.timeline.optional": { en: "optional", es: "opcional" },
 
   "form.priority.whenever": { en: "Whenever", es: "Cuando Sea" },
   "form.priority.whenever.desc": { en: "No rush, take your time", es: "Sin prisa, tómate tu tiempo" },
   "form.priority.thisWeek": { en: "This Week", es: "Esta Semana" },
-  "form.priority.thisWeek.desc": { en: "Normal turnaround", es: "Tiempo normal de entrega" },
+  "form.priority.thisWeek.desc": { en: "Ready within the week", es: "Listo en la semana" },
   "form.priority.urgent": { en: "Urgent", es: "Urgente" },
-  "form.priority.urgent.desc": { en: "Need it ASAP", es: "Lo necesito ya" },
+  "form.priority.urgent.desc": { en: "Need it right away", es: "Lo necesito ya" },
 
   "form.inspiration.title": { en: "Any inspiration?", es: "¿Alguna inspiración?" },
   "form.inspiration.subtitle": { en: "Screenshots from Pinterest, Instagram, or anywhere work great. Or skip this step.", es: "Capturas de Pinterest, Instagram, o donde sea funcionan perfecto. O salta este paso." },
@@ -51,4 +51,6 @@ export const form = {
   "form.submitting": { en: "Sending...", es: "Enviando..." },
   "form.success.title": { en: "Got it!", es: "¡Listo!" },
   "form.success.body": { en: "Your designer will take it from here. We'll let you know when there's something to see.", es: "Tu diseñador se encarga desde aquí. Te avisaremos cuando haya algo que ver." },
+  "form.error.title": { en: "Hmm, something went wrong", es: "Algo salió mal" },
+  "form.error.body": { en: "We couldn't send your request. Please try again.", es: "No pudimos enviar tu solicitud. Inténtalo de nuevo." },
 } as const;
