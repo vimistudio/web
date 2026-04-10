@@ -163,7 +163,7 @@ export type PortalKey = keyof typeof portal;
  */
 export function t(key: PortalKey, locale: Locale = "en", vars?: Record<string, string | number>): string {
   const entry = portal[key];
-  let str = entry?.[locale] ?? entry?.en ?? key;
+  let str: string = entry?.[locale] ?? entry?.en ?? key;
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));

@@ -38,6 +38,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
+import { Input } from "@/components/ui/input";
+import { useLocale } from "./locale-provider";
 
 // --- Types ---
 
@@ -569,6 +571,48 @@ export function RequestDetail({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentFileRef = useRef<HTMLInputElement>(null);
 
+  // Edit mode state (only when queued)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(request.title);
+  const [editDescription, setEditDescription] = useState(request.description ?? "");
+  const [editType, setEditType] = useState<string>(request.type);
+  const [editPriority, setEditPriority] = useState(request.priority);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const { t } = useLocale();
+
+  const canEdit = currentStatus === "queued" && !isAdmin;
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim() || isSavingEdit) return;
+    setIsSavingEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("requests")
+      .update({
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        type: editType as "logo" | "social" | "web" | "brand" | "presentation" | "other",
+        priority: editPriority,
+      })
+      .eq("id", request.id);
+    setIsSavingEdit(false);
+    if (error) {
+      toast.error("Could not save changes");
+      return;
+    }
+    toast.success(t("edit.saved"));
+    setIsEditing(false);
+    router.refresh();
+  };
+
+  const handleCancelEdit = () => {
+    setEditTitle(request.title);
+    setEditDescription(request.description ?? "");
+    setEditType(request.type);
+    setEditPriority(request.priority);
+    setIsEditing(false);
+  };
+
   const allComments = [...request.comments, ...optimisticComments];
 
   // Build image list for lightbox (only visible image deliverables with URLs)
@@ -978,49 +1022,129 @@ export function RequestDetail({
       )}
 
       {/* Title + Meta */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs text-muted-foreground font-medium">
-            {clientName}
-          </span>
+      {isEditing ? (
+        <div className="space-y-4 bg-white border rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium">{t("edit.title")}</h2>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs">
+                {t("edit.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-[#909af7] hover:bg-[#7b85e8]">
+                {isSavingEdit ? t("edit.saving") : t("edit.save")}
+              </Button>
+            </div>
+          </div>
+          <Input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder={t("form.name.placeholder")}
+            className="text-base font-semibold"
+          />
+          <Textarea
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            placeholder={t("form.details.placeholder")}
+            className="min-h-[100px] text-sm"
+          />
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">{t("form.step.type")}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(typeLabels) as string[]).map((typeKey) => (
+                <button
+                  key={typeKey}
+                  onClick={() => setEditType(typeKey)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    editType === typeKey
+                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                  }`}
+                >
+                  {typeLabels[typeKey]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">{t("form.step.timeline")}</label>
+            <div className="flex gap-2">
+              {[
+                { value: 1, label: t("form.priority.whenever") },
+                { value: 2, label: t("form.priority.thisWeek") },
+                { value: 3, label: t("form.priority.urgent") },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setEditPriority(p.value)}
+                  className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
+                    editPriority === p.value
+                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-semibold">{request.title}</h1>
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <Badge
-            variant="secondary"
-            className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
-          >
-            {typeLabels[request.type] ?? request.type}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            Requested {requestedDate}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            · Updated {updatedDate}
-          </span>
-          {request.due_date && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              · <CalendarIcon size={12} />
-              Due{" "}
-              {new Date(request.due_date).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Description */}
-      {request.description ? (
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {request.description}
-        </p>
       ) : (
-        <p className="text-sm text-muted-foreground/60 italic">
-          No description provided
-        </p>
+        <>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-muted-foreground font-medium">
+                {clientName}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold">{request.title}</h1>
+              {canEdit && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="shrink-0 text-xs text-[#909af7] hover:text-[#7b85e8] transition-colors font-medium"
+                >
+                  {t("edit.title")}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge
+                variant="secondary"
+                className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
+              >
+                {typeLabels[request.type] ?? request.type}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {t("detail.requested")} {requestedDate}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                · {t("detail.updated")} {updatedDate}
+              </span>
+              {request.due_date && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  · <CalendarIcon size={12} />
+                  {t("detail.due")}{" "}
+                  {new Date(request.due_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          {request.description ? (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {request.description}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground/60 italic">
+              {t("detail.noDescription")}
+            </p>
+          )}
+        </>
       )}
 
       {/* Deliverables */}
@@ -1419,15 +1543,17 @@ export function RequestDetail({
           {/* Quick feedback chips — help clients articulate feedback */}
           {currentStatus === "review" && !isAdmin && !comment.trim() && (
             <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-              {[
-                "Love it!",
-                "Can we change the colors?",
-                "Can we change the text?",
-                "Can we try a different layout?",
-                "Almost there, small tweaks needed",
-              ].map((chip) => (
+              {([
+                "chip.loveIt",
+                "chip.changeColors",
+                "chip.changeText",
+                "chip.differentLayout",
+                "chip.almostThere",
+              ] as const).map((chipKey) => {
+                const chip = t(chipKey);
+                return (
                 <button
-                  key={chip}
+                  key={chipKey}
                   type="button"
                   onClick={() => {
                     setComment(chip);
@@ -1437,7 +1563,8 @@ export function RequestDetail({
                 >
                   {chip}
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
           {/* Attachment preview */}
