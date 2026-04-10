@@ -5,7 +5,7 @@ export const board = {
   "tab.profile": { en: "Profile", es: "Perfil" },
 
   "board.active": { en: "Active", es: "Activo" },
-  "board.workingOn": { en: "We're working on {count} design{s} for you", es: "Estamos trabajando en {count} diseño{s} para ti" },
+  "board.workingOn": { en: "Your studio is working on {count} design{s}", es: "Tu estudio está trabajando en {count} diseño{s}" },
   "board.newRequest": { en: "New Request", es: "Nueva solicitud" },
   "board.emptyTitle": { en: "Your studio is ready", es: "Tu estudio está listo" },
   "board.emptyBody": { en: "What would you like us to design first?", es: "¿Qué diseñamos primero?" },

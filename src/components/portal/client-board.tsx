@@ -81,9 +81,11 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
   const isNew = lastVisitedAt && new Date(request.updated_at) > new Date(lastVisitedAt);
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative">
+    <Card className={`hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer overflow-hidden relative touch-manipulation ${
+      request.status === "review" ? "ring-2 ring-amber-300 ring-offset-1" : ""
+    }`}>
       {isNew && (
-        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white" />
+        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white animate-pulse" />
       )}
       <div
         className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
@@ -119,6 +121,12 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
           <span className="text-xs text-muted-foreground">
             Updated {timeSince}
           </span>
+          {request.status === "in_progress" && (
+            <span className="flex items-center gap-1 ml-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[10px] text-blue-600 font-medium">In the works</span>
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

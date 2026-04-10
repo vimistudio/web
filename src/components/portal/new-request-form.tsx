@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import { useLocale } from "@/components/portal/locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 
@@ -65,22 +66,27 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
 
   useEffect(() => {
     if (!submitted) return;
+    // Celebration confetti
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ["#909af7", "#10b981", "#f9a8d4"] });
     const timer = setTimeout(() => {
       if (isAdmin) router.back();
       else router.push("/portal");
       router.refresh();
-    }, 2000);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [submitted, isAdmin, router]);
 
   const goNext = useCallback(() => {
+    setDirection("forward");
     if (step < TOTAL_STEPS - 1) setStep((s) => s + 1);
   }, [step]);
 
   const goBack = useCallback(() => {
+    setDirection("back");
     if (step > 0) setStep((s) => s - 1);
     else router.back();
   }, [step, router]);
@@ -231,14 +237,14 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           </div>
 
           {/* Step content */}
-          <div className="flex-1" key={step}>
+          <div className={`flex-1 ${direction === "forward" ? "animate-in fade-in slide-in-from-right-4" : "animate-in fade-in slide-in-from-left-4"} duration-300`} key={step}>
             {/* Step label */}
             <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
               {t(STEP_LABEL_KEYS[step])}
             </p>
 
             {step === 0 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.name.title")}
                 </h2>
@@ -257,7 +263,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.type.title")}
                 </h2>
@@ -271,7 +277,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                       <button
                         key={rt.value}
                         onClick={() => setType(rt.value)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
                             ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
                             : "border-gray-200 hover:border-gray-300 bg-white"
@@ -305,7 +311,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.details.title")}
                 </h2>
@@ -316,14 +322,67 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   placeholder={t("form.details.placeholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[160px] resize-none text-base"
+                  className="min-h-[120px] resize-none text-base"
                   autoFocus
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (const item of Array.from(items)) {
+                      if (item.type.startsWith("image/")) {
+                        const file = item.getAsFile();
+                        if (!file) return;
+                        setFiles((prev) => [...prev, file]);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPreviews((prev) => [...prev, reader.result as string]);
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }}
                 />
+
+                {/* Inline references — paste or upload images alongside details */}
+                {files.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {files.map((file, i) => (
+                      <div
+                        key={i}
+                        className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center group"
+                      >
+                        {previews[i] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground">
+                            {file.name.split(".").pop()?.toUpperCase()}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => removeFile(i)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        >
+                          <Cancel01Icon size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#909af7] cursor-pointer transition-colors w-fit">
+                  <PlusSignIcon size={14} />
+                  <span>{t("form.inspiration.addFile")}</span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
               </div>
             )}
 
             {step === 3 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                     {t("form.timeline.title")}
@@ -339,7 +398,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                       <button
                         key={p.value}
                         onClick={() => setPriority(p.value)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected ? p.activeColor + " shadow-sm" : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                       >
@@ -374,7 +433,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 4 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.inspiration.title")}
                 </h2>
@@ -438,14 +497,21 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             <Button
               onClick={isLastStep ? handleSubmit : goNext}
               disabled={!canAdvance || isSubmitting}
-              className="flex-1 h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-medium rounded-xl gap-2"
+              className="flex-1 h-14 md:h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
             >
-              {isSubmitting
-                ? t("form.submitting")
-                : isLastStep
-                  ? t("form.submit")
-                  : t("form.continue")}
-              {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {t("form.submitting")}
+                </>
+              ) : isLastStep ? (
+                t("form.submit")
+              ) : (
+                <>
+                  {t("form.continue")}
+                  <ArrowRight01Icon size={16} />
+                </>
+              )}
             </Button>
             </div>
           </div>
