@@ -134,7 +134,7 @@ export function AdminSettingsView({
                 <SelectTrigger>
                   <SelectValue placeholder="Select a client project" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" className="bg-white border shadow-lg z-50">
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}

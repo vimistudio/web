@@ -1134,17 +1134,7 @@ export function RequestDetail({
                 {clientName}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold">{request.title}</h1>
-              {canEdit && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="shrink-0 text-xs text-[#909af7] hover:text-[#7b85e8] transition-colors font-medium"
-                >
-                  {t("edit.title")}
-                </button>
-              )}
-            </div>
+            <h1 className="text-2xl font-semibold">{request.title}</h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <Badge
                 variant="secondary"

@@ -113,6 +113,39 @@ export function SocialMediaBuilder({
     [postId]
   );
 
+  // Upload file directly to Supabase Storage (bypasses Vercel 4.5MB limit),
+  // then PATCH the slide record with the storage path
+  const uploadFileToSlide = useCallback(
+    async (slideId: string, file: File): Promise<{ image_path: string; url: string } | null> => {
+      const supabase = createClient();
+      const timestamp = Date.now();
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_") || `paste-${timestamp}.png`;
+      const storagePath = `uploads/${postId}/${timestamp}-${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("social-slides")
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) {
+        console.error("Storage upload failed:", uploadError);
+        return null;
+      }
+
+      // Tell the API to update the slide record
+      const res = await fetch(
+        `/api/portal/social-posts/${postId}/slides/${slideId}/image`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_path: storagePath }),
+        }
+      );
+      if (!res.ok) return null;
+      return res.json();
+    },
+    [postId]
+  );
+
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
       setIsUploading(true);
@@ -126,16 +159,10 @@ export function SocialMediaBuilder({
           const newSlide = await slideRes.json();
           if (!slideRes.ok) continue;
 
-          // Upload image to the slide
-          const formData = new FormData();
-          formData.append("file", file);
-          const uploadRes = await fetch(
-            `/api/portal/social-posts/${postId}/slides/${newSlide.id}/image`,
-            { method: "POST", body: formData }
-          );
-          const uploaded = await uploadRes.json();
+          // Upload directly to Supabase Storage
+          const uploaded = await uploadFileToSlide(newSlide.id, file);
 
-          if (uploadRes.ok) {
+          if (uploaded) {
             setSlides((prev) => [
               ...prev,
               { ...newSlide, image_path: uploaded.image_path, url: uploaded.url, alt_text: null },
@@ -150,7 +177,7 @@ export function SocialMediaBuilder({
         setIsUploading(false);
       }
     },
-    [postId]
+    [postId, uploadFileToSlide]
   );
 
   // Paste images from clipboard (Cmd+V / Ctrl+V)
@@ -183,14 +210,8 @@ export function SocialMediaBuilder({
     async (slideId: string, file: File) => {
       setIsUploading(true);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch(
-          `/api/portal/social-posts/${postId}/slides/${slideId}/image`,
-          { method: "POST", body: formData }
-        );
-        const uploaded = await res.json();
-        if (res.ok) {
+        const uploaded = await uploadFileToSlide(slideId, file);
+        if (uploaded) {
           setSlides((prev) =>
             prev.map((s) =>
               s.id === slideId
@@ -199,6 +220,8 @@ export function SocialMediaBuilder({
             )
           );
           toast.success("Slide image updated");
+        } else {
+          toast.error("Upload failed");
         }
       } catch {
         toast.error("Upload failed");
@@ -206,7 +229,7 @@ export function SocialMediaBuilder({
         setIsUploading(false);
       }
     },
-    [postId]
+    [uploadFileToSlide]
   );
 
   const handlePublish = useCallback(async () => {

@@ -31,6 +31,7 @@ interface Request {
   type: "logo" | "social" | "web" | "brand" | "presentation" | "other";
   status: "queued" | "in_progress" | "review" | "done";
   priority: number;
+  is_archived?: boolean;
   created_at: string;
   updated_at: string;
   due_date: string | null;
@@ -77,14 +78,37 @@ const statusLabels: Record<string, string> = {
   done: "DELIVERED",
 };
 
-function BoardCardContent({ request, clientSlug }: { request: Request; clientSlug: string }) {
+function BoardCardContent({
+  request,
+  clientSlug,
+  onArchive,
+}: {
+  request: Request;
+  clientSlug: string;
+  onArchive?: (id: string) => void;
+}) {
   const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer group relative">
+      {onArchive && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onArchive(request.id);
+          }}
+          className="absolute top-2 right-2 z-10 w-6 h-6 rounded-md bg-white/80 hover:bg-red-50 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Archive"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 hover:text-red-500">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      )}
       <CardContent className="p-4 space-y-3">
         <h3 className="font-medium text-sm leading-tight group-hover:text-[#909af7] transition-colors">
           {request.title}
@@ -160,7 +184,7 @@ function BoardCardContent({ request, clientSlug }: { request: Request; clientSlu
   );
 }
 
-function DraggableBoardCard({ request, clientSlug }: { request: Request; clientSlug: string }) {
+function DraggableBoardCard({ request, clientSlug, onArchive }: { request: Request; clientSlug: string; onArchive: (id: string) => void }) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: request.id });
@@ -180,7 +204,7 @@ function DraggableBoardCard({ request, clientSlug }: { request: Request; clientS
         }}
         className="cursor-grab active:cursor-grabbing"
       >
-        <BoardCardContent request={request} clientSlug={clientSlug} />
+        <BoardCardContent request={request} clientSlug={clientSlug} onArchive={onArchive} />
       </div>
     </div>
   );
@@ -192,12 +216,14 @@ function DroppableColumn({
   color,
   requests,
   clientSlug,
+  onArchive,
 }: {
   columnKey: string;
   label: string;
   color: string;
   requests: Request[];
   clientSlug: string;
+  onArchive: (id: string) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
 
@@ -219,7 +245,7 @@ function DroppableColumn({
       </div>
       <div className="space-y-3 min-h-[60px]">
         {requests.map((request) => (
-          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} />
+          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} onArchive={onArchive} />
         ))}
       </div>
       {requests.length === 0 && !isOver && (
@@ -256,7 +282,42 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
     onEvent: () => router.refresh(),
   });
 
-  const openCount = requests.filter((r) => r.status !== "done").length;
+  const [showArchived, setShowArchived] = useState(false);
+  const visibleRequests = showArchived
+    ? requests
+    : requests.filter((r) => !r.is_archived);
+  const archivedCount = requests.filter((r) => r.is_archived).length;
+  const openCount = visibleRequests.filter((r) => r.status !== "done").length;
+
+  const handleArchive = useCallback(
+    async (requestId: string) => {
+      // Optimistic removal
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, is_archived: true } : r
+        )
+      );
+
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("requests")
+        .update({ is_archived: true })
+        .eq("id", requestId);
+
+      if (error) {
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === requestId ? { ...r, is_archived: false } : r
+          )
+        );
+        toast.error("Couldn't archive. Try again.");
+      } else {
+        toast.success("Request archived");
+        router.refresh();
+      }
+    },
+    [router]
+  );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -348,6 +409,16 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
         </div>
 
         <div className="flex items-center gap-2">
+          {archivedCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              {showArchived ? "Hide" : "Show"} archived ({archivedCount})
+            </Button>
+          )}
           <Link href={`/portal/requests/new?client=${client.id}`}>
             <Button variant="outline" className="gap-2">
               <PlusSignIcon size={16} />
@@ -366,7 +437,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[60vh]">
           {columns.map((col) => {
-            const colRequests = requests.filter((r) => r.status === col.key);
+            const colRequests = visibleRequests.filter((r) => r.status === col.key);
             return (
               <DroppableColumn
                 key={col.key}
@@ -375,6 +446,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
                 color={col.color}
                 requests={colRequests}
                 clientSlug={client.slug}
+                onArchive={handleArchive}
               />
             );
           })}
