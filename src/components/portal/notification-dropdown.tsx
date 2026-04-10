@@ -32,8 +32,10 @@ interface NotificationDropdownProps {
 }
 
 import { Comment01Icon, ArrowRight01Icon, Upload01Icon } from "@/components/ui/icons";
+import { useLocale } from "./locale-provider";
 
 export function NotificationDropdown({ variant = "light" }: NotificationDropdownProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -133,7 +135,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0 max-h-[400px] overflow-hidden bg-white border shadow-lg z-50">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold">Notifications</h3>
+          <h3 className="text-sm font-semibold">{t("notifications.title")}</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -142,7 +144,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
               onClick={markAllRead}
             >
               <CheckmarkCircle01Icon size={12} className="mr-1" />
-              Mark all read
+              {t("notifications.markAllRead")}
             </Button>
           )}
         </div>
@@ -184,8 +186,8 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
             ))
           ) : (
             <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">All clear</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">We&apos;ll let you know when something needs your eye.</p>
+              <p className="text-sm text-muted-foreground">{t("notifications.emptyTitle")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("notifications.emptySubtitle")}</p>
             </div>
           )}
         </div>

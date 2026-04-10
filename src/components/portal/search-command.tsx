@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { Comment01Icon, Upload01Icon, Task01Icon } from "@/components/ui/icons";
+import { useLocale } from "./locale-provider";
 
 interface SearchResults {
   requests: {
@@ -62,6 +63,7 @@ export function SearchCommand({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,29 +116,29 @@ export function SearchCommand({
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Search requests, comments, files..."
+        placeholder={t("search.placeholder")}
         value={query}
         onValueChange={setQuery}
       />
       <CommandList>
         {isLoading && (
           <div className="py-6 text-center text-sm text-muted-foreground">
-            Searching...
+            {t("search.searching")}
           </div>
         )}
 
         {!isLoading && query.length >= 2 && !hasResults && (
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>{t("search.noResults")}</CommandEmpty>
         )}
 
         {!isLoading && query.length < 2 && (
           <div className="py-6 text-center text-sm text-muted-foreground">
-            Type at least 2 characters to search
+            {t("search.minChars")}
           </div>
         )}
 
         {results && results.requests.length > 0 && (
-          <CommandGroup heading="Requests">
+          <CommandGroup heading={t("search.requests")}>
             {results.requests.map((r) => (
               <CommandItem
                 key={`req-${r.id}`}
@@ -170,7 +172,7 @@ export function SearchCommand({
         )}
 
         {results && results.comments.length > 0 && (
-          <CommandGroup heading="Comments">
+          <CommandGroup heading={t("search.comments")}>
             {results.comments.map((c) => (
               <CommandItem
                 key={`com-${c.id}`}
@@ -183,7 +185,7 @@ export function SearchCommand({
                 <Comment01Icon size={14} className="mr-2 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground truncate">
-                    on {c.requests?.title ?? "a request"}
+                    {t("search.onRequest")} {c.requests?.title ?? "a request"}
                   </p>
                   <p className="text-sm truncate">{c.body}</p>
                 </div>
@@ -193,7 +195,7 @@ export function SearchCommand({
         )}
 
         {results && results.deliverables.length > 0 && (
-          <CommandGroup heading="Files">
+          <CommandGroup heading={t("search.files")}>
             {results.deliverables.map((d) => (
               <CommandItem
                 key={`del-${d.id}`}
@@ -209,7 +211,7 @@ export function SearchCommand({
                     {d.file_name}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    in {d.requests?.title ?? "a request"}
+                    {t("search.inRequest")} {d.requests?.title ?? "a request"}
                   </p>
                 </div>
               </CommandItem>

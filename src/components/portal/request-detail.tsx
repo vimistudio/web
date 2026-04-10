@@ -700,7 +700,7 @@ export function RequestDetail({
     });
 
     if (error) {
-      toast.error("Couldn't post your comment. Please try again.");
+      toast.error(t("detail.couldntPost"));
       setOptimisticComments((prev) =>
         prev.filter((c) => c.id !== optimisticComment.id)
       );
@@ -735,7 +735,7 @@ export function RequestDetail({
 
       if (error) {
         setCurrentStatus(previousStatus);
-        toast.error("Couldn't update status. Please try again.");
+        toast.error(t("detail.couldntUpdate"));
         setIsUpdatingStatus(false);
         return;
       }
@@ -747,7 +747,7 @@ export function RequestDetail({
           origin: { y: 0.7 },
           colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
         });
-        toast.success("Approved! Your designs are ready to download.", {
+        toast.success(t("detail.approved"), {
           duration: 5000,
         });
       } else {
@@ -794,7 +794,7 @@ export function RequestDetail({
       });
 
       if (error) {
-        toast.error("Couldn't post your comment. Please try again.");
+        toast.error(t("detail.couldntPost"));
         setIsSubmitting(false);
         return;
       }
@@ -1016,7 +1016,7 @@ export function RequestDetail({
       {currentStatus === "queued" && !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-800">
-            You're up next! Your designer will start working on this soon.
+            {t("detail.upNext")}
           </p>
         </div>
       )}
@@ -1152,7 +1152,7 @@ export function RequestDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">
-              {`Your Designs (${request.deliverables.length})`}
+              {`${t("detail.yourDesigns")} (${request.deliverables.length})`}
             </h2>
             <div className="flex items-center gap-1">
             {isAdmin && hiddenDeliverables.length > 0 && (
@@ -1227,7 +1227,7 @@ export function RequestDetail({
                 }}
               >
                 <Download01Icon size={12} />
-                Download All
+                {t("detail.downloadAll")}
               </Button>
             )}
             </div>
@@ -1283,8 +1283,8 @@ export function RequestDetail({
         <div className="border border-dashed border-muted-foreground/20 rounded-xl p-6 text-center">
           <p className="text-sm text-muted-foreground">
             {currentStatus === "in_progress"
-              ? "Your designs will show up here once they're ready."
-              : "No deliverables for this request yet."}
+              ? t("detail.designsWillAppear")
+              : t("detail.noDeliverables")}
           </p>
         </div>
       )}
@@ -1331,7 +1331,7 @@ export function RequestDetail({
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2 h-11"
           >
             <CheckmarkCircle01Icon size={16} color="white" />
-            {isUpdatingStatus ? "Approving..." : "Approve"}
+            {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
           </Button>
           <Button
             variant="outline"
@@ -1339,7 +1339,7 @@ export function RequestDetail({
             disabled={isUpdatingStatus || isSubmitting}
             className="flex-1 h-11"
           >
-            Ask for Changes
+            {t("detail.askForChanges")}
           </Button>
         </div>
       )}
@@ -1403,7 +1403,7 @@ export function RequestDetail({
       {request.reference_images.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium">
-            References ({request.reference_images.length})
+            {t("detail.references")} ({request.reference_images.length})
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {request.reference_images.map((ref) => (
@@ -1441,7 +1441,7 @@ export function RequestDetail({
       {/* Comments */}
       <div className="space-y-4">
         <h2 className="text-sm font-medium">
-          Comments ({allComments.length})
+          {t("detail.comments")} ({allComments.length})
         </h2>
 
         {allComments.map((c) => {
@@ -1526,7 +1526,7 @@ export function RequestDetail({
 
         {allComments.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No messages yet. Say hi, or we&apos;ll reach out when we have updates.
+            {t("detail.noComments")}
           </p>
         )}
 
@@ -1626,7 +1626,7 @@ export function RequestDetail({
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
-              placeholder="Add a comment..."
+              placeholder={t("detail.addComment")}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -1679,7 +1679,7 @@ export function RequestDetail({
           </div>
           <div className="hidden md:flex items-center justify-between px-1 mt-1">
             <p className="text-[10px] text-muted-foreground/50">
-              Enter to send, Shift+Enter for new line
+              {t("detail.sendHint")}
             </p>
             {comment.length > 1500 && (
               <p className="text-[10px] text-muted-foreground">

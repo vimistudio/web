@@ -124,15 +124,31 @@ const portal = {
   "gallery.oldest": { en: "Oldest", es: "Antiguos" },
   "gallery.empty": { en: "No deliverables yet. They'll appear here as designs are completed.", es: "Aún no hay diseños. Aparecerán aquí conforme se completen." },
   "gallery.emptyFiltered": { en: "No {type} deliverables yet.", es: "Aún no hay diseños de {type}." },
+  "gallery.filter.logos": { en: "Logos", es: "Logos" },
+  "gallery.filter.social": { en: "Social", es: "Social" },
+  "gallery.filter.web": { en: "Web", es: "Web" },
+  "gallery.filter.brand": { en: "Brand", es: "Marca" },
+  "gallery.deliverable": { en: "deliverable", es: "diseño" },
+  "gallery.deliverables": { en: "deliverables", es: "diseños" },
+  "gallery.delivered": { en: "Delivered", es: "Entregado" },
 
   // --- Notifications ---
   "notifications.title": { en: "Notifications", es: "Notificaciones" },
   "notifications.markAllRead": { en: "Mark all read", es: "Marcar todo leído" },
   "notifications.empty": { en: "All clear. We'll let you know when something needs your eye.", es: "Todo al día. Te avisaremos cuando haya algo nuevo." },
+  "notifications.emptyTitle": { en: "All clear", es: "Todo al día" },
+  "notifications.emptySubtitle": { en: "We'll let you know when something needs your eye.", es: "Te avisaremos cuando haya algo nuevo." },
 
   // --- Search ---
-  "search.placeholder": { en: "Search requests...", es: "Buscar solicitudes..." },
+  "search.placeholder": { en: "Search requests, comments, files...", es: "Buscar solicitudes, comentarios, archivos..." },
+  "search.searching": { en: "Searching...", es: "Buscando..." },
   "search.noResults": { en: "No results found.", es: "Sin resultados." },
+  "search.minChars": { en: "Type at least 2 characters to search", es: "Escribe al menos 2 caracteres" },
+  "search.requests": { en: "Requests", es: "Solicitudes" },
+  "search.comments": { en: "Comments", es: "Comentarios" },
+  "search.files": { en: "Files", es: "Archivos" },
+  "search.onRequest": { en: "on", es: "en" },
+  "search.inRequest": { en: "in", es: "en" },
 
   // --- Profile ---
   "profile.signOut": { en: "Sign Out", es: "Cerrar Sesión" },
@@ -149,6 +165,41 @@ const portal = {
   "login.signingIn": { en: "Signing in...", es: "Iniciando sesión..." },
   "login.inviteOnly": { en: "Invite-only access", es: "Acceso solo con invitación" },
   "login.error": { en: "Something went wrong signing in. Please try again.", es: "Algo salió mal al iniciar sesión. Inténtalo de nuevo." },
+
+  // --- Client header ---
+  "header.settings": { en: "Settings", es: "Configuración" },
+  "header.signOut": { en: "Sign out", es: "Cerrar sesión" },
+  "header.searchPlaceholder": { en: "Search projects, files, documents...", es: "Buscar proyectos, archivos, documentos..." },
+
+  // --- Request detail (remaining) ---
+  "detail.requestComplete": { en: "Request Complete", es: "Solicitud Completada" },
+  "detail.preparingFiles": { en: "Preparing {count} files...", es: "Preparando {count} archivos..." },
+  "detail.downloadReady": { en: "Download ready!", es: "¡Descarga lista!" },
+  "detail.revealAll": { en: "Reveal All", es: "Mostrar Todo" },
+  "detail.uploading": { en: "Uploading...", es: "Subiendo..." },
+  "detail.uploadDeliverables": { en: "Upload Deliverables", es: "Subir Diseños" },
+  "detail.designsWillAppear": { en: "Your designs will show up here once they're ready.", es: "Tus diseños aparecerán aquí cuando estén listos." },
+  "detail.noDeliverables": { en: "No deliverables for this request yet.", es: "Aún no hay diseños para esta solicitud." },
+  "detail.startWorking": { en: "Start Working", es: "Empezar" },
+  "detail.submitForReview": { en: "Submit for Review", es: "Enviar a Revisión" },
+  "detail.markDone": { en: "Mark Done", es: "Marcar Entregado" },
+  "detail.markDoneConfirm": { en: "Mark as done?", es: "¿Marcar como entregado?" },
+  "detail.markDoneDesc": { en: "This will skip the client review step and mark the request as complete. The client will see it as delivered.", es: "Esto saltará la revisión del cliente y marcará la solicitud como completada." },
+  "detail.cancel": { en: "Cancel", es: "Cancelar" },
+  "detail.updating": { en: "Updating...", es: "Actualizando..." },
+  "detail.approved": { en: "Approved! Your designs are ready to download.", es: "¡Aprobado! Tus diseños están listos para descargar." },
+  "detail.statusUpdated": { en: "Status updated", es: "Estado actualizado" },
+  "detail.couldntPost": { en: "Couldn't post your comment. Please try again.", es: "No se pudo enviar tu comentario. Inténtalo de nuevo." },
+  "detail.couldntUpdate": { en: "Couldn't update status. Please try again.", es: "No se pudo actualizar el estado. Inténtalo de nuevo." },
+  "detail.hidden": { en: "Hidden", es: "Oculto" },
+  "detail.vimistudio": { en: "Vimi Studio", es: "Vimi Studio" },
+  "detail.client": { en: "Client", es: "Cliente" },
+
+  // --- Login (extra) ---
+  "login.inviteDesc": { en: "Your studio will set up your account.", es: "Tu estudio configurará tu cuenta." },
+  "login.terms": { en: "Terms", es: "Términos" },
+  "login.privacy": { en: "Privacy Policy", es: "Política de Privacidad" },
+  "login.continueGoogle": { en: "Continue with Google", es: "Continuar con Google" },
 
   // --- Common ---
   "common.for": { en: "for", es: "para" },
