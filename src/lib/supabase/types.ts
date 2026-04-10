@@ -454,6 +454,95 @@ export type Database = {
           },
         ]
       }
+      social_posts: {
+        Row: {
+          cover_slide_idx: number
+          created_at: string
+          created_by: string | null
+          id: string
+          ig_caption: string | null
+          ig_handle: string | null
+          published_at: string | null
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cover_slide_idx?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ig_caption?: string | null
+          ig_handle?: string | null
+          published_at?: string | null
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cover_slide_idx?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ig_caption?: string | null
+          ig_handle?: string | null
+          published_at?: string | null
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_slides: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          id: string
+          image_path: string | null
+          post_id: string
+          slide_order: number
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          post_id: string
+          slide_order?: number
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          post_id?: string
+          slide_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_slides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

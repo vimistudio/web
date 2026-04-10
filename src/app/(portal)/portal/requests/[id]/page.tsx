@@ -107,6 +107,26 @@ export default async function RequestDetailPage({
 
   const clientName = request.clients?.name ?? "Client";
 
+  // Fetch social posts for this request (if any)
+  const { data: socialPosts } = await supabase
+    .from("social_posts")
+    .select("*, social_slides(id, slide_order, image_path, alt_text)")
+    .eq("request_id", params.id)
+    .eq("status", "published");
+
+  // Resolve public URLs for social slides
+  const socialPostsWithUrls = (socialPosts || []).map((post) => ({
+    ...post,
+    social_slides: ((post.social_slides as { id: string; slide_order: number; image_path: string | null; alt_text: string | null }[]) || [])
+      .sort((a, b) => a.slide_order - b.slide_order)
+      .map((s) => ({
+        ...s,
+        url: s.image_path
+          ? supabase.storage.from("social-slides").getPublicUrl(s.image_path).data.publicUrl
+          : null,
+      })),
+  }));
+
   return (
     <RequestDetail
       request={{
@@ -120,6 +140,7 @@ export default async function RequestDetailPage({
       isAdmin={profile.role === "admin"}
       isImpersonating={isImpersonating}
       activityLog={activityLog ?? []}
+      socialPosts={socialPostsWithUrls}
     />
   );
 }
