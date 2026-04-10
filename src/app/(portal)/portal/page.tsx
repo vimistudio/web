@@ -67,6 +67,7 @@ export default async function PortalPage() {
     .from("requests")
     .select("*, deliverables(id, file_path, mime_type), comments(id)")
     .eq("client_id", clientId)
+    .eq("is_archived", false)
     .order("priority", { ascending: false })
     .order("created_at", { ascending: false });
 
