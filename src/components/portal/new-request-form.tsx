@@ -66,6 +66,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   const [previews, setPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
 
   useEffect(() => {
     if (!submitted) return;
@@ -80,10 +81,12 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
   }, [submitted, isAdmin, router]);
 
   const goNext = useCallback(() => {
+    setDirection("forward");
     if (step < TOTAL_STEPS - 1) setStep((s) => s + 1);
   }, [step]);
 
   const goBack = useCallback(() => {
+    setDirection("back");
     if (step > 0) setStep((s) => s - 1);
     else router.back();
   }, [step, router]);
@@ -234,14 +237,14 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           </div>
 
           {/* Step content */}
-          <div className="flex-1" key={step}>
+          <div className={`flex-1 ${direction === "forward" ? "animate-in fade-in slide-in-from-right-4" : "animate-in fade-in slide-in-from-left-4"} duration-300`} key={step}>
             {/* Step label */}
             <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
               {t(STEP_LABEL_KEYS[step])}
             </p>
 
             {step === 0 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.name.title")}
                 </h2>
@@ -260,7 +263,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.type.title")}
                 </h2>
@@ -274,7 +277,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                       <button
                         key={rt.value}
                         onClick={() => setType(rt.value)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
                             ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
                             : "border-gray-200 hover:border-gray-300 bg-white"
@@ -308,7 +311,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.details.title")}
                 </h2>
@@ -379,7 +382,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 3 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                     {t("form.timeline.title")}
@@ -395,7 +398,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                       <button
                         key={p.value}
                         onClick={() => setPriority(p.value)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected ? p.activeColor + " shadow-sm" : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                       >
@@ -430,7 +433,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
 
             {step === 4 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-2xl font-semibold tracking-tight leading-tight">
                   {t("form.inspiration.title")}
                 </h2>
@@ -496,12 +499,19 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               disabled={!canAdvance || isSubmitting}
               className="flex-1 h-14 md:h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
             >
-              {isSubmitting
-                ? t("form.submitting")
-                : isLastStep
-                  ? t("form.submit")
-                  : t("form.continue")}
-              {!isLastStep && !isSubmitting && <ArrowRight01Icon size={16} />}
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  {t("form.submitting")}
+                </>
+              ) : isLastStep ? (
+                t("form.submit")
+              ) : (
+                <>
+                  {t("form.continue")}
+                  <ArrowRight01Icon size={16} />
+                </>
+              )}
             </Button>
             </div>
           </div>

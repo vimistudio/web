@@ -167,11 +167,11 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
         <Fragment key={step.key}>
           <div className="flex items-center gap-1.5">
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-colors ${
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-all duration-300 ${
                 i < currentIndex
                   ? "bg-[#909af7] border-[#909af7] text-white"
                   : i === currentIndex
-                    ? "border-[#909af7] text-[#909af7]"
+                    ? "border-[#909af7] text-[#909af7] scale-110 shadow-sm shadow-[#909af7]/30"
                     : "border-muted-foreground/30 text-muted-foreground/40"
               }`}
             >
@@ -1351,7 +1351,7 @@ export function RequestDetail({
           <Button
             onClick={() => handleStatusChange("done")}
             disabled={isUpdatingStatus}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 gap-2 h-14 text-base font-semibold rounded-xl"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 gap-2 h-14 text-base font-semibold rounded-xl transition-all duration-150 shadow-md shadow-emerald-600/20 touch-manipulation"
           >
             <CheckmarkCircle01Icon size={20} color="white" />
             {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
