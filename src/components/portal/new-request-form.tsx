@@ -276,7 +276,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                     return (
                       <button
                         key={rt.value}
-                        onClick={() => { setType(rt.value); setTimeout(() => goNext(), 200); }}
+                        onClick={() => setType(rt.value)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
                             ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
