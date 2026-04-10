@@ -93,7 +93,7 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
             </Avatar>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-56 bg-white border shadow-lg">
           <div className="px-2 py-1.5">
             <p className="text-sm font-medium">{profile.full_name}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
