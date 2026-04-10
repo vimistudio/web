@@ -50,8 +50,8 @@ const priorities = [
 
 type RequestType = (typeof requestTypes)[number]["value"];
 
-const TOTAL_STEPS = 5;
-const STEP_LABEL_KEYS: PortalKey[] = ["form.step.name", "form.step.type", "form.step.details", "form.step.timeline", "form.step.inspiration"];
+const TOTAL_STEPS = 4;
+const STEP_LABEL_KEYS: PortalKey[] = ["form.step.name", "form.step.type", "form.step.details", "form.step.timeline"];
 
 export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewRequestFormProps) {
   const router = useRouter();
@@ -432,50 +432,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               </div>
             )}
 
-            {step === 4 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-                  {t("form.inspiration.title")}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {t("form.inspiration.subtitle")}
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {files.map((file, i) => (
-                    <div
-                      key={i}
-                      className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center group"
-                    >
-                      {previews[i] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          {file.name.split(".").pop()?.toUpperCase()}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => removeFile(i)}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                      >
-                        <Cancel01Icon size={12} />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-[#909af7] hover:bg-[#909af7]/5 transition-colors">
-                    <PlusSignIcon size={20} className="text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground mt-1">{t("form.inspiration.addFile")}</span>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      multiple
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
+            {/* Step 4 (Inspiration) removed — image upload is now in Details step */}
           </div>
 
           {/* Bottom bar: Back + Continue — sticky on mobile above bottom tabs */}
