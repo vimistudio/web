@@ -81,9 +81,11 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
   const isNew = lastVisitedAt && new Date(request.updated_at) > new Date(lastVisitedAt);
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative">
+    <Card className={`hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer overflow-hidden relative touch-manipulation ${
+      request.status === "review" ? "ring-2 ring-amber-300 ring-offset-1" : ""
+    }`}>
       {isNew && (
-        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white" />
+        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white animate-pulse" />
       )}
       <div
         className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
@@ -119,6 +121,12 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
           <span className="text-xs text-muted-foreground">
             Updated {timeSince}
           </span>
+          {request.status === "in_progress" && (
+            <span className="flex items-center gap-1 ml-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[10px] text-blue-600 font-medium">In the works</span>
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -421,27 +429,35 @@ export function ClientBoard({
         })}
       </div>
 
-      {/* What's New banner */}
-      {showBanner && (
-        <div className="bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
-          <div>
-            <p className="text-sm font-medium">{t("board.welcomeBack")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("board.sinceLastVisit")}{" "}
-              {reviewReady > 0 && t("board.designsReady", { count: reviewReady, s: reviewReady > 1 ? "s" : "" })}
-              {reviewReady > 0 && completed > 0 && ", "}
-              {completed > 0 && t("board.delivered", { count: completed, s: completed > 1 ? "s" : "" })}
-              {reviewReady === 0 && completed === 0 && t("board.updates", { count: totalUpdated, s: totalUpdated > 1 ? "s" : "", es: totalUpdated > 1 ? "es" : "" })}
-            </p>
-          </div>
-          <button
-            onClick={() => { setBannerDismissed(true); sessionStorage.setItem("banner_dismissed", "true"); }}
-            className="text-muted-foreground hover:text-foreground p-1 shrink-0"
+      {/* What's New banner — tappable to jump to first review request */}
+      {showBanner && (() => {
+        const firstReviewRequest = reviewReady > 0
+          ? requests.find((r) => r.status === "review")
+          : null;
+        return (
+          <div
+            className={`bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 ${firstReviewRequest ? "cursor-pointer hover:bg-[#909af7]/10 transition-colors" : ""}`}
+            onClick={() => firstReviewRequest && router.push(`/portal/requests/${firstReviewRequest.id}`)}
           >
-            <Cancel01Icon size={16} />
-          </button>
-        </div>
-      )}
+            <div>
+              <p className="text-sm font-medium">{t("board.welcomeBack")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("board.sinceLastVisit")}{" "}
+                {reviewReady > 0 && t("board.designsReady", { count: reviewReady, s: reviewReady > 1 ? "s" : "" })}
+                {reviewReady > 0 && completed > 0 && ", "}
+                {completed > 0 && t("board.delivered", { count: completed, s: completed > 1 ? "s" : "" })}
+                {reviewReady === 0 && completed === 0 && t("board.updates", { count: totalUpdated, s: totalUpdated > 1 ? "s" : "", es: totalUpdated > 1 ? "es" : "" })}
+              </p>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setBannerDismissed(true); sessionStorage.setItem("banner_dismissed", "true"); }}
+              className="text-muted-foreground hover:text-foreground p-1 shrink-0"
+            >
+              <Cancel01Icon size={16} />
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Desktop: 4-column kanban with drag-and-drop */}
       <DndContext

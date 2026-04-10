@@ -58,4 +58,6 @@ export const detail = {
   "detail.approveConfirm": { en: "Looks good to you?", es: "¿Te gusta cómo quedó?" },
   "detail.approveConfirmDesc": { en: "Once you approve, we'll get your files ready to download.", es: "Una vez que apruebes, prepararemos tus archivos para descargar." },
   "detail.uploadSuccess": { en: "Files uploaded!", es: "¡Archivos subidos!" },
+  "detail.reviewHero": { en: "Your designs are ready to review", es: "Tus diseños están listos para revisar" },
+  "detail.reviewHeroSub": { en: "Take a look and let us know what you think", es: "Échalos un vistazo y dinos qué te parecen" },
 } as const;

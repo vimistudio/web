@@ -26,8 +26,13 @@ export const form = {
   "form.type.other.desc": { en: "Anything else you need designed", es: "Cualquier otra cosa que necesites diseñar" },
 
   "form.details.title": { en: "Tell us a bit more", es: "Cuéntanos un poco más" },
-  "form.details.subtitle": { en: "Don't worry about design terms — just describe what you're picturing.", es: "No te preocupes por términos de diseño — solo describe lo que imaginas." },
-  "form.details.placeholder": { en: "What's it for? (e.g. weekly specials on Instagram)\n\nAny colors or style you like? (e.g. warm, appetizing, our brand colors)\n\nAnything to avoid? (e.g. no blue, keep it simple)", es: "¿Para qué es? (ej. especiales semanales en Instagram)\n\n¿Algún color o estilo que te guste? (ej. cálido, apetitoso, colores de nuestra marca)\n\n¿Algo que evitar? (ej. sin azul, mantenerlo simple)" },
+  "form.details.subtitle": { en: "Don't worry about design terms — just describe what you're picturing. You can paste images too.", es: "No te preocupes por términos de diseño — solo describe lo que imaginas. También puedes pegar imágenes." },
+  "form.details.placeholder": { en: "What's it for?\n\nAny colors or style you like?\n\nAnything to avoid?", es: "¿Para qué es?\n\n¿Algún color o estilo que te guste?\n\n¿Algo que evitar?" },
+  "form.details.placeholder.logo": { en: "Business name and tagline?\n\nColors you love or want to avoid?\n\nWhere will it go? (website, menu, signage, social...)", es: "Nombre del negocio y eslogan?\n\n¿Colores que te gusten o quieras evitar?\n\n¿Dónde se usará? (web, menú, letrero, redes...)" },
+  "form.details.placeholder.social": { en: "Which platform? (Instagram, Facebook, TikTok...)\n\nWhat type of post? (story, feed, reel, carousel)\n\nWhat should it say or promote?", es: "¿Qué plataforma? (Instagram, Facebook, TikTok...)\n\n¿Qué tipo? (historia, feed, reel, carrusel)\n\n¿Qué debe decir o promocionar?" },
+  "form.details.placeholder.web": { en: "Which page? (homepage, landing, menu...)\n\nDo you have a website already? Share the URL\n\nWhat content should go on it?", es: "¿Qué página? (inicio, landing, menú...)\n\n¿Ya tienes sitio web? Comparte la URL\n\n¿Qué contenido debe llevar?" },
+  "form.details.placeholder.brand": { en: "What do you already have? (logo, colors, fonts)\n\nWhat's missing?\n\nWho's your audience?", es: "¿Qué ya tienes? (logo, colores, fuentes)\n\n¿Qué falta?\n\n¿Quién es tu audiencia?" },
+  "form.details.placeholder.presentation": { en: "What's it about?\n\nHow many slides?\n\nAny data or content to include?", es: "¿De qué trata?\n\n¿Cuántas diapositivas?\n\n¿Datos o contenido que incluir?" },
 
   "form.timeline.title": { en: "When do you need it?", es: "¿Cuándo lo necesitas?" },
   "form.timeline.subtitle": { en: "Let your designer know how soon you need it.", es: "Dile a tu diseñador qué tan pronto lo necesitas." },
