@@ -775,11 +775,16 @@ export function RequestDetail({
   const handleRequestChanges = useCallback(() => {
     if (!comment.trim()) {
       toast(
-        "Add a comment explaining what you'd like changed, then tap Ask for Changes again.",
-        { duration: 5000 }
+        t("detail.couldntUpdate"),
+        { description: t("detail.addComment"), duration: 5000 }
       );
-      const textarea = document.querySelector("textarea");
-      textarea?.focus();
+      // Scroll textarea into view and focus with visual pulse
+      commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        commentInputRef.current?.focus();
+        commentInputRef.current?.classList.add("ring-2", "ring-[#909af7]");
+        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-[#909af7]"), 2000);
+      }, 300);
       return;
     }
     (async () => {

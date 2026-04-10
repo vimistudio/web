@@ -5,18 +5,22 @@ import { useState } from "react";
 
 interface LoginFormProps {
   error?: string;
+  next?: string;
 }
 
-export function LoginForm({ error }: LoginFormProps) {
+export function LoginForm({ error, next }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     const supabase = createClient();
+    const callbackUrl = next
+      ? `${window.location.origin}/portal/auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/portal/auth/callback`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/portal/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
   };

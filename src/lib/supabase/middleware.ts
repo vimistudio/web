@@ -42,14 +42,21 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/portal/auth")
   ) {
     const url = request.nextUrl.clone();
+    const currentPath = request.nextUrl.pathname;
     url.pathname = "/portal/login";
+    // Deep-link: pass the original path so login redirects back after auth
+    if (currentPath && currentPath !== "/portal") {
+      url.searchParams.set("next", currentPath);
+    }
     return NextResponse.redirect(url);
   }
 
-  // Authenticated users on login page → redirect to portal
+  // Authenticated users on login page → redirect to portal (or deep-link target)
   if (user && request.nextUrl.pathname === "/portal/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/portal";
+    const next = request.nextUrl.searchParams.get("next");
+    url.pathname = next && next.startsWith("/portal") ? next : "/portal";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
