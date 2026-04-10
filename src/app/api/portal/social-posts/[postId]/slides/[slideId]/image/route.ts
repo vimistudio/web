@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function POST(
+// PATCH: Update slide's image_path after client-side upload to Supabase Storage
+export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ postId: string; slideId: string }> }
 ) {
@@ -14,54 +15,26 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    const { image_path } = await request.json();
+    if (!image_path) {
+      return NextResponse.json({ error: "image_path is required" }, { status: 400 });
     }
-
-    // Get the request's client_id for the storage path
-    const { data: post } = await supabase
-      .from("social_posts")
-      .select("request_id, requests(client_id)")
-      .eq("id", postId)
-      .single();
-
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    const clientId = (post.requests as { client_id: string } | null)?.client_id || "unknown";
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const storagePath = `${clientId}/${postId}/${timestamp}-${safeName}`;
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from("social-slides")
-      .upload(storagePath, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
 
     // Get public URL
     const { data: urlData } = supabase.storage
       .from("social-slides")
-      .getPublicUrl(storagePath);
+      .getPublicUrl(image_path);
 
     // Update the slide record
-    const { data: slide, error: updateError } = await supabase
+    const { data: slide, error } = await supabase
       .from("social_slides")
-      .update({ image_path: storagePath })
+      .update({ image_path })
       .eq("id", slideId)
       .eq("post_id", postId)
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (error) throw error;
 
     return NextResponse.json({
       ...slide,
