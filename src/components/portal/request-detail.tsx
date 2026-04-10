@@ -986,7 +986,7 @@ export function RequestDetail({
 
   return (
     <div
-      className={`mx-auto space-y-6 pb-24 md:pb-6 ${
+      className={`mx-auto space-y-6 pb-36 md:pb-6 ${
         isAdmin ? "max-w-3xl" : "max-w-2xl"
       }`}
     >
