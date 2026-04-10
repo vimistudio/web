@@ -276,7 +276,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                     return (
                       <button
                         key={rt.value}
-                        onClick={() => setType(rt.value)}
+                        onClick={() => { setType(rt.value); setTimeout(() => goNext(), 200); }}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
                             ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
@@ -319,7 +319,11 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   {t("form.details.subtitle")}
                 </p>
                 <Textarea
-                  placeholder={t("form.details.placeholder")}
+                  placeholder={t(
+                    (type && ["logo", "social", "web", "brand", "presentation"].includes(type)
+                      ? `form.details.placeholder.${type}`
+                      : "form.details.placeholder") as PortalKey
+                  )}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="min-h-[120px] resize-none text-base"
