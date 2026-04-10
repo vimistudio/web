@@ -82,19 +82,34 @@ function BoardCardContent({
   request,
   clientSlug,
   onArchive,
+  onUnarchive,
 }: {
   request: Request;
   clientSlug: string;
   onArchive?: (id: string) => void;
+  onUnarchive?: (id: string) => void;
 }) {
   const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
+  const isArchived = !!request.is_archived;
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group relative">
-      {onArchive && (
+    <Card className={`hover:shadow-md transition-shadow cursor-pointer group relative ${isArchived ? "opacity-50" : ""}`}>
+      {/* Archive / Unarchive button */}
+      {isArchived && onUnarchive ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onUnarchive(request.id);
+          }}
+          className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[10px] font-medium text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          Restore
+        </button>
+      ) : onArchive && !isArchived ? (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -108,7 +123,7 @@ function BoardCardContent({
             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
         </button>
-      )}
+      ) : null}
       <CardContent className="p-4 space-y-3">
         <h3 className="font-medium text-sm leading-tight group-hover:text-[#909af7] transition-colors">
           {request.title}
@@ -121,7 +136,12 @@ function BoardCardContent({
           >
             {request.type.toUpperCase()}
           </Badge>
-          {request.status === "review" && (
+          {isArchived && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-500">
+              ARCHIVED
+            </Badge>
+          )}
+          {request.status === "review" && !isArchived && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-600">
               {statusLabels[request.status]}
             </Badge>
@@ -184,7 +204,7 @@ function BoardCardContent({
   );
 }
 
-function DraggableBoardCard({ request, clientSlug, onArchive }: { request: Request; clientSlug: string; onArchive: (id: string) => void }) {
+function DraggableBoardCard({ request, clientSlug, onArchive, onUnarchive }: { request: Request; clientSlug: string; onArchive: (id: string) => void; onUnarchive: (id: string) => void }) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: request.id });
@@ -204,7 +224,7 @@ function DraggableBoardCard({ request, clientSlug, onArchive }: { request: Reque
         }}
         className="cursor-grab active:cursor-grabbing"
       >
-        <BoardCardContent request={request} clientSlug={clientSlug} onArchive={onArchive} />
+        <BoardCardContent request={request} clientSlug={clientSlug} onArchive={onArchive} onUnarchive={onUnarchive} />
       </div>
     </div>
   );
@@ -217,6 +237,7 @@ function DroppableColumn({
   requests,
   clientSlug,
   onArchive,
+  onUnarchive,
 }: {
   columnKey: string;
   label: string;
@@ -224,6 +245,7 @@ function DroppableColumn({
   requests: Request[];
   clientSlug: string;
   onArchive: (id: string) => void;
+  onUnarchive: (id: string) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
 
@@ -245,7 +267,7 @@ function DroppableColumn({
       </div>
       <div className="space-y-3 min-h-[60px]">
         {requests.map((request) => (
-          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} onArchive={onArchive} />
+          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} onArchive={onArchive} onUnarchive={onUnarchive} />
         ))}
       </div>
       {requests.length === 0 && !isOver && (
@@ -313,6 +335,35 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
         toast.error("Couldn't archive. Try again.");
       } else {
         toast.success("Request archived");
+        router.refresh();
+      }
+    },
+    [router]
+  );
+
+  const handleUnarchive = useCallback(
+    async (requestId: string) => {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, is_archived: false } : r
+        )
+      );
+
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("requests")
+        .update({ is_archived: false })
+        .eq("id", requestId);
+
+      if (error) {
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === requestId ? { ...r, is_archived: true } : r
+          )
+        );
+        toast.error("Couldn't restore. Try again.");
+      } else {
+        toast.success("Request restored");
         router.refresh();
       }
     },
@@ -447,6 +498,7 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
                 requests={colRequests}
                 clientSlug={client.slug}
                 onArchive={handleArchive}
+                onUnarchive={handleUnarchive}
               />
             );
           })}

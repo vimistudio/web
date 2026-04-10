@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { NewRequestForm } from "@/components/portal/new-request-form";
@@ -22,9 +23,13 @@ export default async function NewRequestPage({
 
   if (!profile) redirect("/portal");
 
-  // Admin creating for a specific client via ?client=<id>
-  const clientId = profile.role === "admin" && searchParams.client
-    ? searchParams.client
+  // Check impersonation cookie
+  const cookieStore = cookies();
+  const impersonateClientId = cookieStore.get("impersonate_client")?.value;
+
+  // Admin creating for a specific client via ?client=<id> or impersonation
+  const clientId = profile.role === "admin"
+    ? searchParams.client || impersonateClientId || null
     : profile.client_id;
 
   if (!clientId) {
