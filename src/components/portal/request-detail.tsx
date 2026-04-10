@@ -646,7 +646,7 @@ export function RequestDetail({
     }));
 
   const backHref = isImpersonating
-    ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
+    ? "/portal"
     : isAdmin
       ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
       : "/portal";
