@@ -7,9 +7,9 @@ export const detail = {
   "detail.approve": { en: "Approve", es: "Aprobar" },
   "detail.approving": { en: "Approving...", es: "Aprobando..." },
   "detail.askForChanges": { en: "Ask for Changes", es: "Pedir Cambios" },
-  "detail.addComment": { en: "Add a comment...", es: "Escribe un comentario..." },
+  "detail.addComment": { en: "Add a comment...", es: "Agrega un comentario..." },
   "detail.noComments": { en: "No messages yet. Say hi, or we'll reach out when we have updates.", es: "Sin mensajes aún. Saluda, o te escribiremos cuando tengamos novedades." },
-  "detail.upNext": { en: "We've got this queued up and your designer will start soon.", es: "Ya lo tenemos en fila y tu diseñador empezará pronto." },
+  "detail.upNext": { en: "We've got this queued up and your designer will start soon.", es: "¡Te toca pronto! Tu diseñador va a empezar con esto en breve." },
   "detail.downloadAll": { en: "Download All", es: "Descargar Todo" },
   "detail.requested": { en: "Requested", es: "Solicitado" },
   "detail.updated": { en: "Updated", es: "Actualizado" },
@@ -29,7 +29,7 @@ export const detail = {
   "detail.submitForReview": { en: "Submit for Review", es: "Enviar a Revisión" },
   "detail.markDone": { en: "Mark Done", es: "Marcar Entregado" },
   "detail.markDoneConfirm": { en: "Mark as done?", es: "¿Marcar como entregado?" },
-  "detail.markDoneDesc": { en: "This marks the design as finished and delivered.", es: "Esto marcará el diseño como terminado y entregado." },
+  "detail.markDoneDesc": { en: "This marks the design as finished and delivered.", es: "Esto omite la revisión del cliente y marca la solicitud como completada." },
   "detail.cancel": { en: "Cancel", es: "Cancelar" },
   "detail.updating": { en: "Updating...", es: "Actualizando..." },
   "detail.approved": { en: "Approved! Your designs are ready to download.", es: "¡Aprobado! Tus diseños están listos para descargar." },
@@ -42,9 +42,9 @@ export const detail = {
 
   // Quick feedback chips
   "chip.loveIt": { en: "Love it!", es: "¡Me encanta!" },
-  "chip.changeColors": { en: "Can we change the colors?", es: "¿Podemos cambiar los colores?" },
-  "chip.changeText": { en: "Can we change the text?", es: "¿Podemos cambiar el texto?" },
-  "chip.differentLayout": { en: "Can we try a different layout?", es: "¿Podemos probar otro diseño?" },
+  "chip.changeColors": { en: "Can we change the colors?", es: "¿Cambiamos los colores?" },
+  "chip.changeText": { en: "Can we change the text?", es: "¿Cambiamos el texto?" },
+  "chip.differentLayout": { en: "Can we try a different layout?", es: "¿Probamos con otro layout?" },
   "chip.almostThere": { en: "Almost! Just a few tweaks", es: "¡Casi! Solo unos ajustes" },
 
   // Edit mode

@@ -18,7 +18,7 @@ export const chrome = {
 
   // Notifications
   "notifications.title": { en: "Notifications", es: "Notificaciones" },
-  "notifications.markAllRead": { en: "Mark all read", es: "Marcar todo leído" },
+  "notifications.markAllRead": { en: "Mark all read", es: "Marcar todas como leídas" },
   "notifications.empty": { en: "All clear. We'll let you know when something needs your attention.", es: "Todo al día. Te avisaremos cuando haya algo nuevo." },
   "notifications.emptyTitle": { en: "All clear", es: "Todo al día" },
   "notifications.emptySubtitle": { en: "We'll let you know when something needs your attention.", es: "Te avisaremos cuando haya algo nuevo." },
@@ -29,10 +29,10 @@ export const chrome = {
   "profile.project": { en: "Project", es: "Proyecto" },
   "profile.role": { en: "Account type", es: "Tipo de cuenta" },
   "profile.signInMethod": { en: "You sign in with", es: "Inicias sesión con" },
-  "profile.about": { en: "Questions? We're here for you — reach out at", es: "¿Preguntas? Estamos para ayudarte — escríbenos a" },
+  "profile.about": { en: "Questions? We're here for you — reach out at", es: "¿Preguntas? Estamos para ti — escríbenos a" },
 
   // Login
-  "login.welcome": { en: "Welcome to your studio", es: "Bienvenido a tu estudio" },
+  "login.welcome": { en: "Welcome to your studio", es: "Tu estudio te espera" },
   "login.subtitle": { en: "Sign in to see your designs and stay in touch with your team", es: "Inicia sesión para ver tus diseños y estar en contacto con tu equipo" },
   "login.google": { en: "Sign in with Google", es: "Iniciar sesión con Google" },
   "login.signingIn": { en: "Signing in...", es: "Iniciando sesión..." },
