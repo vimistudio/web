@@ -316,9 +316,62 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   placeholder={t("form.details.placeholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[160px] resize-none text-base"
+                  className="min-h-[120px] resize-none text-base"
                   autoFocus
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (const item of Array.from(items)) {
+                      if (item.type.startsWith("image/")) {
+                        const file = item.getAsFile();
+                        if (!file) return;
+                        setFiles((prev) => [...prev, file]);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPreviews((prev) => [...prev, reader.result as string]);
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }}
                 />
+
+                {/* Inline references — paste or upload images alongside details */}
+                {files.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {files.map((file, i) => (
+                      <div
+                        key={i}
+                        className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center group"
+                      >
+                        {previews[i] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground">
+                            {file.name.split(".").pop()?.toUpperCase()}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => removeFile(i)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                        >
+                          <Cancel01Icon size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#909af7] cursor-pointer transition-colors w-fit">
+                  <PlusSignIcon size={14} />
+                  <span>{t("form.inspiration.addFile")}</span>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
               </div>
             )}
 

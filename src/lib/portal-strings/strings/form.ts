@@ -26,7 +26,7 @@ export const form = {
   "form.type.other.desc": { en: "Anything else you need designed", es: "Cualquier otra cosa que necesites diseñar" },
 
   "form.details.title": { en: "Tell us a bit more", es: "Cuéntanos un poco más" },
-  "form.details.subtitle": { en: "Don't worry about design terms — just describe what you're picturing.", es: "No te preocupes por términos de diseño — solo describe lo que imaginas." },
+  "form.details.subtitle": { en: "Don't worry about design terms — just describe what you're picturing. You can paste images too.", es: "No te preocupes por términos de diseño — solo describe lo que imaginas. También puedes pegar imágenes." },
   "form.details.placeholder": { en: "What's it for? (e.g. weekly specials on Instagram)\n\nAny colors or style you like? (e.g. warm, appetizing, our brand colors)\n\nAnything to avoid? (e.g. no blue, keep it simple)", es: "¿Para qué es? (ej. especiales semanales en Instagram)\n\n¿Algún color o estilo que te guste? (ej. cálido, apetitoso, colores de nuestra marca)\n\n¿Algo que evitar? (ej. sin azul, mantenerlo simple)" },
 
   "form.timeline.title": { en: "When do you need it?", es: "¿Cuándo lo necesitas?" },
