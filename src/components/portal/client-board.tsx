@@ -237,7 +237,10 @@ export function ClientBoard({
   const { t } = useLocale();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("banner_dismissed") === "true";
+  });
 
   // What's New banner — show when returning after 1+ hours
   const bannerData = useMemo(() => {
@@ -367,7 +370,7 @@ export function ClientBoard({
             {/* Mobile: FAB */}
             <Button
               size="icon"
-              className="md:hidden rounded-full h-12 w-12 bg-[#909af7] hover:bg-[#7b85e8] shadow-lg fixed bottom-20 right-4 z-40"
+              className="md:hidden rounded-full h-12 w-12 bg-[#909af7] hover:bg-[#7b85e8] shadow-lg fixed bottom-24 right-4 z-50"
             >
               <PlusSignIcon size={20} color="white" />
             </Button>
@@ -432,7 +435,7 @@ export function ClientBoard({
             </p>
           </div>
           <button
-            onClick={() => setBannerDismissed(true)}
+            onClick={() => { setBannerDismissed(true); sessionStorage.setItem("banner_dismissed", "true"); }}
             className="text-muted-foreground hover:text-foreground p-1 shrink-0"
           >
             <Cancel01Icon size={16} />
@@ -505,6 +508,12 @@ export function ClientBoard({
             <p className="text-muted-foreground max-w-sm mb-6">
               {t("board.emptyBody")} {t("board.emptyCta")}
             </p>
+            <Link href="/portal/requests/new">
+              <Button className="gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
+                <PlusSignIcon size={16} color="white" />
+                {t("board.newRequest")}
+              </Button>
+            </Link>
           </div>
         )}
       </div>

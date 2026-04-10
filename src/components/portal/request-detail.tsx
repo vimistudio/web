@@ -182,7 +182,7 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
               )}
             </div>
             <span
-              className={`text-xs font-medium hidden sm:inline ${
+              className={`text-[10px] sm:text-xs font-medium ${
                 i <= currentIndex
                   ? "text-foreground"
                   : "text-muted-foreground/40"
@@ -1019,10 +1019,18 @@ export function RequestDetail({
 
       {/* Queued status reassurance */}
       {currentStatus === "queued" && !isAdmin && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
           <p className="text-sm text-blue-800">
             {t("detail.upNext")}
           </p>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors underline underline-offset-2"
+            >
+              {t("edit.title")}
+            </button>
+          )}
         </div>
       )}
 
@@ -1289,7 +1297,9 @@ export function RequestDetail({
           <p className="text-sm text-muted-foreground">
             {currentStatus === "in_progress"
               ? t("detail.designsWillAppear")
-              : t("detail.noDeliverables")}
+              : currentStatus === "review"
+                ? t("detail.designsWillAppear")
+                : t("detail.noDeliverables")}
           </p>
         </div>
       )}

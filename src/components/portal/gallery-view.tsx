@@ -31,7 +31,7 @@ interface GalleryViewProps {
   deliverables: Deliverable[];
 }
 
-const filterChipKeys = ["all", "logo", "social", "web", "brand"] as const;
+const filterChipKeys = ["all", "logo", "social", "web", "brand", "presentation", "other"] as const;
 
 const typeGradients: Record<string, string> = {
   logo: "from-purple-300/80 to-purple-200/40",
@@ -123,6 +123,8 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
     social: t("gallery.filter.social"),
     web: t("gallery.filter.web"),
     brand: t("gallery.filter.brand"),
+    presentation: t("gallery.filter.presentation"),
+    other: t("gallery.filter.other"),
   };
 
   const filtered =

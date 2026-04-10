@@ -9,6 +9,8 @@ export const gallery = {
   "gallery.filter.social": { en: "Social", es: "Social" },
   "gallery.filter.web": { en: "Web", es: "Web" },
   "gallery.filter.brand": { en: "Brand", es: "Marca" },
+  "gallery.filter.presentation": { en: "Decks", es: "Presentaciones" },
+  "gallery.filter.other": { en: "Other", es: "Otro" },
   "gallery.deliverable": { en: "design", es: "diseño" },
   "gallery.deliverables": { en: "designs", es: "diseños" },
   "gallery.delivered": { en: "Delivered", es: "Entregado" },
