@@ -35,11 +35,22 @@ export default async function PortalPage() {
   if (!clientId) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-        <h1 className="text-2xl font-semibold mb-2">Welcome to Vimi Studio</h1>
-        <p className="text-muted-foreground max-w-md">
-          Your account hasn&apos;t been linked to a project yet. Carlos will set
-          this up for you shortly.
+        <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#909af7]">
+            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h1 className="text-2xl font-semibold mb-2">Almost there!</h1>
+        <p className="text-muted-foreground max-w-md mb-6">
+          Your account hasn&apos;t been linked to a project yet.
+          We&apos;re getting it set up for you — check back soon.
         </p>
+        <a
+          href="mailto:hello@vimistudio.com"
+          className="text-sm text-[#909af7] hover:text-[#7b85e8] font-medium transition-colors"
+        >
+          Questions? Reach out at hello@vimistudio.com
+        </a>
       </div>
     );
   }

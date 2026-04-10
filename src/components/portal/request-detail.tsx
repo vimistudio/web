@@ -38,6 +38,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
+import { Input } from "@/components/ui/input";
+import { useLocale } from "./locale-provider";
 
 // --- Types ---
 
@@ -117,17 +119,17 @@ interface RequestDetailProps {
 // --- Config ---
 
 const statusSteps = [
-  { key: "queued", label: "Queued" },
+  { key: "queued", label: "Up Next" },
   { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Review" },
-  { key: "done", label: "Done" },
+  { key: "review", label: "Ready for You" },
+  { key: "done", label: "Delivered" },
 ] as const;
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  queued: { label: "Queued", color: "bg-gray-100 text-gray-700" },
+  queued: { label: "Up Next", color: "bg-gray-100 text-gray-700" },
   in_progress: { label: "In Progress", color: "bg-blue-100 text-blue-700" },
-  review: { label: "Review", color: "bg-amber-100 text-amber-700" },
-  done: { label: "Done", color: "bg-emerald-100 text-emerald-700" },
+  review: { label: "Ready for You", color: "bg-amber-100 text-amber-700" },
+  done: { label: "Delivered", color: "bg-emerald-100 text-emerald-700" },
 };
 
 const priorityLabels: Record<number, { label: string; color: string }> = {
@@ -180,7 +182,7 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
               )}
             </div>
             <span
-              className={`text-xs font-medium hidden sm:inline ${
+              className={`text-[10px] sm:text-xs font-medium ${
                 i <= currentIndex
                   ? "text-foreground"
                   : "text-muted-foreground/40"
@@ -569,6 +571,48 @@ export function RequestDetail({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentFileRef = useRef<HTMLInputElement>(null);
 
+  // Edit mode state (only when queued)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(request.title);
+  const [editDescription, setEditDescription] = useState(request.description ?? "");
+  const [editType, setEditType] = useState<string>(request.type);
+  const [editPriority, setEditPriority] = useState(request.priority);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const { t } = useLocale();
+
+  const canEdit = currentStatus === "queued" && !isAdmin;
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim() || isSavingEdit) return;
+    setIsSavingEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("requests")
+      .update({
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        type: editType as "logo" | "social" | "web" | "brand" | "presentation" | "other",
+        priority: editPriority,
+      })
+      .eq("id", request.id);
+    setIsSavingEdit(false);
+    if (error) {
+      toast.error("Could not save changes");
+      return;
+    }
+    toast.success(t("edit.saved"));
+    setIsEditing(false);
+    router.refresh();
+  };
+
+  const handleCancelEdit = () => {
+    setEditTitle(request.title);
+    setEditDescription(request.description ?? "");
+    setEditType(request.type);
+    setEditPriority(request.priority);
+    setIsEditing(false);
+  };
+
   const allComments = [...request.comments, ...optimisticComments];
 
   // Build image list for lightbox (only visible image deliverables with URLs)
@@ -656,7 +700,7 @@ export function RequestDetail({
     });
 
     if (error) {
-      toast.error("Couldn't post your comment. Please try again.");
+      toast.error(t("detail.couldntPost"));
       setOptimisticComments((prev) =>
         prev.filter((c) => c.id !== optimisticComment.id)
       );
@@ -691,7 +735,7 @@ export function RequestDetail({
 
       if (error) {
         setCurrentStatus(previousStatus);
-        toast.error("Couldn't update status. Please try again.");
+        toast.error(t("detail.couldntUpdate"));
         setIsUpdatingStatus(false);
         return;
       }
@@ -703,7 +747,7 @@ export function RequestDetail({
           origin: { y: 0.7 },
           colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
         });
-        toast.success("Approved! Your designs are ready to download.", {
+        toast.success(t("detail.approved"), {
           duration: 5000,
         });
       } else {
@@ -731,11 +775,16 @@ export function RequestDetail({
   const handleRequestChanges = useCallback(() => {
     if (!comment.trim()) {
       toast(
-        "Add a comment explaining what you'd like changed, then tap Request Changes again.",
-        { duration: 5000 }
+        t("detail.couldntUpdate"),
+        { description: t("detail.addComment"), duration: 5000 }
       );
-      const textarea = document.querySelector("textarea");
-      textarea?.focus();
+      // Scroll textarea into view and focus with visual pulse
+      commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        commentInputRef.current?.focus();
+        commentInputRef.current?.classList.add("ring-2", "ring-[#909af7]");
+        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-[#909af7]"), 2000);
+      }, 300);
       return;
     }
     (async () => {
@@ -750,7 +799,7 @@ export function RequestDetail({
       });
 
       if (error) {
-        toast.error("Couldn't post your comment. Please try again.");
+        toast.error(t("detail.couldntPost"));
         setIsSubmitting(false);
         return;
       }
@@ -970,58 +1019,145 @@ export function RequestDetail({
 
       {/* Queued status reassurance */}
       {currentStatus === "queued" && !isAdmin && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
           <p className="text-sm text-blue-800">
-            Your request is in the queue! Your designer will start working on it
-            soon.
+            {t("detail.upNext")}
           </p>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors underline underline-offset-2"
+            >
+              {t("edit.title")}
+            </button>
+          )}
         </div>
       )}
 
       {/* Title + Meta */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs text-muted-foreground font-medium">
-            {clientName}
-          </span>
+      {isEditing ? (
+        <div className="space-y-4 bg-white border rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium">{t("edit.title")}</h2>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs">
+                {t("edit.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-[#909af7] hover:bg-[#7b85e8]">
+                {isSavingEdit ? t("edit.saving") : t("edit.save")}
+              </Button>
+            </div>
+          </div>
+          <Input
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder={t("form.name.placeholder")}
+            className="text-base font-semibold"
+          />
+          <Textarea
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            placeholder={t("form.details.placeholder")}
+            className="min-h-[100px] text-sm"
+          />
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">{t("form.step.type")}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(typeLabels) as string[]).map((typeKey) => (
+                <button
+                  key={typeKey}
+                  onClick={() => setEditType(typeKey)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    editType === typeKey
+                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                  }`}
+                >
+                  {typeLabels[typeKey]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">{t("form.step.timeline")}</label>
+            <div className="flex gap-2">
+              {[
+                { value: 1, label: t("form.priority.whenever") },
+                { value: 2, label: t("form.priority.thisWeek") },
+                { value: 3, label: t("form.priority.urgent") },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setEditPriority(p.value)}
+                  className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
+                    editPriority === p.value
+                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-semibold">{request.title}</h1>
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <Badge
-            variant="secondary"
-            className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
-          >
-            {typeLabels[request.type] ?? request.type}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            Requested {requestedDate}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            · Updated {updatedDate}
-          </span>
-          {request.due_date && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              · <CalendarIcon size={12} />
-              Due{" "}
-              {new Date(request.due_date).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Description */}
-      {request.description ? (
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {request.description}
-        </p>
       ) : (
-        <p className="text-sm text-muted-foreground/60 italic">
-          No description provided
-        </p>
+        <>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs text-muted-foreground font-medium">
+                {clientName}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold">{request.title}</h1>
+              {canEdit && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="shrink-0 text-xs text-[#909af7] hover:text-[#7b85e8] transition-colors font-medium"
+                >
+                  {t("edit.title")}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge
+                variant="secondary"
+                className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
+              >
+                {typeLabels[request.type] ?? request.type}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {t("detail.requested")} {requestedDate}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                · {t("detail.updated")} {updatedDate}
+              </span>
+              {request.due_date && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  · <CalendarIcon size={12} />
+                  {t("detail.due")}{" "}
+                  {new Date(request.due_date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          {request.description ? (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {request.description}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground/60 italic">
+              {t("detail.noDescription")}
+            </p>
+          )}
+        </>
       )}
 
       {/* Deliverables */}
@@ -1029,7 +1165,7 @@ export function RequestDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">
-              {`Your Designs (${request.deliverables.length})`}
+              {`${t("detail.yourDesigns")} (${request.deliverables.length})`}
             </h2>
             <div className="flex items-center gap-1">
             {isAdmin && hiddenDeliverables.length > 0 && (
@@ -1104,7 +1240,7 @@ export function RequestDetail({
                 }}
               >
                 <Download01Icon size={12} />
-                Download All
+                {t("detail.downloadAll")}
               </Button>
             )}
             </div>
@@ -1160,8 +1296,10 @@ export function RequestDetail({
         <div className="border border-dashed border-muted-foreground/20 rounded-xl p-6 text-center">
           <p className="text-sm text-muted-foreground">
             {currentStatus === "in_progress"
-              ? "Your designs will show up here once they're ready."
-              : "No deliverables for this request yet."}
+              ? t("detail.designsWillAppear")
+              : currentStatus === "review"
+                ? t("detail.designsWillAppear")
+                : t("detail.noDeliverables")}
           </p>
         </div>
       )}
@@ -1208,7 +1346,7 @@ export function RequestDetail({
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2 h-11"
           >
             <CheckmarkCircle01Icon size={16} color="white" />
-            {isUpdatingStatus ? "Approving..." : "Approve"}
+            {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
           </Button>
           <Button
             variant="outline"
@@ -1216,7 +1354,7 @@ export function RequestDetail({
             disabled={isUpdatingStatus || isSubmitting}
             className="flex-1 h-11"
           >
-            Request Changes
+            {t("detail.askForChanges")}
           </Button>
         </div>
       )}
@@ -1280,7 +1418,7 @@ export function RequestDetail({
       {request.reference_images.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium">
-            References ({request.reference_images.length})
+            {t("detail.references")} ({request.reference_images.length})
           </h2>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {request.reference_images.map((ref) => (
@@ -1318,7 +1456,7 @@ export function RequestDetail({
       {/* Comments */}
       <div className="space-y-4">
         <h2 className="text-sm font-medium">
-          Comments ({allComments.length})
+          {t("detail.comments")} ({allComments.length})
         </h2>
 
         {allComments.map((c) => {
@@ -1403,7 +1541,7 @@ export function RequestDetail({
 
         {allComments.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No messages yet. Say hi, or we&apos;ll reach out when we have updates.
+            {t("detail.noComments")}
           </p>
         )}
 
@@ -1417,6 +1555,33 @@ export function RequestDetail({
             isAdmin ? "max-w-3xl" : "max-w-2xl"
           }`}
         >
+          {/* Quick feedback chips — help clients articulate feedback */}
+          {currentStatus === "review" && !isAdmin && !comment.trim() && (
+            <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {([
+                "chip.loveIt",
+                "chip.changeColors",
+                "chip.changeText",
+                "chip.differentLayout",
+                "chip.almostThere",
+              ] as const).map((chipKey) => {
+                const chip = t(chipKey);
+                return (
+                <button
+                  key={chipKey}
+                  type="button"
+                  onClick={() => {
+                    setComment(chip);
+                    commentInputRef.current?.focus();
+                  }}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-[#909af7] hover:text-[#909af7] transition-colors whitespace-nowrap"
+                >
+                  {chip}
+                </button>
+                );
+              })}
+            </div>
+          )}
           {/* Attachment preview */}
           {attachmentPreview && (
             <div className="relative inline-block mb-2">
@@ -1447,7 +1612,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white pl-2 pr-1.5 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -1476,7 +1641,7 @@ export function RequestDetail({
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
-              placeholder="Add a comment..."
+              placeholder={t("detail.addComment")}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -1486,7 +1651,7 @@ export function RequestDetail({
               }}
               maxLength={2000}
               rows={1}
-              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent rounded-none p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -1529,7 +1694,7 @@ export function RequestDetail({
           </div>
           <div className="hidden md:flex items-center justify-between px-1 mt-1">
             <p className="text-[10px] text-muted-foreground/50">
-              Enter to send, Shift+Enter for new line
+              {t("detail.sendHint")}
             </p>
             {comment.length > 1500 && (
               <p className="text-[10px] text-muted-foreground">

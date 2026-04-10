@@ -7,6 +7,7 @@ import { Download01Icon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
+import { useLocale } from "./locale-provider";
 
 interface Deliverable {
   id: string;
@@ -30,13 +31,7 @@ interface GalleryViewProps {
   deliverables: Deliverable[];
 }
 
-const filterChips = [
-  { key: "all", label: "All" },
-  { key: "logo", label: "Logos" },
-  { key: "social", label: "Social" },
-  { key: "web", label: "Web" },
-  { key: "brand", label: "Brand" },
-];
+const filterChipKeys = ["all", "logo", "social", "web", "brand", "presentation", "other"] as const;
 
 const typeGradients: Record<string, string> = {
   logo: "from-purple-300/80 to-purple-200/40",
@@ -52,12 +47,14 @@ function GalleryImageCard({
   height,
   gradient,
   deliveredDate,
+  deliveredLabel,
   onImageClick,
 }: {
   d: Deliverable;
   height: string;
   gradient: string;
   deliveredDate: string;
+  deliveredLabel: string;
   onImageClick?: () => void;
 }) {
   const [loaded, setLoaded] = useState(false);
@@ -93,7 +90,7 @@ function GalleryImageCard({
       <CardContent className="p-3">
         <p className="text-sm font-medium truncate">{d.requests.title}</p>
         <p className="text-xs text-muted-foreground">
-          Delivered {deliveredDate}
+          {deliveredLabel} {deliveredDate}
         </p>
       </CardContent>
     </Card>
@@ -113,11 +110,22 @@ function GalleryImageCard({
 }
 
 export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
+  const { t } = useLocale();
   const [filter, setFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const pathname = usePathname();
+
+  const filterChipLabels: Record<string, string> = {
+    all: t("gallery.all"),
+    logo: t("gallery.filter.logos"),
+    social: t("gallery.filter.social"),
+    web: t("gallery.filter.web"),
+    brand: t("gallery.filter.brand"),
+    presentation: t("gallery.filter.presentation"),
+    other: t("gallery.filter.other"),
+  };
 
   const filtered =
     filter === "all"
@@ -164,12 +172,12 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
             </h1>
             <span className="text-sm text-muted-foreground hidden md:inline">
               {deliverables.length}{" "}
-              {deliverables.length === 1 ? "deliverable" : "deliverables"}
+              {deliverables.length === 1 ? t("gallery.deliverable") : t("gallery.deliverables")}
             </span>
           </div>
           <p className="text-sm text-muted-foreground md:hidden">
             {deliverables.length}{" "}
-            {deliverables.length === 1 ? "deliverable" : "deliverables"}
+            {deliverables.length === 1 ? t("gallery.deliverable") : t("gallery.deliverables")}
           </p>
         </div>
 
@@ -183,7 +191,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Board
+            {t("tab.board")}
           </Link>
           <Link
             href="/portal/gallery"
@@ -193,7 +201,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Gallery
+            {t("tab.gallery")}
           </Link>
         </div>
       </div>
@@ -204,31 +212,31 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
           href="/portal"
           className="pb-2 text-sm font-medium border-b-2 border-transparent text-muted-foreground"
         >
-          Board
+          {t("tab.board")}
         </Link>
         <Link
           href="/portal/gallery"
           className="pb-2 text-sm font-semibold border-b-2 border-foreground text-foreground"
         >
-          Gallery
+          {t("tab.gallery")}
         </Link>
       </div>
 
       {/* Filter Chips + Sort Toggle */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
-        {filterChips.map((chip) => {
-          const isActive = filter === chip.key;
+        {filterChipKeys.map((key) => {
+          const isActive = filter === key;
           return (
             <button
-              key={chip.key}
-              onClick={() => setFilter(chip.key)}
-              className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors ${
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
                 isActive
                   ? "bg-foreground text-white"
                   : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
               }`}
             >
-              {chip.label}
+              {filterChipLabels[key]}
             </button>
           );
         })}
@@ -236,7 +244,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
           onClick={() => setSortOrder(s => s === "newest" ? "oldest" : "newest")}
           className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full bg-[#f0eeec] shrink-0 transition-colors"
         >
-          {sortOrder === "newest" ? "Newest" : "Oldest"}
+          {sortOrder === "newest" ? t("gallery.newest") : t("gallery.oldest")}
         </button>
       </div>
 
@@ -273,6 +281,7 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
                       height={height}
                       gradient={gradient}
                       deliveredDate={deliveredDate(d)}
+                      deliveredLabel={t("gallery.delivered")}
                       onImageClick={
                         imageIndex >= 0
                           ? () => {
@@ -292,8 +301,8 @@ export function GalleryView({ clientName, deliverables }: GalleryViewProps) {
         <div className="text-center py-16">
           <p className="text-muted-foreground">
             {filter === "all"
-              ? "No deliverables yet. They'll appear here as designs are completed."
-              : `No ${filter} deliverables yet.`}
+              ? t("gallery.empty")
+              : t("gallery.emptyFiltered", { type: filterChipLabels[filter] ?? filter })}
           </p>
         </div>
       )}

@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import type { Profile } from "./portal-shell";
 import { SearchCommand } from "./search-command";
 import { NotificationDropdown } from "./notification-dropdown";
+import { useLocale } from "./locale-provider";
 
 interface ClientHeaderProps {
   user: User;
@@ -30,6 +31,7 @@ interface ClientHeaderProps {
 
 export function ClientHeader({ user, profile }: ClientHeaderProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -96,12 +98,12 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/portal/profile")}>
               <Settings02Icon size={16} className="mr-2" />
-              Settings
+              {t("header.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <Logout01Icon size={16} className="mr-2" />
-              Sign out
+              {t("header.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -126,7 +128,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
           className="bg-[#1a1d2e] rounded-lg px-5 py-2.5 w-[400px] text-left hover:bg-[#1e2136] transition-colors"
         >
           <span className="text-[#4a4d66] text-sm">
-            Search projects, files, documents...
+            {t("header.searchPlaceholder")}
           </span>
           <kbd className="text-[10px] text-[#4a4d66] float-right mt-0.5 border border-[#2a2d46] rounded px-1.5 py-0.5">
             ⌘K
@@ -157,12 +159,12 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/portal/profile")}>
                 <Settings02Icon size={16} className="mr-2" />
-                Settings
+                {t("header.settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <Logout01Icon size={16} className="mr-2" />
-                Sign out
+                {t("header.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

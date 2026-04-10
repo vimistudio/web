@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { type User } from "@supabase/supabase-js";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,9 @@ import { Logout01Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useLocale } from "./locale-provider";
+import { type Locale } from "@/lib/portal-i18n";
+import { toast } from "sonner";
 
 interface ProfileViewProps {
   user: User;
@@ -19,19 +23,46 @@ interface ProfileViewProps {
     avatar_url: string | null;
     role: "client" | "admin";
     client_id: string | null;
+    locale?: string;
     created_at: string;
     clients: { name: string; slug: string } | null;
   };
 }
 
+const LOCALE_OPTIONS: { value: Locale; label: string; flag: string }[] = [
+  { value: "en", label: "English", flag: "EN" },
+  { value: "es", label: "Español", flag: "ES" },
+];
+
 export function ProfileView({ user, profile }: ProfileViewProps) {
   const router = useRouter();
+  const { t, locale } = useLocale();
   const isAdmin = profile.role === "admin";
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
+  const [currentLocale, setCurrentLocale] = useState<Locale>(locale);
+  const [isSavingLocale, setIsSavingLocale] = useState(false);
   const memberSince = new Date(profile.created_at).toLocaleDateString(
-    "en-US",
+    locale === "es" ? "es" : "en-US",
     { month: "long", year: "numeric" }
   );
+
+  const handleLocaleChange = async (newLocale: Locale) => {
+    if (newLocale === currentLocale) return;
+    setIsSavingLocale(true);
+    setCurrentLocale(newLocale);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ locale: newLocale })
+      .eq("id", profile.id);
+    setIsSavingLocale(false);
+    if (error) {
+      setCurrentLocale(locale);
+      toast.error("Could not update language");
+      return;
+    }
+    router.refresh();
+  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -41,7 +72,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold">Profile</h1>
+      <h1 className="text-2xl font-semibold">{t("tab.profile")}</h1>
 
       {/* User Info Card */}
       <Card>
@@ -75,12 +106,42 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
         </CardContent>
       </Card>
 
+      {/* Language Selector */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium">{locale === "es" ? "Idioma" : "Language"}</span>
+            {isSavingLocale && (
+              <span className="text-xs text-muted-foreground animate-pulse">
+                {locale === "es" ? "Guardando..." : "Saving..."}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {LOCALE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleLocaleChange(opt.value)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                  currentLocale === opt.value
+                    ? "border-[#909af7] bg-[#909af7]/5 text-[#909af7]"
+                    : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                }`}
+              >
+                <span className="text-xs font-bold opacity-60">{opt.flag}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Details */}
       <Card>
         <CardContent className="pt-6 space-y-4">
           {profile.clients && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Project</span>
+              <span className="text-sm text-muted-foreground">{t("profile.project")}</span>
               <span className="text-sm font-medium">
                 {profile.clients.name}
               </span>
@@ -88,19 +149,19 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Role</span>
+            <span className="text-sm text-muted-foreground">{t("profile.role")}</span>
             <span className="text-sm font-medium capitalize">
               {profile.role}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Member since</span>
+            <span className="text-sm text-muted-foreground">{t("profile.memberSince")}</span>
             <span className="text-sm font-medium">{memberSince}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Sign-in method</span>
+            <span className="text-sm text-muted-foreground">{t("profile.signInMethod")}</span>
             <span className="text-sm font-medium">Google</span>
           </div>
         </CardContent>
@@ -119,7 +180,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Your design partner. Need help? Reach out at{" "}
+            {t("profile.about")}{" "}
             <a
               href="mailto:hello@vimistudio.com"
               className="text-[#909af7] hover:underline"
@@ -137,7 +198,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
         className="w-full gap-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
       >
         <Logout01Icon size={16} />
-        Sign out
+        {t("profile.signOut")}
       </Button>
     </div>
   );

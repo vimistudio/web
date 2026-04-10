@@ -64,10 +64,10 @@ const statCards = [
 ];
 
 const statusPills = [
-  { key: "queued" as const, label: "Queued", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" },
+  { key: "queued" as const, label: "Up Next", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" },
   { key: "in_progress" as const, label: "In Progress", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  { key: "review" as const, label: "Review", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  { key: "done" as const, label: "Done", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+  { key: "review" as const, label: "Ready for Review", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
+  { key: "done" as const, label: "Delivered", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
 ];
 
 function ClientCard({ client }: { client: ClientSummary }) {

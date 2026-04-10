@@ -6,7 +6,7 @@ import { LoginForm } from "@/components/portal/login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; next?: string };
 }) {
   const supabase = createClient();
   const {
@@ -14,7 +14,7 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/portal");
+    redirect(searchParams.next ?? "/portal");
   }
 
   return (
@@ -65,7 +65,7 @@ export default async function LoginPage({
               </p>
             </div>
 
-            <LoginForm error={searchParams.error} />
+            <LoginForm error={searchParams.error} next={searchParams.next} />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

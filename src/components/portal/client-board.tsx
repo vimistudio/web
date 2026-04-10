@@ -21,6 +21,8 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useLocale } from "./locale-provider";
+import { type PortalKey } from "@/lib/portal-i18n";
 
 interface Request {
   id: string;
@@ -46,10 +48,10 @@ interface ClientBoardProps {
 }
 
 const statusColumns = [
-  { key: "queued" as const, label: "Queued", color: "bg-gray-400" },
-  { key: "in_progress" as const, label: "In Progress", color: "bg-blue-500" },
-  { key: "review" as const, label: "Review", color: "bg-amber-500" },
-  { key: "done" as const, label: "Done", color: "bg-emerald-500" },
+  { key: "queued" as const, labelKey: "status.queued" as PortalKey, color: "bg-gray-400" },
+  { key: "in_progress" as const, labelKey: "status.in_progress" as PortalKey, color: "bg-blue-500" },
+  { key: "review" as const, labelKey: "status.review" as PortalKey, color: "bg-amber-500" },
+  { key: "done" as const, labelKey: "status.done" as PortalKey, color: "bg-emerald-500" },
 ];
 
 const typeColors: Record<string, string> = {
@@ -70,15 +72,19 @@ const typeGradients: Record<string, string> = {
   other: "from-gray-100 to-gray-50",
 };
 
-function RequestCardContent({ request }: { request: Request }) {
+function RequestCardContent({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
   const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
   const gradient = typeGradients[request.type] ?? typeGradients.other;
+  const isNew = lastVisitedAt && new Date(request.updated_at) > new Date(lastVisitedAt);
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative">
+      {isNew && (
+        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white" />
+      )}
       <div
         className={`h-16 md:h-20 bg-gradient-to-br ${gradient}`}
       />
@@ -119,10 +125,10 @@ function RequestCardContent({ request }: { request: Request }) {
   );
 }
 
-function RequestCard({ request }: { request: Request }) {
+function RequestCard({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
   return (
     <Link href={`/portal/requests/${request.id}`}>
-      <RequestCardContent request={request} />
+      <RequestCardContent request={request} lastVisitedAt={lastVisitedAt} />
     </Link>
   );
 }
@@ -153,20 +159,30 @@ function DraggableRequestCard({ request }: { request: Request }) {
   );
 }
 
+const emptyColumnGradients: Record<string, string> = {
+  queued: "from-gray-50 to-gray-100/50",
+  in_progress: "from-blue-50/50 to-blue-100/30",
+  review: "from-amber-50/50 to-amber-100/30",
+  done: "from-emerald-50/50 to-emerald-100/30",
+};
+
 function DroppableColumn({
   columnKey,
-  label,
+  labelKey,
   color,
   requests,
   canDrag,
+  lastVisitedAt,
 }: {
   columnKey: string;
-  label: string;
+  labelKey: PortalKey;
   color: string;
   requests: Request[];
   canDrag: boolean;
+  lastVisitedAt?: string | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: columnKey });
+  const { t } = useLocale();
 
   return (
     <div
@@ -178,7 +194,7 @@ function DroppableColumn({
       <div className="flex items-center gap-2 pb-2">
         <div className={`w-2 h-2 rounded-full ${color}`} />
         <span className="text-sm font-semibold text-muted-foreground">
-          {label}
+          {t(labelKey)}
         </span>
         <span className="text-xs text-muted-foreground ml-auto">
           {requests.length}
@@ -189,13 +205,15 @@ function DroppableColumn({
           canDrag ? (
             <DraggableRequestCard key={request.id} request={request} />
           ) : (
-            <RequestCard key={request.id} request={request} />
+            <RequestCard key={request.id} request={request} lastVisitedAt={lastVisitedAt} />
           )
         )}
       </div>
       {requests.length === 0 && !isOver && (
-        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-xs text-muted-foreground">Nothing here yet</p>
+        <div className={`rounded-xl bg-gradient-to-b ${emptyColumnGradients[columnKey] ?? "from-gray-50 to-gray-100/50"} p-6 text-center`}>
+          <p className="text-xs text-muted-foreground/70">
+            {t(`board.empty.${columnKey}` as PortalKey)}
+          </p>
         </div>
       )}
       {requests.length === 0 && isOver && canDrag && (
@@ -216,9 +234,13 @@ export function ClientBoard({
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLocale();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("banner_dismissed") === "true";
+  });
 
   // What's New banner — show when returning after 1+ hours
   const bannerData = useMemo(() => {
@@ -329,7 +351,7 @@ export function ClientBoard({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Board
+              {t("tab.board")}
             </Link>
             <Link
               href="/portal/gallery"
@@ -339,7 +361,7 @@ export function ClientBoard({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Gallery
+              {t("tab.gallery")}
             </Link>
           </div>
 
@@ -348,14 +370,14 @@ export function ClientBoard({
             {/* Mobile: FAB */}
             <Button
               size="icon"
-              className="md:hidden rounded-full h-12 w-12 bg-[#909af7] hover:bg-[#7b85e8] shadow-lg fixed bottom-20 right-4 z-40"
+              className="md:hidden rounded-full h-12 w-12 bg-[#909af7] hover:bg-[#7b85e8] shadow-lg fixed bottom-24 right-4 z-50"
             >
               <PlusSignIcon size={20} color="white" />
             </Button>
             {/* Desktop: button */}
             <Button className="hidden md:flex gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
               <PlusSignIcon size={16} color="white" />
-              New Request
+              {t("board.newRequest")}
             </Button>
           </Link>
         </div>
@@ -371,7 +393,7 @@ export function ClientBoard({
               : "border-transparent text-muted-foreground"
           }`}
         >
-          Board
+          {t("tab.board")}
         </Link>
         <Link
           href="/portal/gallery"
@@ -381,7 +403,7 @@ export function ClientBoard({
               : "border-transparent text-muted-foreground"
           }`}
         >
-          Gallery
+          {t("tab.gallery")}
         </Link>
       </div>
 
@@ -393,7 +415,7 @@ export function ClientBoard({
           return (
             <div key={col.key} className="flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${col.color}`} />
-              <span>{count} {col.label}</span>
+              <span>{count} {t(col.labelKey)}</span>
             </div>
           );
         })}
@@ -403,17 +425,17 @@ export function ClientBoard({
       {showBanner && (
         <div className="bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
           <div>
-            <p className="text-sm font-medium">Welcome back!</p>
+            <p className="text-sm font-medium">{t("board.welcomeBack")}</p>
             <p className="text-xs text-muted-foreground">
-              Since your last visit:{" "}
-              {reviewReady > 0 && `${reviewReady} design${reviewReady > 1 ? "s" : ""} ready for review`}
+              {t("board.sinceLastVisit")}{" "}
+              {reviewReady > 0 && t("board.designsReady", { count: reviewReady, s: reviewReady > 1 ? "s" : "" })}
               {reviewReady > 0 && completed > 0 && ", "}
-              {completed > 0 && `${completed} completed`}
-              {reviewReady === 0 && completed === 0 && `${totalUpdated} update${totalUpdated > 1 ? "s" : ""} to your requests`}
+              {completed > 0 && t("board.delivered", { count: completed, s: completed > 1 ? "s" : "" })}
+              {reviewReady === 0 && completed === 0 && t("board.updates", { count: totalUpdated, s: totalUpdated > 1 ? "s" : "", es: totalUpdated > 1 ? "es" : "" })}
             </p>
           </div>
           <button
-            onClick={() => setBannerDismissed(true)}
+            onClick={() => { setBannerDismissed(true); sessionStorage.setItem("banner_dismissed", "true"); }}
             className="text-muted-foreground hover:text-foreground p-1 shrink-0"
           >
             <Cancel01Icon size={16} />
@@ -435,10 +457,11 @@ export function ClientBoard({
               <DroppableColumn
                 key={col.key}
                 columnKey={col.key}
-                label={col.label}
+                labelKey={col.labelKey}
                 color={col.color}
                 requests={colRequests}
                 canDrag={isAdmin}
+                lastVisitedAt={lastVisitedAt}
               />
             );
           })}
@@ -463,14 +486,14 @@ export function ClientBoard({
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${col.color}`} />
                 <h2 className="text-sm font-medium text-muted-foreground">
-                  {col.label}
+                  {t(col.labelKey)}
                 </h2>
                 <span className="text-xs text-muted-foreground">
                   {colRequests.length}
                 </span>
               </div>
               {colRequests.map((request) => (
-                <RequestCard key={request.id} request={request} />
+                <RequestCard key={request.id} request={request} lastVisitedAt={lastVisitedAt} />
               ))}
             </div>
           );
@@ -481,10 +504,16 @@ export function ClientBoard({
             <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
               <PlusSignIcon size={24} className="text-[#909af7]" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Your studio is ready</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("board.emptyTitle")}</h2>
             <p className="text-muted-foreground max-w-sm mb-6">
-              What would you like us to design first? Submit a request and your designer will get started.
+              {t("board.emptyBody")} {t("board.emptyCta")}
             </p>
+            <Link href="/portal/requests/new">
+              <Button className="gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
+                <PlusSignIcon size={16} color="white" />
+                {t("board.newRequest")}
+              </Button>
+            </Link>
           </div>
         )}
       </div>
