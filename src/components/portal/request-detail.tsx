@@ -62,6 +62,7 @@ interface Comment {
 
 interface DeliverableEvent {
   id: string;
+  deliverable_id: string;
   user_id: string;
   event_type: string;
   created_at: string;
@@ -295,6 +296,9 @@ function DeliverableCard({
   onToggleHidden,
   onUpdateTags,
   onDownload,
+  onVote,
+  isVoted,
+  voteCount,
 }: {
   d: Deliverable;
   onImageClick?: () => void;
@@ -302,6 +306,9 @@ function DeliverableCard({
   onToggleHidden?: () => void;
   onUpdateTags?: (tags: string[]) => void;
   onDownload?: () => void;
+  onVote?: () => void;
+  isVoted?: boolean;
+  voteCount?: number;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
@@ -351,6 +358,36 @@ function DeliverableCard({
         </>
       )}
     </div>
+  ) : null;
+
+  const voteSection = onVote ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onVote();
+      }}
+      className={`mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${
+        isVoted
+          ? "text-red-500"
+          : "text-muted-foreground hover:text-red-400"
+      }`}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill={isVoted ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+      {(voteCount ?? 0) > 0 ? `${voteCount} pick${(voteCount ?? 0) !== 1 ? "s" : ""}` : "Pick this one"}
+    </button>
   ) : null;
 
   const tagSection = (tags.length > 0 || onUpdateTags) ? (
@@ -500,6 +537,7 @@ function DeliverableCard({
               ].filter(Boolean).join(" · ")}
             </p>
             {tagSection}
+            {voteSection}
             {statsSection}
           </CardContent>
         </Card>
@@ -548,6 +586,7 @@ function DeliverableCard({
             <Download01Icon size={16} className="text-muted-foreground shrink-0" />
           </div>
           {tagSection}
+          {voteSection}
         </CardContent>
       </Card>
     </div>
@@ -1006,6 +1045,57 @@ export function RequestDetail({
     [router]
   );
 
+  // --- Voting ---
+  // Track which deliverable the current user voted for (one pick per request)
+  const allDeliverables = request.deliverables;
+  const existingVote = allDeliverables
+    .flatMap((d) => (d.deliverable_events ?? []).filter((e) => e.event_type === "vote" && e.user_id === currentUserId))
+    .map((e) => e.deliverable_id)[0] ?? null;
+  const [votedDeliverableId, setVotedDeliverableId] = useState<string | null>(existingVote);
+
+  const handleVote = useCallback(
+    async (deliverableId: string) => {
+      if (!currentUserId) return;
+      const supabase = createClient();
+
+      // If already voted for this one, remove the vote
+      if (votedDeliverableId === deliverableId) {
+        setVotedDeliverableId(null);
+        await supabase
+          .from("deliverable_events")
+          .delete()
+          .eq("deliverable_id", deliverableId)
+          .eq("user_id", currentUserId)
+          .eq("event_type", "vote");
+        router.refresh();
+        return;
+      }
+
+      // Remove any existing vote for this request
+      if (votedDeliverableId) {
+        await supabase
+          .from("deliverable_events")
+          .delete()
+          .eq("deliverable_id", votedDeliverableId)
+          .eq("user_id", currentUserId)
+          .eq("event_type", "vote");
+      }
+
+      // Cast new vote
+      setVotedDeliverableId(deliverableId);
+      await supabase
+        .from("deliverable_events")
+        .insert({ deliverable_id: deliverableId, user_id: currentUserId, event_type: "vote" });
+      router.refresh();
+    },
+    [currentUserId, votedDeliverableId, router]
+  );
+
+  const getVoteCount = (deliverableId: string) => {
+    const d = allDeliverables.find((del) => del.id === deliverableId);
+    return (d?.deliverable_events ?? []).filter((e) => e.event_type === "vote").length;
+  };
+
   const logDeliverableEvent = useCallback(
     (deliverableId: string, eventType: "view" | "download") => {
       if (!currentUserId) return;
@@ -1367,6 +1457,11 @@ export function RequestDetail({
                       : undefined
                   }
                   onDownload={() => logDeliverableEvent(d.id, "download")}
+                  onVote={allDeliverables.filter((del) => !del.is_hidden || isAdmin).length > 1
+                    ? () => handleVote(d.id)
+                    : undefined}
+                  isVoted={votedDeliverableId === d.id}
+                  voteCount={getVoteCount(d.id)}
                 />
               );
             })}
