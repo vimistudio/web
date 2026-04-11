@@ -132,6 +132,50 @@ interface RequestDetailProps {
   socialPosts?: SocialPost[];
 }
 
+// --- Comment Body with Video Embeds ---
+
+const LOOM_REGEX = /https?:\/\/(?:www\.)?loom\.com\/share\/([a-zA-Z0-9]+)(?:\?[^\s]*)?/g;
+const YOUTUBE_REGEX = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s]*)?/g;
+
+function CommentBody({ body }: { body: string }) {
+  const loomMatches = Array.from(body.matchAll(LOOM_REGEX));
+  const youtubeMatches = Array.from(body.matchAll(YOUTUBE_REGEX));
+
+  // Strip video URLs from the text body so they don't show as raw links too
+  let textBody = body;
+  for (const m of loomMatches) textBody = textBody.replace(m[0], "");
+  for (const m of youtubeMatches) textBody = textBody.replace(m[0], "");
+  textBody = textBody.trim();
+
+  return (
+    <div className="mt-1 space-y-2">
+      {textBody && (
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{textBody}</p>
+      )}
+      {loomMatches.map((m, i) => (
+        <div key={`loom-${i}`} className="mt-2 rounded-lg overflow-hidden border bg-black/5">
+          <iframe
+            src={`https://www.loom.com/embed/${m[1]}`}
+            allowFullScreen
+            className="w-full aspect-video"
+            title="Loom video"
+          />
+        </div>
+      ))}
+      {youtubeMatches.map((m, i) => (
+        <div key={`yt-${i}`} className="mt-2 rounded-lg overflow-hidden border bg-black/5">
+          <iframe
+            src={`https://www.youtube.com/embed/${m[1]}`}
+            allowFullScreen
+            className="w-full aspect-video"
+            title="YouTube video"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // --- Config ---
 
 const statusSteps = [
@@ -1545,11 +1589,7 @@ export function RequestDetail({
                         })}
                   </span>
                 </div>
-                {c.body && (
-                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                    {c.body}
-                  </p>
-                )}
+                {c.body && <CommentBody body={c.body} />}
                 {c.attachment_url && c.attachment_type?.startsWith("image/") && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
