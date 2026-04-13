@@ -37,14 +37,20 @@ export default async function GalleryPage() {
     .single();
 
   // Fetch deliverables for this client.
-  // Excludes deliverables belonging to archived requests — those shouldn't
-  // clutter the gallery view even though the files still exist.
+  //
+  // Gallery is the "downloadable assets" hub. It intentionally excludes:
+  //   - Deliverables from archived requests (their files still exist but
+  //     shouldn't clutter the primary view).
+  //   - Carousel placeholder files (mime 'application/vnd.vimi.social-post').
+  //     Those render the full interactive Instagram preview inside the
+  //     originating request, so showing them here too is duplicate surface.
   const { data: deliverables } = await supabase
     .from("deliverables")
     .select("*, requests!inner(title, type, status, client_id, is_archived)")
     .eq("requests.client_id", clientId)
     .eq("requests.is_archived", false)
     .eq("is_hidden", false)
+    .neq("mime_type", "application/vnd.vimi.social-post")
     .order("created_at", { ascending: false });
 
   // Generate signed URLs for image deliverables

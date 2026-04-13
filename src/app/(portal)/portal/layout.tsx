@@ -22,28 +22,15 @@ export default async function PortalLayout({
     redirect("/portal/login");
   }
 
-  // Check if user has a pre-created profile (invite-only gate)
-  const profileResult = await supabase
+  // Check if user has a pre-created profile (invite-only gate).
+  // Explicit FK hint on the clients embed — avoids PostgREST ambiguity if a
+  // future migration adds another FK between clients and profiles (see
+  // Decisions/2026-04-13-postgrest-fk-ambiguity-incident).
+  let { data: profile } = await supabase
     .from("profiles")
-    .select("*, clients(*)")
+    .select("*, clients!profiles_client_id_fkey(*)")
     .eq("id", user.id)
     .single();
-
-  // TEMP DEBUG — to diagnose NoAccess regression for admin users
-  console.log("[portal-gate]", JSON.stringify({
-    userId: user.id,
-    userEmail: user.email,
-    profileNull: profileResult.data === null,
-    errorMessage: profileResult.error?.message ?? null,
-    errorCode: profileResult.error?.code ?? null,
-    errorDetails: profileResult.error?.details ?? null,
-    errorHint: profileResult.error?.hint ?? null,
-    profileRole: profileResult.data?.role ?? null,
-    profileClientId: profileResult.data?.client_id ?? null,
-    profileHasClients: Boolean(profileResult.data?.clients),
-  }));
-
-  let profile = profileResult.data;
 
   // Self-healing invite consumption: handle_new_user only fires AFTER INSERT
   // on auth.users, so users who signed in BEFORE being invited (or who were
@@ -61,7 +48,7 @@ export default async function PortalLayout({
       justClaimed = true;
       const re = await supabase
         .from("profiles")
-        .select("*, clients(*)")
+        .select("*, clients!profiles_client_id_fkey(*)")
         .eq("id", user.id)
         .single();
       profile = re.data;
