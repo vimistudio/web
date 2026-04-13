@@ -70,7 +70,7 @@ export function SlideUploadZone({ onFilesSelected, isUploading }: SlideUploadZon
         {isUploading ? "Uploading..." : "Choose Files"}
       </Button>
       <p className="text-xs text-gray-400 mt-2">
-        PNG, JPG up to 10MB · 1080×1350 recommended · or paste (⌘V)
+        PNG, JPG up to 10MB · auto-cropped to 1080×1350 (4:5) · or paste (⌘V)
       </p>
     </div>
   );

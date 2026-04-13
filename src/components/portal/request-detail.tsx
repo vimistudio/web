@@ -362,6 +362,7 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
 
 function DeliverableCard({
   d,
+  isAdmin,
   onImageClick,
   onDelete,
   onToggleHidden,
@@ -372,6 +373,7 @@ function DeliverableCard({
   voteCount,
 }: {
   d: Deliverable;
+  isAdmin: boolean;
   onImageClick?: () => void;
   onDelete?: () => void;
   onToggleHidden?: () => void;
@@ -391,7 +393,9 @@ function DeliverableCard({
   const viewCount = events.filter((e) => e.event_type === "view").length;
   const downloadCount = events.filter((e) => e.event_type === "download").length;
 
-  const statsSection = events.length > 0 ? (
+  // Stats (views/downloads + viewer list) are admin-only — clients shouldn't see
+  // who viewed their own deliverables nor download tallies on their own files.
+  const statsSection = isAdmin && events.length > 0 ? (
     <div className="relative mt-1">
       <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
         <button
@@ -1333,7 +1337,7 @@ export function RequestDetail({
       {/* Review hero moment — directions voting or standard banner */}
       {currentStatus === "review" && hasDirections && (
         <DirectionsVoting
-          directions={request.deliverables
+          directions={realDeliverables
             .filter((d) => d.direction_label && (!d.is_hidden || isAdmin))
             .map((d) => ({
               ...d,
@@ -1817,7 +1821,7 @@ export function RequestDetail({
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables
+            {realDeliverables
               .filter((d) => isAdmin || !d.is_hidden)
               .map((d) => {
               const isImage = d.mime_type?.startsWith("image/") && d.url;
@@ -1829,6 +1833,7 @@ export function RequestDetail({
                 <DeliverableCard
                   key={d.id}
                   d={d}
+                  isAdmin={isAdmin}
                   onImageClick={
                     imageIndex >= 0
                       ? () => {
