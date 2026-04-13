@@ -28,7 +28,12 @@ export default async function PortalLayout({
     .eq("id", user.id)
     .single();
 
-  if (!profile) {
+  // Gate: an authenticated user lacks portal access if either:
+  //   - their profile row is missing (RLS denied or trigger failed), OR
+  //   - they're a client without a client_id (uninvited Google sign-in —
+  //     handle_new_user creates a profile for everyone, so a NULL client_id
+  //     is the real signal of "not invited").
+  if (!profile || (profile.role === "client" && !profile.client_id)) {
     return <NoAccess />;
   }
 
