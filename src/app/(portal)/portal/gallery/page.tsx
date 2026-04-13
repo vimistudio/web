@@ -36,11 +36,14 @@ export default async function GalleryPage() {
     .eq("id", clientId)
     .single();
 
-  // Fetch deliverables for this client
+  // Fetch deliverables for this client.
+  // Excludes deliverables belonging to archived requests — those shouldn't
+  // clutter the gallery view even though the files still exist.
   const { data: deliverables } = await supabase
     .from("deliverables")
-    .select("*, requests!inner(title, type, status, client_id)")
+    .select("*, requests!inner(title, type, status, client_id, is_archived)")
     .eq("requests.client_id", clientId)
+    .eq("requests.is_archived", false)
     .eq("is_hidden", false)
     .order("created_at", { ascending: false });
 
