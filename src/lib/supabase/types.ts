@@ -145,6 +145,7 @@ export type Database = {
       }
       deliverable_events: {
         Row: {
+          comment: string | null
           created_at: string
           deliverable_id: string
           event_type: string
@@ -152,6 +153,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          comment?: string | null
           created_at?: string
           deliverable_id: string
           event_type: string
@@ -159,6 +161,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          comment?: string | null
           created_at?: string
           deliverable_id?: string
           event_type?: string
@@ -185,11 +188,15 @@ export type Database = {
       deliverables: {
         Row: {
           created_at: string
+          direction_description: string | null
+          direction_label: string | null
+          direction_order: number | null
           file_name: string
           file_path: string
           file_size: number | null
           id: string
           is_hidden: boolean
+          is_recommended: boolean
           mime_type: string | null
           request_id: string
           tags: string[]
@@ -197,11 +204,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          direction_description?: string | null
+          direction_label?: string | null
+          direction_order?: number | null
           file_name: string
           file_path: string
           file_size?: number | null
           id?: string
           is_hidden?: boolean
+          is_recommended?: boolean
           mime_type?: string | null
           request_id: string
           tags?: string[]
@@ -209,11 +220,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          direction_description?: string | null
+          direction_label?: string | null
+          direction_order?: number | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           id?: string
           is_hidden?: boolean
+          is_recommended?: boolean
           mime_type?: string | null
           request_id?: string
           tags?: string[]
@@ -418,6 +433,7 @@ export type Database = {
           title: string
           type: Database["public"]["Enums"]["request_type"]
           updated_at: string
+          voting_mode: string | null
         }
         Insert: {
           client_id: string
@@ -432,6 +448,7 @@ export type Database = {
           title: string
           type?: Database["public"]["Enums"]["request_type"]
           updated_at?: string
+          voting_mode?: string | null
         }
         Update: {
           client_id?: string
@@ -446,6 +463,7 @@ export type Database = {
           title?: string
           type?: Database["public"]["Enums"]["request_type"]
           updated_at?: string
+          voting_mode?: string | null
         }
         Relationships: [
           {

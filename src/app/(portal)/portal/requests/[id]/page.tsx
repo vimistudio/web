@@ -34,7 +34,7 @@ export default async function RequestDetailPage({
     .select(
       `*,
       clients(name, slug),
-      deliverables(id, file_name, file_path, file_size, mime_type, created_at, is_hidden, tags),
+      deliverables(*),
       reference_images(id, file_name, file_path, file_size, mime_type, created_at),
       comments(id, body, created_at, author_id, attachment_path, attachment_name, attachment_type, profiles!comments_author_id_profiles_fkey(full_name, avatar_url, role))`
     )
@@ -53,7 +53,7 @@ export default async function RequestDetailPage({
   const { data: deliverableEvents } = deliverableIds.length > 0
     ? await supabase
         .from("deliverable_events")
-        .select("id, deliverable_id, user_id, event_type, created_at, profiles(full_name)")
+        .select("*, profiles(full_name)")
         .in("deliverable_id", deliverableIds)
         .order("created_at", { ascending: false })
         .limit(100)

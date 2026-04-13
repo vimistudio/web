@@ -41,6 +41,8 @@ import { ImageLightbox } from "@/components/portal/image-lightbox";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "./locale-provider";
 import { InstagramCarouselPreview } from "./social/instagram-carousel-preview";
+import { DirectionOrganizer } from "./admin/direction-organizer";
+import { DirectionsVoting } from "./directions-voting";
 
 // --- Types ---
 
@@ -65,6 +67,7 @@ interface DeliverableEvent {
   deliverable_id: string;
   user_id: string;
   event_type: string;
+  comment: string | null;
   created_at: string;
   profiles?: { full_name: string | null } | null;
 }
@@ -79,6 +82,10 @@ interface Deliverable {
   url: string | null;
   is_hidden?: boolean;
   tags?: string[];
+  direction_label?: string | null;
+  direction_description?: string | null;
+  direction_order?: number | null;
+  is_recommended?: boolean;
   deliverable_events?: DeliverableEvent[];
 }
 
@@ -93,6 +100,7 @@ interface Request {
   updated_at: string;
   due_date: string | null;
   client_id: string;
+  voting_mode?: string | null;
   clients: { name: string; slug: string } | null;
   deliverables: Deliverable[];
   reference_images: Deliverable[];
@@ -682,6 +690,9 @@ export function RequestDetail({
 
   const canEdit = currentStatus === "queued" && !isAdmin;
 
+  // Directions mode — check if any deliverable has direction_label set
+  const hasDirections = request.deliverables.some((d) => d.direction_label);
+
   const handleSaveEdit = async () => {
     if (!editTitle.trim() || isSavingEdit) return;
     setIsSavingEdit(true);
@@ -1168,8 +1179,30 @@ export function RequestDetail({
         <CompletionBanner updatedAt={request.updated_at} />
       )}
 
-      {/* Review hero moment */}
-      {currentStatus === "review" && !isAdmin && (
+      {/* Review hero moment — directions voting or standard banner */}
+      {currentStatus === "review" && hasDirections && (
+        <DirectionsVoting
+          directions={request.deliverables
+            .filter((d) => d.direction_label && (!d.is_hidden || isAdmin))
+            .map((d) => ({
+              ...d,
+              direction_label: d.direction_label ?? null,
+              direction_description: d.direction_description ?? null,
+              direction_order: d.direction_order ?? null,
+              is_recommended: d.is_recommended ?? false,
+              deliverable_events: (d.deliverable_events ?? []).map((e) => ({
+                ...e,
+                comment: e.comment ?? null,
+              })),
+            }))}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          clientName={clientName}
+          requestId={request.id}
+          onVoteComplete={() => router.refresh()}
+        />
+      )}
+      {currentStatus === "review" && !hasDirections && !isAdmin && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center space-y-1">
           <p className="font-semibold text-amber-900">{t("detail.reviewHero")}</p>
           <p className="text-sm text-amber-700">{t("detail.reviewHeroSub")}</p>
@@ -1329,6 +1362,25 @@ export function RequestDetail({
           </div>
         );
       })}
+
+      {/* Admin: Direction Organizer */}
+      {isAdmin && request.deliverables.length >= 2 && (
+        <DirectionOrganizer
+          deliverables={request.deliverables.map((d) => ({
+            id: d.id,
+            file_name: d.file_name,
+            mime_type: d.mime_type,
+            url: d.url,
+            direction_label: d.direction_label ?? null,
+            direction_description: d.direction_description ?? null,
+            direction_order: d.direction_order ?? null,
+            is_recommended: d.is_recommended ?? false,
+          }))}
+          requestId={request.id}
+          votingMode={request.voting_mode ?? null}
+          onUpdate={() => router.refresh()}
+        />
+      )}
 
       {/* Deliverables */}
       {request.deliverables.length > 0 ? (
