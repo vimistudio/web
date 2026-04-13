@@ -686,34 +686,72 @@ const activityConfig: Record<string, { label: (oldVal: string | null, newVal: st
   },
 };
 
+const ACTIVITY_COLLAPSED_COUNT = 5;
+
 function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
+  const [expanded, setExpanded] = useState(false);
+
   if (entries.length === 0) return null;
+
+  // Entries arrive in chronological order (oldest first). We collapse the
+  // OLDER ones so the user sees the most recent activity by default —
+  // "Show N earlier" button at the top restores full history.
+  const totalHidden =
+    !expanded && entries.length > ACTIVITY_COLLAPSED_COUNT
+      ? entries.length - ACTIVITY_COLLAPSED_COUNT
+      : 0;
+  const visibleEntries = totalHidden > 0 ? entries.slice(-ACTIVITY_COLLAPSED_COUNT) : entries;
 
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-medium">Activity</h2>
       <div className="relative pl-5 space-y-3">
         <div className="absolute left-[7px] top-1 bottom-1 w-px bg-muted-foreground/15" />
-        {entries.map((entry) => {
+
+        {totalHidden > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="flex items-center gap-3 relative text-xs text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <span className="absolute left-[-14px] top-1.5 w-2 h-2 rounded-full border border-muted-foreground/30 bg-background group-hover:border-foreground/60" />
+            Show {totalHidden} earlier {totalHidden === 1 ? "item" : "items"}
+          </button>
+        )}
+
+        {visibleEntries.map((entry) => {
           const actor = entry.profiles?.full_name ?? "Someone";
           const config = activityConfig[entry.action];
           const label = config
             ? config.label(entry.old_value, entry.new_value, actor)
             : `${actor} ${entry.action}`;
           const dotColor = config?.dot ?? "bg-gray-400";
+          const absoluteTimestamp = new Date(entry.created_at).toLocaleString();
 
           return (
             <div key={entry.id} className="flex items-start gap-3 relative">
               <div className={`absolute left-[-14px] top-1.5 w-2 h-2 rounded-full ${dotColor}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-[10px] text-muted-foreground/60">
+                <p
+                  className="text-[10px] text-muted-foreground/60"
+                  title={absoluteTimestamp}
+                >
                   {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
                 </p>
               </div>
             </div>
           );
         })}
+
+        {expanded && entries.length > ACTIVITY_COLLAPSED_COUNT && (
+          <button
+            onClick={() => setExpanded(false)}
+            className="flex items-center gap-3 relative text-xs text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <span className="absolute left-[-14px] top-1.5 w-2 h-2 rounded-full border border-muted-foreground/30 bg-background group-hover:border-foreground/60" />
+            Collapse earlier activity
+          </button>
+        )}
       </div>
     </div>
   );
