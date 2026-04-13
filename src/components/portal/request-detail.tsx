@@ -19,6 +19,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft01Icon,
   CalendarIcon,
   Cancel01Icon,
@@ -744,7 +749,8 @@ export function RequestDetail({
   const [editType, setEditType] = useState<string>(request.type);
   const [editPriority, setEditPriority] = useState(request.priority);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const [fullscreenPost, setFullscreenPost] = useState<SocialPost | null>(null);
 
   const canEdit = currentStatus === "queued" && !isAdmin;
 
@@ -784,8 +790,15 @@ export function RequestDetail({
 
   const allComments = [...request.comments, ...optimisticComments];
 
+  // Carousel publishes create a placeholder deliverable file with this mime —
+  // those should NOT show up in "Your Designs" (the carousel block already
+  // renders them) nor count toward the deliverables-direction-organizer.
+  const realDeliverables = request.deliverables.filter(
+    (d) => d.mime_type !== "application/vnd.vimi.social-post"
+  );
+
   // Build image list for lightbox (only visible image deliverables with URLs)
-  const visibleDeliverables = request.deliverables.filter(
+  const visibleDeliverables = realDeliverables.filter(
     (d) => isAdmin || !d.is_hidden
   );
   const lightboxImages = visibleDeliverables
@@ -1196,7 +1209,7 @@ export function RequestDetail({
 
   // --- Voting ---
   // Track which deliverable the current user voted for (one pick per request)
-  const allDeliverables = request.deliverables;
+  const allDeliverables = realDeliverables;
   const existingVote = allDeliverables
     .flatMap((d) => (d.deliverable_events ?? []).filter((e) => e.event_type === "vote" && e.user_id === currentUserId))
     .map((e) => e.deliverable_id)[0] ?? null;
@@ -1281,7 +1294,7 @@ export function RequestDetail({
       .slice(0, 2);
 
   const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
-  const hiddenDeliverables = request.deliverables.filter((d) => d.is_hidden);
+  const hiddenDeliverables = realDeliverables.filter((d) => d.is_hidden);
 
 
   return (
@@ -1498,24 +1511,18 @@ export function RequestDetail({
           )
         );
         const hasVoted = !!myVote;
-
-        // Beat labels — Pixar 3-beat narrative arc
-        const beats = ["Hook", "Build", "Reveal"];
+        const designersPick = visiblePosts.find((p) => p.is_recommended);
 
         return (
           <div className="space-y-4">
-            {/* Hero — Narrative Transportation */}
+            {/* Hero — Narrative Transportation (P1: bilingual) */}
             {multi && inDirections && !isAdmin && (
               <div className="space-y-1">
                 <h2 className="text-base font-semibold">
-                  {hasVoted
-                    ? "The story is set"
-                    : "Two stories. Which should we tell your audience?"}
+                  {hasVoted ? t("directions.heroDone") : t("directions.heroPick")}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  {hasVoted
-                    ? `You picked ${myVote?.direction_label || "this direction"}. Carlos will refine it next.`
-                    : "Tap through each carousel like you would on Instagram, then pick the one that feels right."}
+                  {hasVoted ? t("directions.heroDoneHint") : t("directions.heroPickHint")}
                 </p>
               </div>
             )}
@@ -1523,6 +1530,26 @@ export function RequestDetail({
               <h2 className="text-sm font-medium">
                 {multi ? `Instagram Carousels (${visiblePosts.length})` : "Instagram Carousel"}
               </h2>
+            )}
+
+            {/* Designer's Pick banner — elevated per Marcus + Lorena feedback */}
+            {multi && inDirections && !isAdmin && !hasVoted && designersPick && (
+              <button
+                onClick={() => handleVoteCarousel(designersPick.id, null)}
+                className="w-full rounded-xl bg-gradient-to-r from-[#909af7] to-[#b4baff] p-4 text-left text-white hover:from-[#7d87e8] hover:to-[#a3a9ff] transition-all active:scale-[0.99]"
+              >
+                <div className="text-[11px] uppercase tracking-wider opacity-90 mb-0.5">
+                  {t("detail.designersPick")}
+                </div>
+                <div className="text-sm font-semibold">
+                  {designersPick.direction_label || `${t("directions.option")} ${(designersPick.direction_order ?? 0) + 1}`}
+                </div>
+                <div className="text-xs opacity-90 mt-1">
+                  {locale === "es"
+                    ? "Tu diseñador recomienda esta. Toca para elegirla, o explora ambas abajo."
+                    : "Your designer recommends this one. Tap to choose it, or explore both below."}
+                </div>
+              </button>
             )}
 
             {/* Admin: Direction Organizer for carousels */}
@@ -1558,14 +1585,12 @@ export function RequestDetail({
                 const isWinner = hasVoted && isMyVote;
                 const isLoser = hasVoted && !isMyVote;
 
-                // Default story-flavored label fallback
-                const defaultStoryLabels = [
-                  "Direction A: The Hook",
-                  "Direction B: The Slow Burn",
-                  "Direction C: The Bold Move",
-                  "Direction D: The Quiet Confidence",
-                ];
-                const label = post.direction_label || (inDirections ? defaultStoryLabels[idx] : null);
+                // Per persona feedback: drop "story-flavored" preset labels —
+                // strategist called them vibes, Marcus called them pretentious,
+                // Lorena said "Direction" reads as GPS in Spanish. Use clean
+                // "Option A / Opción A" defaults; admins can override.
+                const letter = String.fromCharCode(65 + idx);
+                const label = post.direction_label || (inDirections ? `${t("directions.option")} ${letter}` : null);
 
                 return (
                   <div
@@ -1581,12 +1606,12 @@ export function RequestDetail({
                           <span className="text-sm font-semibold">{label}</span>
                           {post.is_recommended && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#909af7] text-white">
-                              Designer&apos;s Pick
+                              {t("detail.designersPick")}
                             </span>
                           )}
                           {isWinner && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500 text-white">
-                              Your Pick
+                              {t("detail.yourPick")}
                             </span>
                           )}
                         </div>
@@ -1602,46 +1627,44 @@ export function RequestDetail({
                       </div>
                     )}
 
-                    {/* The carousel itself (Picture Superiority) */}
-                    <InstagramCarouselPreview
-                      slides={slides}
-                      handle={post.ig_handle || "@handle"}
-                      caption={post.ig_caption || undefined}
-                      subtitle={inDirections ? (label || "Story Direction") : "Instagram Carousel"}
-                    />
-
-                    {/* 3-beat narrative arc indicator (Pixar Beat Sheet, Miller's chunking) */}
-                    {inDirections && slides.length >= 3 && (
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                        {beats.map((beat, i) => (
-                          <div key={beat} className="flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full ${i === 0 ? "bg-[#909af7]" : i === 1 ? "bg-[#b4baff]" : "bg-foreground/40"}`} />
-                            <span>{beat}</span>
-                            {i < beats.length - 1 && <span className="text-foreground/20">—</span>}
-                          </div>
-                        ))}
+                    {/* The carousel itself — wrapped in tap-to-fullscreen (Lorena's #1 ask) */}
+                    <button
+                      type="button"
+                      onClick={() => setFullscreenPost(post)}
+                      className="block w-full text-left cursor-zoom-in group relative"
+                      aria-label={t("directions.viewLarger")}
+                    >
+                      <InstagramCarouselPreview
+                        slides={slides}
+                        handle={post.ig_handle || "@handle"}
+                        caption={post.ig_caption || undefined}
+                        subtitle={inDirections ? (label || "Carousel") : "Instagram Carousel"}
+                      />
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none">
+                        {t("directions.viewLarger")}
                       </div>
-                    )}
+                    </button>
 
-                    {/* Premise (Generation Effect) */}
+                    {/* Premise (Generation Effect) — kept; this is the load-bearing
+                        storytelling element per brand strategist's review */}
                     {inDirections && post.direction_description && (
                       <p className="text-xs text-muted-foreground italic text-center max-w-[28ch]">
                         &ldquo;{post.direction_description}&rdquo;
                       </p>
                     )}
 
-                    {/* Vote CTA (IKEA / Endowment) */}
+                    {/* Vote CTA — bilingual, "Esta es la buena" in Spanish */}
                     {inDirections && !isAdmin && !hasVoted && (
                       <button
                         onClick={() => handleVoteCarousel(post.id, null)}
                         className="w-full max-w-[320px] h-12 rounded-full bg-[#909af7] text-white text-sm font-medium hover:bg-[#7d87e8] active:scale-95 transition-all"
                       >
-                        Pick this story
+                        {t("directions.pickStory")}
                       </button>
                     )}
                     {inDirections && !isAdmin && hasVoted && isMyVote && (
                       <div className="w-full max-w-[320px] text-center text-xs text-muted-foreground">
-                        ✨ Carlos will refine this next
+                        {t("directions.refining")}
                       </div>
                     )}
 
@@ -1689,10 +1712,10 @@ export function RequestDetail({
         );
       })()}
 
-      {/* Admin: Direction Organizer */}
-      {isAdmin && request.deliverables.length >= 2 && (
+      {/* Admin: Direction Organizer (excludes carousel placeholder files) */}
+      {isAdmin && realDeliverables.length >= 2 && (
         <DirectionOrganizer
-          deliverables={request.deliverables.map((d) => ({
+          deliverables={realDeliverables.map((d) => ({
             id: d.id,
             file_name: d.file_name,
             mime_type: d.mime_type,
@@ -1708,12 +1731,12 @@ export function RequestDetail({
         />
       )}
 
-      {/* Deliverables */}
-      {request.deliverables.length > 0 ? (
+      {/* Deliverables (excludes carousel placeholder files — those render above) */}
+      {realDeliverables.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">
-              {`${t("detail.yourDesigns")} (${request.deliverables.length})`}
+              {`${t("detail.yourDesigns")} (${realDeliverables.length})`}
             </h2>
             <div className="flex items-center gap-1">
             {isAdmin && hiddenDeliverables.length > 0 && (
@@ -1835,9 +1858,15 @@ export function RequestDetail({
                       : undefined
                   }
                   onDownload={() => logDeliverableEvent(d.id, "download")}
-                  onVote={allDeliverables.filter((del) => !del.is_hidden || isAdmin).length > 1
-                    ? () => handleVote(d.id)
-                    : undefined}
+                  onVote={
+                    // Only show vote CTA when admin has explicitly enabled directions mode
+                    // (voting_mode set) — otherwise treat multi-deliverable requests as a series,
+                    // not competing options.
+                    (request.voting_mode === "single" || request.voting_mode === "team") &&
+                    allDeliverables.filter((del) => !del.is_hidden || isAdmin).length > 1
+                      ? () => handleVote(d.id)
+                      : undefined
+                  }
                   isVoted={votedDeliverableId === d.id}
                   voteCount={getVoteCount(d.id)}
                 />
@@ -2262,6 +2291,28 @@ export function RequestDetail({
           onOpenChange={setLightboxOpen}
         />
       )}
+
+      {/* Carousel fullscreen preview (Lorena's #1 ask: see at real Instagram size) */}
+      <Dialog
+        open={!!fullscreenPost}
+        onOpenChange={(open) => !open && setFullscreenPost(null)}
+      >
+        <DialogContent className="max-w-[420px] p-0 bg-transparent border-none shadow-none">
+          <DialogTitle className="sr-only">
+            {fullscreenPost?.direction_label || "Carousel preview"}
+          </DialogTitle>
+          {fullscreenPost && (
+            <InstagramCarouselPreview
+              slides={fullscreenPost.social_slides
+                .filter((s) => s.url)
+                .map((s) => ({ url: s.url!, alt: s.alt_text || undefined }))}
+              handle={fullscreenPost.ig_handle || "@handle"}
+              caption={fullscreenPost.ig_caption || undefined}
+              subtitle={fullscreenPost.direction_label || "Instagram Carousel"}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -66,16 +66,40 @@ export const detail = {
   "detail.pickThis": { en: "Pick This One", es: "Elegir Esta" },
   "detail.thisOne": { en: "This one!", es: "¡Esta!" },
   "detail.greatChoice": { en: "Great choice!", es: "¡Gran elección!" },
-  "detail.willRefine": { en: "Carlos will refine this direction for you", es: "Carlos refinará esta dirección para ti" },
+  "detail.willRefine": { en: "Your designer will refine this direction for you", es: "Tu diseñador refinará esta propuesta" },
   "detail.yourPick": { en: "Your Pick", es: "Tu Elección" },
   "detail.designersPick": { en: "Designer's Pick", es: "Favorita del Diseñador" },
   "detail.confirmVote": { en: "Confirm", es: "Confirmar" },
   "detail.confirming": { en: "Confirming...", es: "Confirmando..." },
   "detail.changeMyMind": { en: "Change My Mind", es: "Cambiar de Opinión" },
-  "detail.addNote": { en: "Want to add a note for Carlos? (optional)", es: "¿Quieres agregar una nota para Carlos? (opcional)" },
-  "detail.tellDesigner": { en: "Tell Carlos what you think...", es: "Dile a Carlos lo que piensas..." },
+  "detail.addNote": { en: "Want to add a note for your designer? (optional)", es: "¿Quieres agregar una nota para tu diseñador? (opcional)" },
+  "detail.tellDesigner": { en: "Tell your designer what you think...", es: "Dile a tu diseñador lo que piensas..." },
   "detail.seeOthers": { en: "See other directions", es: "Ver otras direcciones" },
   "detail.hideOthers": { en: "Hide other directions", es: "Ocultar otras direcciones" },
   "detail.waitingForPick": { en: "Waiting for client to pick a direction", es: "Esperando a que el cliente elija una dirección" },
   "detail.clientPicked": { en: "picked", es: "eligió" },
+
+  // Carousel directions / story-driven voting (P1 polish from persona feedback)
+  "directions.heroPick": {
+    en: "Two stories. Which should we tell your audience?",
+    es: "Dos propuestas. ¿Cuál le va mejor a tu marca?",
+  },
+  "directions.heroDone": { en: "The story is set ✨", es: "Ya decidiste ✨" },
+  "directions.heroPickHint": {
+    en: "Tap through each carousel like you would on Instagram, then pick the one that feels right.",
+    es: "Desliza por cada carrusel como lo harías en Instagram, y elige la propuesta que más te guste.",
+  },
+  "directions.heroDoneHint": {
+    en: "Your designer will refine this next.",
+    es: "Tu diseñador refinará esta propuesta.",
+  },
+  "directions.pickStory": { en: "Choose this one", es: "Esta es la buena" },
+  "directions.refining": {
+    en: "✨ Your designer will refine this next",
+    es: "✨ Tu diseñador refinará esta propuesta",
+  },
+  "directions.viewLarger": { en: "Tap to view larger", es: "Toca para ver más grande" },
+  "directions.captionMore": { en: "more", es: "más" },
+  "directions.captionLess": { en: "less", es: "menos" },
+  "directions.option": { en: "Option", es: "Opción" },
 } as const;

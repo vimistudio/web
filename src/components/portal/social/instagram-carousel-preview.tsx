@@ -2,6 +2,53 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
+// Real IG truncates captions to ~125 chars on first view, with "...more" link.
+function CaptionBlock({ caption, handle }: { caption: string; handle: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const TRUNCATE_AT = 125;
+  const isLong = caption.length > TRUNCATE_AT;
+  const display = !expanded && isLong ? caption.slice(0, TRUNCATE_AT).trimEnd() : caption;
+  return (
+    <div className="px-3.5 pb-3.5 text-[13px] text-gray-900 leading-relaxed">
+      <span className="font-semibold">{handle}</span>{" "}
+      <span className="whitespace-pre-wrap">{display}</span>
+      {isLong && !expanded && (
+        <>
+          <span>… </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(true);
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            more
+          </button>
+        </>
+      )}
+      {isLong && expanded && (
+        <>
+          {" "}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(false);
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            less
+          </button>
+        </>
+      )}
+      <span className="block text-[10px] text-gray-400 tracking-wide mt-1">
+        HACE 1 HORA
+      </span>
+    </div>
+  );
+}
+
 interface CarouselSlide {
   url: string;
   alt?: string;
@@ -261,15 +308,9 @@ export function InstagramCarouselPreview({
         </svg>
       </div>
 
-      {/* Caption */}
+      {/* Caption — truncated like real Instagram (~125 chars), expandable */}
       {caption && (
-        <div className="px-3.5 pb-3.5 text-[13px] text-gray-900 leading-relaxed">
-          <span className="font-semibold">{handle.replace("@", "")}</span>{" "}
-          {caption}
-          <span className="block text-[10px] text-gray-400 tracking-wide mt-1">
-            HACE 1 HORA
-          </span>
-        </div>
+        <CaptionBlock caption={caption} handle={handle.replace("@", "")} />
       )}
     </div>
   );
