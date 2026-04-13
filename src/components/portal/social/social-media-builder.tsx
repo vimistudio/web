@@ -13,6 +13,7 @@ import { SlideStrip } from "./slide-strip";
 import { SlideUploadZone } from "./slide-upload-zone";
 import { PostMetadataForm } from "./post-metadata-form";
 import { PublishDialog } from "./publish-dialog";
+import { normalizeInstagramImage } from "@/lib/normalize-instagram-image";
 
 interface Slide {
   id: string;
@@ -150,7 +151,28 @@ export function SocialMediaBuilder({
     async (files: File[]) => {
       setIsUploading(true);
       try {
-        for (const file of files) {
+        // Normalize each file to Instagram's 1080×1350 (4:5) spec BEFORE upload.
+        // What gets stored is exactly what shows in the carousel preview and on IG —
+        // no display-time crop surprises.
+        let croppedCount = 0;
+        const normalizedFiles: File[] = [];
+        for (const f of files) {
+          try {
+            const result = await normalizeInstagramImage(f);
+            normalizedFiles.push(result.file);
+            if (result.modified) croppedCount += 1;
+          } catch (err) {
+            console.error("Normalize failed for", f.name, err);
+            normalizedFiles.push(f); // fall back to original
+          }
+        }
+        if (croppedCount > 0) {
+          toast.info(
+            `${croppedCount} image${croppedCount > 1 ? "s" : ""} center-cropped to Instagram's 4:5 portrait spec`
+          );
+        }
+
+        for (const file of normalizedFiles) {
           // Create a slide first
           const slideRes = await fetch(
             `/api/portal/social-posts/${postId}/slides`,
@@ -210,7 +232,17 @@ export function SocialMediaBuilder({
     async (slideId: string, file: File) => {
       setIsUploading(true);
       try {
-        const uploaded = await uploadFileToSlide(slideId, file);
+        let normalizedFile = file;
+        try {
+          const result = await normalizeInstagramImage(file);
+          normalizedFile = result.file;
+          if (result.modified) {
+            toast.info("Image center-cropped to Instagram's 4:5 portrait spec");
+          }
+        } catch (err) {
+          console.error("Normalize failed", err);
+        }
+        const uploaded = await uploadFileToSlide(slideId, normalizedFile);
         if (uploaded) {
           setSlides((prev) =>
             prev.map((s) =>

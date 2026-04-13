@@ -1333,7 +1333,7 @@ export function RequestDetail({
       {/* Review hero moment — directions voting or standard banner */}
       {currentStatus === "review" && hasDirections && (
         <DirectionsVoting
-          directions={request.deliverables
+          directions={realDeliverables
             .filter((d) => d.direction_label && (!d.is_hidden || isAdmin))
             .map((d) => ({
               ...d,
@@ -1817,7 +1817,7 @@ export function RequestDetail({
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {request.deliverables
+            {realDeliverables
               .filter((d) => isAdmin || !d.is_hidden)
               .map((d) => {
               const isImage = d.mime_type?.startsWith("image/") && d.url;
