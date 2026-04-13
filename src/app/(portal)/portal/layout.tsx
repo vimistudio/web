@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { NoAccess } from "@/components/portal/no-access";
+import { LinkingAccount } from "@/components/portal/linking-account";
 import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
 import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
@@ -45,12 +46,26 @@ export default async function PortalLayout({
     }
   }
 
-  // Gate: an authenticated user lacks portal access if either:
-  //   - their profile row is missing (RLS denied or trigger failed), OR
-  //   - they're a client without a client_id (uninvited Google sign-in —
-  //     handle_new_user creates a profile for everyone, so a NULL client_id
-  //     is the real signal of "not invited").
-  if (!profile || (profile.role === "client" && !profile.client_id)) {
+  // Gate: an authenticated user lacks portal access if their profile row is
+  // missing entirely (RLS denied or trigger failed).
+  if (!profile) {
+    return <NoAccess />;
+  }
+
+  // Client without a client_id: distinguish between "invited but link is
+  // still propagating" and "genuinely not invited" so we don't show a
+  // hostile "no access" message to someone in the middle of being claimed.
+  //   - Pending invite exists for this email → LinkingAccount (auto-refreshes)
+  //   - No pending invite → NoAccess (correct behaviour for uninvited users)
+  if (profile.role === "client" && !profile.client_id) {
+    const { data: pendingInvite } = await supabase
+      .from("invited_emails")
+      .select("email")
+      .eq("email", (user.email ?? "").toLowerCase())
+      .maybeSingle();
+    if (pendingInvite) {
+      return <LinkingAccount />;
+    }
     return <NoAccess />;
   }
 
