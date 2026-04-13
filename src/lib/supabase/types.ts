@@ -67,12 +67,6 @@ export type Database = {
           locale: string
           logo_url: string | null
           name: string
-          paused_at: string | null
-          paused_by: string | null
-          paused_note: string | null
-          paused_reason: string | null
-          paused_until: string | null
-          paused_visible_to_client: boolean
           retainer_amount: number | null
           slug: string
           updated_at: string
@@ -84,12 +78,6 @@ export type Database = {
           locale?: string
           logo_url?: string | null
           name: string
-          paused_at?: string | null
-          paused_by?: string | null
-          paused_note?: string | null
-          paused_reason?: string | null
-          paused_until?: string | null
-          paused_visible_to_client?: boolean
           retainer_amount?: number | null
           slug: string
           updated_at?: string
@@ -101,12 +89,6 @@ export type Database = {
           locale?: string
           logo_url?: string | null
           name?: string
-          paused_at?: string | null
-          paused_by?: string | null
-          paused_note?: string | null
-          paused_reason?: string | null
-          paused_until?: string | null
-          paused_visible_to_client?: boolean
           retainer_amount?: number | null
           slug?: string
           updated_at?: string
@@ -616,7 +598,6 @@ export type Database = {
     }
     Functions: {
       claim_invite: { Args: never; Returns: boolean }
-      client_is_paused: { Args: { p_client_id: string }; Returns: boolean }
       current_user_client_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
     }

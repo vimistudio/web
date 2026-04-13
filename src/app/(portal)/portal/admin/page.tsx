@@ -18,38 +18,26 @@ export default async function AdminDashboardPage() {
 
   if (profile?.role !== "admin") redirect("/portal");
 
-  // Fetch all clients (active + paused) — we display them in separate sections.
-  const { data: allClientsRaw } = await supabase
+  // Fetch all clients with request counts
+  const { data: clients } = await supabase
     .from("clients")
     .select("*")
+    .eq("is_active", true)
     .order("created_at", { ascending: false });
 
-  const clients = (allClientsRaw ?? []).filter((c) => c.is_active);
-  const activeClientIdSet = new Set(clients.map((c) => c.id));
-
-  // Get request counts per status — only for active clients (paused clients
-  // shouldn't pollute open-request totals or hot-request lists).
-  const { data: allRequests } = await supabase
+  // Get request counts per status
+  const { data: requests } = await supabase
     .from("requests")
     .select("id, client_id, status, updated_at, created_at, title");
-  const requests = (allRequests ?? []).filter((r) =>
-    activeClientIdSet.has(r.client_id)
-  );
 
-  // Recent comments — exclude admin's own AND any from paused clients.
-  // Fetch extra so post-filter we can still show the latest 10.
-  const { data: recentCommentsRaw } = await supabase
+  // Get recent comments for activity feed (exclude admin's own)
+  // Uses explicit FK hint since author_id has FKs to both auth.users and profiles
+  const { data: recentComments } = await supabase
     .from("comments")
-    .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id, clients(name, is_active))")
+    .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id, clients(name))")
     .neq("author_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(50);
-  const recentComments = (recentCommentsRaw ?? [])
-    .filter((c) => {
-      const r = (c as { requests?: { clients?: { is_active?: boolean } | null } | null }).requests;
-      return r?.clients?.is_active !== false;
-    })
-    .slice(0, 10);
+    .limit(10);
 
   // Get recent comments for last-active calculation (last 90 days, capped at 500)
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();

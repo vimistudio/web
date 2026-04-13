@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { NoAccess } from "@/components/portal/no-access";
 import { LinkingAccount } from "@/components/portal/linking-account";
-import { ProjectPaused } from "@/components/portal/project-paused";
 import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
 import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
@@ -78,25 +77,6 @@ export default async function PortalLayout({
       return <LinkingAccount />;
     }
     return <NoAccess />;
-  }
-
-  // Project paused: client members of an inactive client see the warm
-  // ProjectPaused page instead of the portal. Admins are unaffected and can
-  // continue to view the paused client's board for archival/reactivation.
-  // Admins impersonating a paused client also bypass this (so they can
-  // sanity-check what the client would have seen — useful for support).
-  if (profile.role === "client" && profile.clients && profile.clients.is_active === false) {
-    const reasonShown =
-      profile.clients.paused_visible_to_client === true
-        ? profile.clients.paused_reason ?? null
-        : null;
-    return (
-      <ProjectPaused
-        clientName={profile.clients.name}
-        pausedUntil={profile.clients.paused_until ?? null}
-        reasonShownToClient={reasonShown}
-      />
-    );
   }
 
   // Admin impersonation: check cookie
