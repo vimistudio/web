@@ -147,25 +147,28 @@ export type Database = {
         Row: {
           comment: string | null
           created_at: string
-          deliverable_id: string
+          deliverable_id: string | null
           event_type: string
           id: string
+          social_post_id: string | null
           user_id: string
         }
         Insert: {
           comment?: string | null
           created_at?: string
-          deliverable_id: string
+          deliverable_id?: string | null
           event_type: string
           id?: string
+          social_post_id?: string | null
           user_id: string
         }
         Update: {
           comment?: string | null
           created_at?: string
-          deliverable_id?: string
+          deliverable_id?: string | null
           event_type?: string
           id?: string
+          social_post_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -174,6 +177,13 @@ export type Database = {
             columns: ["deliverable_id"]
             isOneToOne: false
             referencedRelation: "deliverables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliverable_events_social_post_id_fkey"
+            columns: ["social_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
             referencedColumns: ["id"]
           },
           {
@@ -480,36 +490,54 @@ export type Database = {
           cover_slide_idx: number
           created_at: string
           created_by: string | null
+          direction_description: string | null
+          direction_label: string | null
+          direction_order: number | null
           id: string
           ig_caption: string | null
           ig_handle: string | null
+          is_hidden: boolean
+          is_recommended: boolean
           published_at: string | null
           request_id: string
           status: string
+          tags: string[]
           updated_at: string
         }
         Insert: {
           cover_slide_idx?: number
           created_at?: string
           created_by?: string | null
+          direction_description?: string | null
+          direction_label?: string | null
+          direction_order?: number | null
           id?: string
           ig_caption?: string | null
           ig_handle?: string | null
+          is_hidden?: boolean
+          is_recommended?: boolean
           published_at?: string | null
           request_id: string
           status?: string
+          tags?: string[]
           updated_at?: string
         }
         Update: {
           cover_slide_idx?: number
           created_at?: string
           created_by?: string | null
+          direction_description?: string | null
+          direction_label?: string | null
+          direction_order?: number | null
           id?: string
           ig_caption?: string | null
           ig_handle?: string | null
+          is_hidden?: boolean
+          is_recommended?: boolean
           published_at?: string | null
           request_id?: string
           status?: string
+          tags?: string[]
           updated_at?: string
         }
         Relationships: [

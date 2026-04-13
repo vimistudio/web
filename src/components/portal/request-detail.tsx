@@ -64,7 +64,7 @@ interface Comment {
 
 interface DeliverableEvent {
   id: string;
-  deliverable_id: string;
+  deliverable_id: string | null;
   user_id: string;
   event_type: string;
   comment: string | null;
@@ -122,12 +122,26 @@ interface SocialPost {
   ig_handle: string | null;
   ig_caption: string | null;
   status: string;
+  tags?: string[];
+  is_hidden?: boolean;
+  direction_label?: string | null;
+  direction_description?: string | null;
+  direction_order?: number | null;
+  is_recommended?: boolean;
   social_slides: {
     id: string;
     slide_order: number;
     image_path: string | null;
     alt_text: string | null;
     url: string | null;
+  }[];
+  deliverable_events?: {
+    id: string;
+    social_post_id: string | null;
+    user_id: string;
+    event_type: string;
+    comment: string | null;
+    created_at: string;
   }[];
 }
 
@@ -139,6 +153,50 @@ interface RequestDetailProps {
   isImpersonating: boolean;
   activityLog?: ActivityEntry[];
   socialPosts?: SocialPost[];
+}
+
+// --- Carousel Tag Input (small, for admin) ---
+
+function CarouselTagInput({ onAdd }: { onAdd: (tag: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-[10px] px-2 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:text-foreground hover:border-foreground/60"
+      >
+        + tag
+      </button>
+    );
+  }
+  return (
+    <input
+      autoFocus
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        const v = value.trim();
+        if (v) onAdd(v);
+        setValue("");
+        setOpen(false);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          const v = value.trim();
+          if (v) onAdd(v);
+          setValue("");
+          setOpen(false);
+        } else if (e.key === "Escape") {
+          setValue("");
+          setOpen(false);
+        }
+      }}
+      placeholder="tag…"
+      maxLength={20}
+      className="text-[10px] px-2 py-0.5 rounded-full bg-muted border-none outline-none w-20"
+    />
+  );
 }
 
 // --- Comment Body with Video Embeds ---
@@ -991,6 +1049,86 @@ export function RequestDetail({
     [router]
   );
 
+  // --- Social Post (Carousel) handlers ---
+  const handleUpdateCarouselTags = useCallback(
+    async (postId: string, tags: string[]) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("social_posts")
+        .update({ tags })
+        .eq("id", postId);
+      if (error) {
+        toast.error("Couldn't update tags");
+        return;
+      }
+      router.refresh();
+    },
+    [router]
+  );
+
+  const handleToggleCarouselHidden = useCallback(
+    async (post: SocialPost) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("social_posts")
+        .update({ is_hidden: !post.is_hidden })
+        .eq("id", post.id);
+      if (error) {
+        toast.error("Couldn't update visibility");
+        return;
+      }
+      toast.success(
+        post.is_hidden
+          ? "Carousel is now visible to client"
+          : "Carousel hidden from client (kept as building blocks)"
+      );
+      router.refresh();
+    },
+    [router]
+  );
+
+  const handleVoteCarousel = useCallback(
+    async (postId: string, comment: string | null) => {
+      const supabase = createClient();
+      // Clear any previous vote by this user on this request's carousels
+      const carouselIds = (socialPosts || []).map((p) => p.id);
+      if (carouselIds.length > 0) {
+        await supabase
+          .from("deliverable_events")
+          .delete()
+          .eq("user_id", currentUserId)
+          .in("social_post_id", carouselIds)
+          .in("event_type", ["vote", "direction_vote"]);
+      }
+      const { error } = await supabase.from("deliverable_events").insert({
+        social_post_id: postId,
+        user_id: currentUserId,
+        event_type: "direction_vote",
+        comment,
+      });
+      if (error) {
+        toast.error("Couldn't save your pick");
+        return;
+      }
+      // Confetti — Peak-End rule
+      try {
+        const c = (await import("canvas-confetti")).default;
+        c({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#909af7", "#b4baff", "#ffffff"],
+        });
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          (navigator as Navigator & { vibrate: (ms: number) => void }).vibrate?.(50);
+        }
+      } catch {}
+      toast.success("The story is set ✨");
+      router.refresh();
+    },
+    [currentUserId, router, socialPosts]
+  );
+
   const handleToggleHidden = useCallback(
     async (deliverable: Deliverable) => {
       const supabase = createClient();
@@ -1342,26 +1480,214 @@ export function RequestDetail({
         </>
       )}
 
-      {/* Social Post Preview */}
-      {socialPosts.length > 0 && socialPosts.map((post) => {
-        const slides = post.social_slides
-          .filter((s) => s.url)
-          .map((s) => ({ url: s.url!, alt: s.alt_text || undefined }));
-        if (slides.length === 0) return null;
+      {/* Social Posts (Carousels) — Story-driven directions */}
+      {socialPosts.length > 0 && (() => {
+        // Hide hidden posts from clients; admins see them dimmed
+        const visiblePosts = isAdmin
+          ? [...socialPosts].sort((a, b) => (a.direction_order ?? 999) - (b.direction_order ?? 999))
+          : socialPosts.filter((p) => !p.is_hidden).sort((a, b) => (a.direction_order ?? 999) - (b.direction_order ?? 999));
+        if (visiblePosts.length === 0) return null;
+
+        const inDirections = request.voting_mode === "single" || request.voting_mode === "team";
+        const multi = visiblePosts.length >= 2;
+
+        // Existing vote (client side)
+        const myVote = visiblePosts.find((p) =>
+          p.deliverable_events?.some(
+            (e) => e.user_id === currentUserId && (e.event_type === "vote" || e.event_type === "direction_vote")
+          )
+        );
+        const hasVoted = !!myVote;
+
+        // Beat labels — Pixar 3-beat narrative arc
+        const beats = ["Hook", "Build", "Reveal"];
+
         return (
-          <div key={post.id} className="space-y-3">
-            <h2 className="text-sm font-medium">Instagram Carousel</h2>
-            <div className="flex justify-center">
-              <InstagramCarouselPreview
-                slides={slides}
-                handle={post.ig_handle || "@handle"}
-                caption={post.ig_caption || undefined}
-                subtitle="Instagram Carousel"
+          <div className="space-y-4">
+            {/* Hero — Narrative Transportation */}
+            {multi && inDirections && !isAdmin && (
+              <div className="space-y-1">
+                <h2 className="text-base font-semibold">
+                  {hasVoted
+                    ? "The story is set"
+                    : "Two stories. Which should we tell your audience?"}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {hasVoted
+                    ? `You picked ${myVote?.direction_label || "this direction"}. Carlos will refine it next.`
+                    : "Tap through each carousel like you would on Instagram, then pick the one that feels right."}
+                </p>
+              </div>
+            )}
+            {!inDirections && (
+              <h2 className="text-sm font-medium">
+                {multi ? `Instagram Carousels (${visiblePosts.length})` : "Instagram Carousel"}
+              </h2>
+            )}
+
+            {/* Admin: Direction Organizer for carousels */}
+            {isAdmin && multi && (
+              <DirectionOrganizer
+                deliverables={visiblePosts.map((p) => ({
+                  id: p.id,
+                  file_name: p.ig_caption?.slice(0, 40) || "Carousel",
+                  mime_type: null,
+                  url: p.social_slides.find((s) => s.url)?.url ?? null,
+                  direction_label: p.direction_label ?? null,
+                  direction_description: p.direction_description ?? null,
+                  direction_order: p.direction_order ?? null,
+                  is_recommended: p.is_recommended ?? false,
+                }))}
+                requestId={request.id}
+                votingMode={request.voting_mode ?? null}
+                entityTable="social_posts"
+                heading="Present carousels as Story Directions"
+                onUpdate={() => router.refresh()}
               />
+            )}
+
+            {/* Grid — 1 col mobile, 2 col on desktop when 2+ */}
+            <div className={multi ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "flex justify-center"}>
+              {visiblePosts.map((post, idx) => {
+                const slides = post.social_slides
+                  .filter((s) => s.url)
+                  .map((s) => ({ url: s.url!, alt: s.alt_text || undefined }));
+                if (slides.length === 0) return null;
+
+                const isMyVote = myVote?.id === post.id;
+                const isWinner = hasVoted && isMyVote;
+                const isLoser = hasVoted && !isMyVote;
+
+                // Default story-flavored label fallback
+                const defaultStoryLabels = [
+                  "Direction A: The Hook",
+                  "Direction B: The Slow Burn",
+                  "Direction C: The Bold Move",
+                  "Direction D: The Quiet Confidence",
+                ];
+                const label = post.direction_label || (inDirections ? defaultStoryLabels[idx] : null);
+
+                return (
+                  <div
+                    key={post.id}
+                    className={`flex flex-col items-center gap-3 transition-opacity ${
+                      isLoser ? "opacity-40" : ""
+                    } ${post.is_hidden ? "ring-1 ring-amber-400/40 rounded-lg p-2" : ""}`}
+                  >
+                    {/* Story label header (Curiosity Gap) */}
+                    {inDirections && label && (
+                      <div className="w-full flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">{label}</span>
+                          {post.is_recommended && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#909af7] text-white">
+                              Designer&apos;s Pick
+                            </span>
+                          )}
+                          {isWinner && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500 text-white">
+                              Your Pick
+                            </span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleToggleCarouselHidden(post)}
+                            className="text-[11px] text-muted-foreground hover:text-foreground"
+                            title={post.is_hidden ? "Show to client" : "Hide from client (keep as building block)"}
+                          >
+                            {post.is_hidden ? "Hidden" : "Hide"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* The carousel itself (Picture Superiority) */}
+                    <InstagramCarouselPreview
+                      slides={slides}
+                      handle={post.ig_handle || "@handle"}
+                      caption={post.ig_caption || undefined}
+                      subtitle={inDirections ? (label || "Story Direction") : "Instagram Carousel"}
+                    />
+
+                    {/* 3-beat narrative arc indicator (Pixar Beat Sheet, Miller's chunking) */}
+                    {inDirections && slides.length >= 3 && (
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        {beats.map((beat, i) => (
+                          <div key={beat} className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${i === 0 ? "bg-[#909af7]" : i === 1 ? "bg-[#b4baff]" : "bg-foreground/40"}`} />
+                            <span>{beat}</span>
+                            {i < beats.length - 1 && <span className="text-foreground/20">—</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Premise (Generation Effect) */}
+                    {inDirections && post.direction_description && (
+                      <p className="text-xs text-muted-foreground italic text-center max-w-[28ch]">
+                        &ldquo;{post.direction_description}&rdquo;
+                      </p>
+                    )}
+
+                    {/* Vote CTA (IKEA / Endowment) */}
+                    {inDirections && !isAdmin && !hasVoted && (
+                      <button
+                        onClick={() => handleVoteCarousel(post.id, null)}
+                        className="w-full max-w-[320px] h-12 rounded-full bg-[#909af7] text-white text-sm font-medium hover:bg-[#7d87e8] active:scale-95 transition-all"
+                      >
+                        Pick this story
+                      </button>
+                    )}
+                    {inDirections && !isAdmin && hasVoted && isMyVote && (
+                      <div className="w-full max-w-[320px] text-center text-xs text-muted-foreground">
+                        ✨ Carlos will refine this next
+                      </div>
+                    )}
+
+                    {/* Tags row (admin only or if tags exist) */}
+                    {(isAdmin || (post.tags && post.tags.length > 0)) && (
+                      <div className="w-full max-w-[320px] flex flex-wrap items-center gap-1.5 px-1">
+                        {(post.tags ?? []).map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground inline-flex items-center gap-1"
+                          >
+                            {tag}
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateCarouselTags(
+                                    post.id,
+                                    (post.tags ?? []).filter((t) => t !== tag)
+                                  )
+                                }
+                                className="hover:text-foreground"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                        {isAdmin && (
+                          <CarouselTagInput
+                            onAdd={(tag) =>
+                              handleUpdateCarouselTags(
+                                post.id,
+                                Array.from(new Set([...(post.tags ?? []), tag]))
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
-      })}
+      })()}
 
       {/* Admin: Direction Organizer */}
       {isAdmin && request.deliverables.length >= 2 && (

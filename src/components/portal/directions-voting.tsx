@@ -51,7 +51,7 @@ interface DirectionDeliverable {
   is_recommended?: boolean;
   deliverable_events?: {
     id: string;
-    deliverable_id: string;
+    deliverable_id: string | null;
     user_id: string;
     event_type: string;
     comment: string | null;

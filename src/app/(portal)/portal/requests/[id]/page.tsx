@@ -110,7 +110,7 @@ export default async function RequestDetailPage({
   // Fetch social posts for this request (if any)
   const { data: socialPosts } = await supabase
     .from("social_posts")
-    .select("*, social_slides(id, slide_order, image_path, alt_text)")
+    .select("*, social_slides(id, slide_order, image_path, alt_text), deliverable_events(id, social_post_id, user_id, event_type, comment, created_at)")
     .eq("request_id", params.id)
     .eq("status", "published");
 

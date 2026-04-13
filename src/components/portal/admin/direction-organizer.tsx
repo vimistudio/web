@@ -32,6 +32,10 @@ interface DirectionOrganizerProps {
   requestId: string;
   votingMode: string | null;
   onUpdate: () => void;
+  /** Source table for direction metadata. Defaults to "deliverables". */
+  entityTable?: "deliverables" | "social_posts";
+  /** Heading override (e.g. "Present carousels as Directions"). */
+  heading?: string;
 }
 
 const DEFAULT_LABELS = [
@@ -46,6 +50,8 @@ export function DirectionOrganizer({
   requestId,
   votingMode,
   onUpdate,
+  entityTable = "deliverables",
+  heading = "Present as Directions",
 }: DirectionOrganizerProps) {
   const router = useRouter();
   const [isDirectionsMode, setIsDirectionsMode] = useState(
@@ -79,7 +85,7 @@ export function DirectionOrganizer({
         setSaving(true);
         for (const d of updates) {
           await supabase
-            .from("deliverables")
+            .from(entityTable)
             .update({
               direction_label: d.direction_label,
               direction_order: d.direction_order,
@@ -98,7 +104,7 @@ export function DirectionOrganizer({
         setSaving(true);
         for (const d of directions) {
           await supabase
-            .from("deliverables")
+            .from(entityTable)
             .update({
               direction_label: null,
               direction_description: null,
@@ -127,11 +133,11 @@ export function DirectionOrganizer({
       );
       const supabase = createClient();
       await supabase
-        .from("deliverables")
+        .from(entityTable)
         .update({ direction_label: label })
         .eq("id", id);
     },
-    []
+    [entityTable]
   );
 
   const handleUpdateDescription = useCallback(
@@ -143,11 +149,11 @@ export function DirectionOrganizer({
       );
       const supabase = createClient();
       await supabase
-        .from("deliverables")
+        .from(entityTable)
         .update({ direction_description: description || null })
         .eq("id", id);
     },
-    []
+    [entityTable]
   );
 
   const handleToggleRecommended = useCallback(
@@ -165,12 +171,12 @@ export function DirectionOrganizer({
       const supabase = createClient();
       for (const d of updated) {
         await supabase
-          .from("deliverables")
+          .from(entityTable)
           .update({ is_recommended: d.is_recommended })
           .eq("id", d.id);
       }
     },
-    [directions]
+    [directions, entityTable]
   );
 
   const handleMoveDirection = useCallback(
@@ -186,12 +192,12 @@ export function DirectionOrganizer({
       const supabase = createClient();
       for (const d of reordered) {
         await supabase
-          .from("deliverables")
+          .from(entityTable)
           .update({ direction_order: d.direction_order })
           .eq("id", d.id);
       }
     },
-    [directions]
+    [directions, entityTable]
   );
 
   if (deliverables.length < 2) return null;
@@ -202,7 +208,7 @@ export function DirectionOrganizer({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PenToolIcon size={16} className="text-muted-foreground" />
-          <span className="text-sm font-medium">Present as Directions</span>
+          <span className="text-sm font-medium">{heading}</span>
           {directions.length > 4 && isDirectionsMode && (
             <span className="text-xs text-amber-600">
               Tip: 2-3 options work best
