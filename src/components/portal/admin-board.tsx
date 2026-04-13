@@ -23,6 +23,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
 import { EditClientDialog } from "./edit-client-form";
+import { PausedBanner } from "./admin/paused-banner";
+import { PauseClientDialog } from "./admin/pause-client-dialog";
 
 interface Request {
   id: string;
@@ -48,6 +50,11 @@ interface Client {
   slug: string;
   retainer_amount: number | null;
   is_active: boolean;
+  paused_reason?: string | null;
+  paused_note?: string | null;
+  paused_at?: string | null;
+  paused_until?: string | null;
+  paused_visible_to_client?: boolean;
 }
 
 interface AdminBoardProps {
@@ -284,6 +291,27 @@ function DroppableColumn({
   );
 }
 
+function PauseToggleButton({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="text-[11px] px-2 py-0.5 rounded-full border border-gray-200 text-muted-foreground hover:text-amber-700 hover:border-amber-300 transition-colors"
+        title="Pause this project"
+      >
+        Pause
+      </button>
+      <PauseClientDialog
+        clientId={clientId}
+        clientName={clientName}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
+  );
+}
+
 export function AdminBoard({ client, requests: initialRequests }: AdminBoardProps) {
   const router = useRouter();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
@@ -428,6 +456,19 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
 
   return (
     <div className="space-y-6">
+      {/* Paused banner — Recognition over Recall + Fitts (one-click reactivate) */}
+      {!client.is_active && (
+        <PausedBanner
+          clientId={client.id}
+          clientName={client.name}
+          reason={client.paused_reason ?? null}
+          note={client.paused_note ?? null}
+          pausedAt={client.paused_at ?? null}
+          pausedUntil={client.paused_until ?? null}
+          visibleToClient={client.paused_visible_to_client ?? false}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -441,16 +482,16 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold">{client.name}</h1>
               <EditClientDialog client={client} />
-              <Badge
-                variant="outline"
-                className={
-                  client.is_active
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-gray-50 text-gray-500 border-gray-200"
-                }
-              >
-                {client.is_active ? "Active" : "Paused"}
-              </Badge>
+              {client.is_active ? (
+                <PauseToggleButton clientId={client.id} clientName={client.name} />
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-50 text-amber-700 border-amber-200"
+                >
+                  Paused
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               ${client.retainer_amount ?? 0}/mo &middot; {openCount} open{" "}
