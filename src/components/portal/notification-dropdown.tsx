@@ -163,6 +163,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
                   {n.type === "comment_added" && <Comment01Icon size={14} className="text-[#909af7]" />}
                   {n.type === "status_changed" && <ArrowRight01Icon size={14} className="text-[#909af7]" />}
                   {n.type === "deliverable_uploaded" && <Upload01Icon size={14} className="text-[#909af7]" />}
+                  {n.type === "direction_voted" && <CheckmarkCircle01Icon size={14} className="text-[#909af7]" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm leading-tight ${!n.is_read ? "font-medium" : ""}`}>

@@ -6,9 +6,10 @@ import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
 import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
+import { DirectionVotedEmail } from "@/lib/email/templates/direction-voted";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created", "client_signed_in"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created", "client_signed_in", "direction_voted"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -29,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription } = body;
+    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription, direction_label, vote_comment } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json(
@@ -243,6 +244,17 @@ export async function POST(request: Request) {
           requestType: TYPE_LABELS[req.type] || req.type,
           priority: priorityLabels[reqPriority as number] || priorityLabels[req.priority] || "Normal",
           description: (reqDescription as string) || undefined,
+        });
+        break;
+      }
+      case "direction_voted": {
+        emailSubject = `${actorName} picked a direction for "${req.title}"`;
+        emailReact = DirectionVotedEmail({
+          requestTitle: req.title,
+          requestUrl,
+          voterName: actorName,
+          directionLabel: (direction_label as string) || "a direction",
+          comment: (vote_comment as string) || undefined,
         });
         break;
       }
