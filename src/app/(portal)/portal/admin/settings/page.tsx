@@ -31,10 +31,19 @@ export default async function AdminSettingsPage() {
     .eq("is_active", true)
     .order("name");
 
+  // Fetch active client members (already-onboarded users) for the Members section
+  const { data: members } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, avatar_url, client_id, first_login_at, created_at, clients(id, name)")
+    .eq("role", "client")
+    .not("client_id", "is", null)
+    .order("created_at", { ascending: false });
+
   return (
     <AdminSettingsView
       invites={invites ?? []}
       clients={clients ?? []}
+      members={members ?? []}
     />
   );
 }
