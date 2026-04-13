@@ -19,11 +19,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   ArrowLeft01Icon,
   CalendarIcon,
   Cancel01Icon,
@@ -792,7 +787,6 @@ export function RequestDetail({
   const [editPriority, setEditPriority] = useState(request.priority);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const { t, locale } = useLocale();
-  const [fullscreenPost, setFullscreenPost] = useState<SocialPost | null>(null);
 
   const canEdit = currentStatus === "queued" && !isAdmin;
 
@@ -1669,23 +1663,15 @@ export function RequestDetail({
                       </div>
                     )}
 
-                    {/* The carousel itself — wrapped in tap-to-fullscreen (Lorena's #1 ask) */}
-                    <button
-                      type="button"
-                      onClick={() => setFullscreenPost(post)}
-                      className="block w-full text-left cursor-zoom-in group relative"
-                      aria-label={t("directions.viewLarger")}
-                    >
-                      <InstagramCarouselPreview
-                        slides={slides}
-                        handle={post.ig_handle || "@handle"}
-                        caption={post.ig_caption || undefined}
-                        subtitle={inDirections ? (label || "Carousel") : "Instagram Carousel"}
-                      />
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none">
-                        {t("directions.viewLarger")}
-                      </div>
-                    </button>
+                    {/* The carousel itself — kept inline; fullscreen removed because
+                        the Dialog wasn't meaningfully larger and the wrapping button
+                        conflicted with drag-to-swipe on desktop. */}
+                    <InstagramCarouselPreview
+                      slides={slides}
+                      handle={post.ig_handle || "@handle"}
+                      caption={post.ig_caption || undefined}
+                      subtitle={inDirections ? (label || "Carousel") : "Instagram Carousel"}
+                    />
 
                     {/* Premise (Generation Effect) — kept; this is the load-bearing
                         storytelling element per brand strategist's review */}
@@ -2335,27 +2321,6 @@ export function RequestDetail({
         />
       )}
 
-      {/* Carousel fullscreen preview (Lorena's #1 ask: see at real Instagram size) */}
-      <Dialog
-        open={!!fullscreenPost}
-        onOpenChange={(open) => !open && setFullscreenPost(null)}
-      >
-        <DialogContent className="max-w-[420px] p-0 bg-transparent border-none shadow-none">
-          <DialogTitle className="sr-only">
-            {fullscreenPost?.direction_label || "Carousel preview"}
-          </DialogTitle>
-          {fullscreenPost && (
-            <InstagramCarouselPreview
-              slides={fullscreenPost.social_slides
-                .filter((s) => s.url)
-                .map((s) => ({ url: s.url!, alt: s.alt_text || undefined }))}
-              handle={fullscreenPost.ig_handle || "@handle"}
-              caption={fullscreenPost.ig_caption || undefined}
-              subtitle={fullscreenPost.direction_label || "Instagram Carousel"}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
