@@ -247,10 +247,20 @@ export function HomepageFooter() {
             </motion.div>
           </div>
 
-          {/* Copyright */}
-          <div className="text-gray-500 text-xs items-center">
-            © VIMI STUDIO {new Date().getFullYear()} <br></br>{" "}
-            {t("allRightsReserved")}
+          {/* Copyright + legal links (Google OAuth verifier requires
+              a discoverable privacy policy link from the home page) */}
+          <div className="text-gray-500 text-xs flex flex-col md:items-end gap-2">
+            <div className="flex gap-4 text-[11px]">
+              <Link href="/privacy" className="hover:text-white transition-colors">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-white transition-colors">
+                Terms
+              </Link>
+            </div>
+            <div>
+              © VIMI STUDIO {new Date().getFullYear()} · {t("allRightsReserved")}
+            </div>
           </div>
         </div>
       </div>
