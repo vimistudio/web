@@ -597,7 +597,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_invite: { Args: never; Returns: boolean }
+      current_user_client_id: { Args: never; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       request_status: "queued" | "in_progress" | "review" | "done"

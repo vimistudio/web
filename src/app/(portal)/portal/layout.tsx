@@ -22,11 +22,28 @@ export default async function PortalLayout({
   }
 
   // Check if user has a pre-created profile (invite-only gate)
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("profiles")
     .select("*, clients(*)")
     .eq("id", user.id)
     .single();
+
+  // Self-healing invite consumption: handle_new_user only fires AFTER INSERT
+  // on auth.users, so users who signed in BEFORE being invited (or who were
+  // removed and re-invited) end up with a profile but no client_id. The
+  // claim_invite() function checks invited_emails for their address and
+  // links them on the next portal load — idempotent no-op if no invite.
+  if (profile && profile.role === "client" && !profile.client_id) {
+    const { data: claimed } = await supabase.rpc("claim_invite");
+    if (claimed === true) {
+      const re = await supabase
+        .from("profiles")
+        .select("*, clients(*)")
+        .eq("id", user.id)
+        .single();
+      profile = re.data;
+    }
+  }
 
   // Gate: an authenticated user lacks portal access if either:
   //   - their profile row is missing (RLS denied or trigger failed), OR
