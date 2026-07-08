@@ -8,7 +8,7 @@ export const welcome = {
   "welcome.step": { en: "Step {n} of 3", es: "Paso {n} de 3" },
 
   // Slide 1 — the studio
-  "welcome.s1.title": { en: "Welcome to your studio", es: "Bienvenidos a su estudio" },
+  "welcome.s1.title": { en: "Welcome to your studio", es: "Te damos la bienvenida a tu estudio" },
   "welcome.s1.body": {
     en: "This is where {client} and the studio work together: requests, progress, and deliveries in one place, not scattered across chats.",
     es: "Aquí es donde {client} y el estudio trabajan juntos: solicitudes, avances y entregas en un solo lugar, no repartidos en mil chats.",
