@@ -1,51 +1,76 @@
 import * as React from "react";
 import { EmailLayout, BRAND, Heading, Text, Section } from "./layout";
+import type { Locale } from "@/lib/portal-strings";
 
 interface InviteEmailProps {
   clientName: string;
   portalUrl: string;
   invitedByName: string;
+  locale?: Locale;
 }
+
+const STRINGS = {
+  en: {
+    preview: (by: string, client: string) =>
+      `${by} invited you to your ${client} design portal`,
+    cta: "Sign In to Your Portal",
+    heading: "You're Invited",
+    welcome: (by: string) => `${by} has set up a design portal for`,
+    onVimi: "on Vimi Studio.",
+    features: [
+      "View your design requests and their progress",
+      "Leave feedback and comments directly on deliverables",
+      "Download final files when they're ready",
+      "Get notified when something needs your attention",
+    ],
+    signInNote: "Sign in with Google using this email address to get started.",
+  },
+  es: {
+    preview: (by: string, client: string) =>
+      `${by} te invitó a tu portal de diseño de ${client}`,
+    cta: "Entrar a tu portal",
+    heading: "Te invitamos",
+    welcome: (by: string) => `${by} creó un portal de diseño para`,
+    onVimi: "en Vimi Studio.",
+    features: [
+      "Mira tus solicitudes de diseño y su avance",
+      "Deja comentarios directamente sobre las entregas",
+      "Descarga los archivos finales cuando estén listos",
+      "Recibe avisos cuando algo necesite tu atención",
+    ],
+    signInNote:
+      "Inicia sesión con Google usando este correo para empezar.",
+  },
+} as const;
 
 export function InviteEmail({
   clientName,
   portalUrl,
   invitedByName,
+  locale = "en",
 }: InviteEmailProps) {
+  const s = STRINGS[locale];
   return (
     <EmailLayout
-      previewText={`${invitedByName} invited you to your ${clientName} design portal`}
+      previewText={s.preview(invitedByName, clientName)}
       ctaUrl={portalUrl}
-      ctaLabel="Sign In to Your Portal"
+      ctaLabel={s.cta}
+      locale={locale}
     >
-      <Heading style={heading}>You&apos;re Invited</Heading>
+      <Heading style={heading}>{s.heading}</Heading>
       <Text style={welcome}>
-        {invitedByName} has set up a design portal for{" "}
-        <strong>{clientName}</strong> on Vimi Studio.
+        {s.welcome(invitedByName)} <strong>{clientName}</strong> {s.onVimi}
       </Text>
 
       <Section style={featureList}>
-        <Text style={featureItem}>
-          <span style={bullet}>&#x2713;</span> View your design requests and
-          their progress
-        </Text>
-        <Text style={featureItem}>
-          <span style={bullet}>&#x2713;</span> Leave feedback and comments
-          directly on deliverables
-        </Text>
-        <Text style={featureItem}>
-          <span style={bullet}>&#x2713;</span> Download final files when
-          they&apos;re ready
-        </Text>
-        <Text style={featureItem}>
-          <span style={bullet}>&#x2713;</span> Get notified when something
-          needs your attention
-        </Text>
+        {s.features.map((feature, i) => (
+          <Text key={i} style={featureItem}>
+            <span style={bullet}>&#x2713;</span> {feature}
+          </Text>
+        ))}
       </Section>
 
-      <Text style={signInNote}>
-        Sign in with Google using this email address to get started.
-      </Text>
+      <Text style={signInNote}>{s.signInNote}</Text>
     </EmailLayout>
   );
 }

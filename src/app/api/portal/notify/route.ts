@@ -9,16 +9,30 @@ import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { DirectionVotedEmail } from "@/lib/email/templates/direction-voted";
 import { MilestoneDoneEmail } from "@/lib/email/templates/milestone-done";
+import type { Locale } from "@/lib/portal-strings";
 import { NextResponse } from "next/server";
 
 const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "team_invite", "request_created", "client_signed_in", "direction_voted", "milestone_done"];
 
-const STATUS_LABELS: Record<string, string> = {
-  queued: "Queued",
-  in_progress: "In Progress",
-  review: "Review",
-  done: "Done",
+const STATUS_LABELS: Record<Locale, Record<string, string>> = {
+  en: {
+    queued: "Queued",
+    in_progress: "In Progress",
+    review: "Review",
+    done: "Done",
+  },
+  es: {
+    queued: "En cola",
+    in_progress: "En proceso",
+    review: "En revisión",
+    done: "Entregado",
+  },
 };
+
+// Locale resolution: recipient's profiles.locale, else their clients.locale,
+// else English. Client-facing emails only — admin-facing stay English.
+const toLocale = (value: string | null | undefined): Locale =>
+  value === "es" ? "es" : "en";
 
 const TYPE_LABELS: Record<string, string> = {
   logo: "Logo Design",
@@ -70,13 +84,27 @@ export async function POST(request: Request) {
         );
       }
       const actorName = callerProfile.full_name || "Vimi Studio";
+      // No profile exists yet for an invitee — use the invited client's locale.
+      const { data: inviteRow } = await supabase
+        .from("invited_emails")
+        .select("clients(locale)")
+        .eq("email", invite_email.toLowerCase())
+        .maybeSingle();
+      const inviteLocale = toLocale(
+        (inviteRow as { clients?: { locale?: string } | null } | null)?.clients
+          ?.locale
+      );
       const result = await sendEmail({
         to: invite_email,
-        subject: `You're invited to your ${client_name} design portal`,
+        subject:
+          inviteLocale === "es"
+            ? `Te invitamos a tu portal de diseño de ${client_name}`
+            : `You're invited to your ${client_name} design portal`,
         react: InviteEmail({
           clientName: client_name,
           portalUrl: "https://vimistudio.com/portal/login",
           invitedByName: actorName,
+          locale: inviteLocale,
         }),
       });
       return NextResponse.json({ success: result.success, sent: result.success ? 1 : 0 });
@@ -98,14 +126,28 @@ export async function POST(request: Request) {
       }
       const inviterName = callerProfile.full_name || "A teammate";
 
-      // 1. Invite the teammate.
+      // 1. Invite the teammate (client-facing → localized by the invited
+      // client's locale, since no profile exists yet).
+      const { data: teamInviteRow } = await supabase
+        .from("invited_emails")
+        .select("clients(locale)")
+        .eq("email", invite_email.toLowerCase())
+        .maybeSingle();
+      const teamInviteLocale = toLocale(
+        (teamInviteRow as { clients?: { locale?: string } | null } | null)
+          ?.clients?.locale
+      );
       const inviteResult = await sendEmail({
         to: invite_email,
-        subject: `You're invited to your ${client_name} design portal`,
+        subject:
+          teamInviteLocale === "es"
+            ? `Te invitamos a tu portal de diseño de ${client_name}`
+            : `You're invited to your ${client_name} design portal`,
         react: InviteEmail({
           clientName: client_name,
           portalUrl: "https://vimistudio.com/portal/login",
           invitedByName: inviterName,
+          locale: teamInviteLocale,
         }),
       });
 
@@ -240,7 +282,7 @@ export async function POST(request: Request) {
     // Load request with client info
     const { data: req } = await supabase
       .from("requests")
-      .select("*, clients(name, slug)")
+      .select("*, clients(name, slug, locale)")
       .eq("id", request_id)
       .single();
 
@@ -258,6 +300,7 @@ export async function POST(request: Request) {
     interface Recipient {
       id: string;
       email: string | null;
+      locale?: string | null;
     }
     let recipients: Recipient[] = [];
 
@@ -265,7 +308,7 @@ export async function POST(request: Request) {
       // Admin action → notify client users for this request's client
       const { data } = await supabase
         .from("profiles")
-        .select("id, email")
+        .select("id, email, locale")
         .eq("client_id", req.client_id);
       recipients = data ?? [];
     } else {
@@ -276,6 +319,16 @@ export async function POST(request: Request) {
         .eq("role", "admin");
       recipients = data ?? [];
     }
+
+    // Client-facing sends (admin → clients) localize per recipient; admin-facing
+    // sends (client → admins) stay English.
+    const clientLocaleFallback = toLocale(
+      (req as { clients?: { locale?: string } | null }).clients?.locale
+    );
+    const resolveRecipientLocale = (recipient: Recipient): Locale =>
+      isCallerAdmin
+        ? toLocale(recipient.locale ?? clientLocaleFallback)
+        : "en";
 
     // Don't email the person who triggered the action, or people without emails
     const filtered = recipients.filter(
@@ -289,9 +342,12 @@ export async function POST(request: Request) {
     const actorName = callerProfile.full_name || "Someone";
     const requestUrl = `https://vimistudio.com/portal/requests/${request_id}`;
 
-    // Pre-fetch data needed for templates (avoid N+1 queries per recipient)
-    let emailSubject: string;
-    let emailReact: React.ReactElement;
+    // Pre-fetch data needed for templates (avoid N+1 queries per recipient),
+    // then build the email per recipient locale in the send loop below.
+    let buildEmail: (locale: Locale) => {
+      subject: string;
+      react: React.ReactElement;
+    };
 
     switch (type) {
       case "comment_added": {
@@ -304,26 +360,42 @@ export async function POST(request: Request) {
           .limit(1)
           .single();
 
-        emailSubject = `${actorName} commented on "${req.title}"`;
-        emailReact = CommentAddedEmail({
-          requestTitle: req.title,
-          requestUrl,
-          commenterName: actorName,
-          commentBody: latestComment?.body || "New comment",
-          requestType: TYPE_LABELS[req.type] || req.type,
+        buildEmail = (locale) => ({
+          subject:
+            locale === "es"
+              ? `${actorName} comentó en «${req.title}»`
+              : `${actorName} commented on "${req.title}"`,
+          react: CommentAddedEmail({
+            requestTitle: req.title,
+            requestUrl,
+            commenterName: actorName,
+            commentBody: latestComment?.body || "New comment",
+            requestType: TYPE_LABELS[req.type] || req.type,
+            locale,
+          }),
         });
         break;
       }
       case "status_changed": {
-        const newLabel = STATUS_LABELS[new_status] || new_status || "Unknown";
-        emailSubject = `"${req.title}" moved to ${newLabel}`;
-        emailReact = StatusChangedEmail({
-          requestTitle: req.title,
-          requestUrl,
-          oldStatus: old_status || req.status,
-          newStatus: new_status || req.status,
-          changedByName: actorName,
-        });
+        const resolvedNew = new_status || req.status;
+        buildEmail = (locale) => {
+          const newLabel =
+            STATUS_LABELS[locale][resolvedNew] || resolvedNew || "Unknown";
+          return {
+            subject:
+              locale === "es"
+                ? `«${req.title}» pasó a ${newLabel}`
+                : `"${req.title}" moved to ${newLabel}`,
+            react: StatusChangedEmail({
+              requestTitle: req.title,
+              requestUrl,
+              oldStatus: old_status || req.status,
+              newStatus: resolvedNew,
+              changedByName: actorName,
+              locale,
+            }),
+          };
+        };
         break;
       }
       case "deliverable_uploaded": {
@@ -336,38 +408,50 @@ export async function POST(request: Request) {
           .limit(10);
 
         const fileNames = deliverables?.map((d) => d.file_name) ?? [];
-        emailSubject = `New files for "${req.title}"`;
-        emailReact = DeliverableUploadedEmail({
-          requestTitle: req.title,
-          requestUrl,
-          uploaderName: actorName,
-          fileNames,
-          fileCount: fileNames.length || 1,
+        buildEmail = (locale) => ({
+          subject:
+            locale === "es"
+              ? `Nuevos archivos para «${req.title}»`
+              : `New files for "${req.title}"`,
+          react: DeliverableUploadedEmail({
+            requestTitle: req.title,
+            requestUrl,
+            uploaderName: actorName,
+            fileNames,
+            fileCount: fileNames.length || 1,
+            locale,
+          }),
         });
         break;
       }
       case "request_created": {
+        // Admin-facing (client → admins) → English only.
         const clientName = (req as { clients?: { name?: string } | null }).clients?.name || "A client";
         const priorityLabels: Record<number, string> = { 1: "Whenever", 2: "This Week", 3: "Urgent" };
-        emailSubject = `New request from ${clientName}: "${req.title}"`;
-        emailReact = RequestCreatedEmail({
-          requestTitle: req.title,
-          requestUrl,
-          clientName,
-          requestType: TYPE_LABELS[req.type] || req.type,
-          priority: priorityLabels[reqPriority as number] || priorityLabels[req.priority] || "Normal",
-          description: (reqDescription as string) || undefined,
+        buildEmail = () => ({
+          subject: `New request from ${clientName}: "${req.title}"`,
+          react: RequestCreatedEmail({
+            requestTitle: req.title,
+            requestUrl,
+            clientName,
+            requestType: TYPE_LABELS[req.type] || req.type,
+            priority: priorityLabels[reqPriority as number] || priorityLabels[req.priority] || "Normal",
+            description: (reqDescription as string) || undefined,
+          }),
         });
         break;
       }
       case "direction_voted": {
-        emailSubject = `${actorName} picked a direction for "${req.title}"`;
-        emailReact = DirectionVotedEmail({
-          requestTitle: req.title,
-          requestUrl,
-          voterName: actorName,
-          directionLabel: (direction_label as string) || "a direction",
-          comment: (vote_comment as string) || undefined,
+        // Admin-facing (client → admins) → English only.
+        buildEmail = () => ({
+          subject: `${actorName} picked a direction for "${req.title}"`,
+          react: DirectionVotedEmail({
+            requestTitle: req.title,
+            requestUrl,
+            voterName: actorName,
+            directionLabel: (direction_label as string) || "a direction",
+            comment: (vote_comment as string) || undefined,
+          }),
         });
         break;
       }
@@ -376,13 +460,14 @@ export async function POST(request: Request) {
     }
 
     const results = await Promise.allSettled(
-      filtered.map((recipient) =>
-        sendEmail({
+      filtered.map((recipient) => {
+        const { subject, react } = buildEmail(resolveRecipientLocale(recipient));
+        return sendEmail({
           to: recipient.email!,
-          subject: emailSubject,
-          react: emailReact,
-        })
-      )
+          subject,
+          react,
+        });
+      })
     );
     const sent = results.filter(
       (r) => r.status === "fulfilled" && r.value.success

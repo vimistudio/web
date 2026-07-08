@@ -1,5 +1,6 @@
 import * as React from "react";
 import { EmailLayout, BRAND, Heading, Text, Section } from "./layout";
+import type { Locale } from "@/lib/portal-strings";
 
 interface StatusChangedEmailProps {
   requestTitle: string;
@@ -7,14 +8,58 @@ interface StatusChangedEmailProps {
   oldStatus: string;
   newStatus: string;
   changedByName: string;
+  locale?: Locale;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  queued: "Up Next",
-  in_progress: "In Progress",
-  review: "Ready for You",
-  done: "Delivered",
+const STATUS_LABELS: Record<Locale, Record<string, string>> = {
+  en: {
+    queued: "Up Next",
+    in_progress: "In Progress",
+    review: "Ready for You",
+    done: "Delivered",
+  },
+  es: {
+    queued: "En cola",
+    in_progress: "En proceso",
+    review: "Listo para ti",
+    done: "Entregado",
+  },
 };
+
+const STRINGS = {
+  en: {
+    preview: (title: string, label: string) => `"${title}" moved to ${label}`,
+    cta: {
+      review: "See Your Designs",
+      done: "Download Your Designs",
+      default: "View Request",
+    },
+    heading: {
+      in_progress: "Your Designer Started Working",
+      review: "Your Designs Are Ready for Review",
+      done: "Your Designs Have Been Delivered",
+      default: "Status Updated",
+    },
+    changeFrom: "moved this request from",
+    changeTo: "to",
+  },
+  es: {
+    preview: (title: string, label: string) => `«${title}» pasó a ${label}`,
+    cta: {
+      review: "Ver tus diseños",
+      done: "Descargar tus diseños",
+      default: "Ver la solicitud",
+    },
+    heading: {
+      in_progress: "Tu diseñador empezó a trabajar",
+      review: "Tus diseños están listos para revisar",
+      done: "Tus diseños fueron entregados",
+      default: "Estado actualizado",
+    },
+    changeFrom: "cambió esta solicitud de",
+    changeTo: "a",
+  },
+} as const;
 
 const STATUS_COLORS: Record<string, string> = {
   queued: "#9ca3af",
@@ -23,37 +68,41 @@ const STATUS_COLORS: Record<string, string> = {
   done: "#10b981",
 };
 
-function getCta(newStatus: string) {
-  if (newStatus === "review") return "See Your Designs";
-  if (newStatus === "done") return "Download Your Designs";
-  return "View Request";
-}
-
 export function StatusChangedEmail({
   requestTitle,
   requestUrl,
   oldStatus,
   newStatus,
   changedByName,
+  locale = "en",
 }: StatusChangedEmailProps) {
+  const s = STRINGS[locale];
+  const labels = STATUS_LABELS[locale];
   const steps = ["queued", "in_progress", "review", "done"];
   const currentIndex = steps.indexOf(newStatus);
+  const ctaLabel =
+    newStatus === "review"
+      ? s.cta.review
+      : newStatus === "done"
+        ? s.cta.done
+        : s.cta.default;
+  const headingText =
+    newStatus === "in_progress"
+      ? s.heading.in_progress
+      : newStatus === "review"
+        ? s.heading.review
+        : newStatus === "done"
+          ? s.heading.done
+          : s.heading.default;
 
   return (
     <EmailLayout
-      previewText={`"${requestTitle}" moved to ${STATUS_LABELS[newStatus] || newStatus}`}
+      previewText={s.preview(requestTitle, labels[newStatus] || newStatus)}
       ctaUrl={requestUrl}
-      ctaLabel={getCta(newStatus)}
+      ctaLabel={ctaLabel}
+      locale={locale}
     >
-      <Heading style={heading}>
-        {newStatus === "in_progress"
-          ? "Your Designer Started Working"
-          : newStatus === "review"
-            ? "Your Designs Are Ready for Review"
-            : newStatus === "done"
-              ? "Your Designs Have Been Delivered"
-              : "Status Updated"}
-      </Heading>
+      <Heading style={heading}>{headingText}</Heading>
       <Text style={meta}>{requestTitle}</Text>
 
       {/* Status stepper */}
@@ -98,7 +147,7 @@ export function StatusChangedEmail({
                         fontWeight: isCurrent ? 600 : 400,
                       }}
                     >
-                      {STATUS_LABELS[step]}
+                      {labels[step]}
                     </div>
                   </td>
                   {i < steps.length - 1 && (
@@ -121,9 +170,9 @@ export function StatusChangedEmail({
       </Section>
 
       <Text style={changeText}>
-        {changedByName} moved this request from{" "}
-        <strong>{STATUS_LABELS[oldStatus] || oldStatus}</strong> to{" "}
-        <strong>{STATUS_LABELS[newStatus] || newStatus}</strong>
+        {changedByName} {s.changeFrom}{" "}
+        <strong>{labels[oldStatus] || oldStatus}</strong> {s.changeTo}{" "}
+        <strong>{labels[newStatus] || newStatus}</strong>
       </Text>
     </EmailLayout>
   );

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { EmailLayout, BRAND, Heading, Text, Section } from "./layout";
+import type { Locale } from "@/lib/portal-strings";
 
 interface DeliverableUploadedEmailProps {
   requestTitle: string;
@@ -7,7 +8,27 @@ interface DeliverableUploadedEmailProps {
   uploaderName: string;
   fileNames: string[];
   fileCount: number;
+  locale?: Locale;
 }
+
+const STRINGS = {
+  en: {
+    preview: (title: string) => `New files for "${title}"`,
+    cta: "View Files",
+    heading: (count: number) =>
+      count === 1 ? "New File Uploaded" : `${count} New Files`,
+    uploadedBy: (name: string) => `Uploaded by ${name}`,
+    more: (n: number) => `+${n} more file${n > 1 ? "s" : ""}`,
+  },
+  es: {
+    preview: (title: string) => `Nuevos archivos para «${title}»`,
+    cta: "Ver los archivos",
+    heading: (count: number) =>
+      count === 1 ? "Nuevo archivo" : `${count} archivos nuevos`,
+    uploadedBy: (name: string) => `Subido por ${name}`,
+    more: (n: number) => `+${n} archivo${n > 1 ? "s" : ""} más`,
+  },
+} as const;
 
 export function DeliverableUploadedEmail({
   requestTitle,
@@ -15,33 +36,30 @@ export function DeliverableUploadedEmail({
   uploaderName,
   fileNames,
   fileCount,
+  locale = "en",
 }: DeliverableUploadedEmailProps) {
+  const s = STRINGS[locale];
   const displayFiles = fileNames.slice(0, 5);
   const remaining = fileCount - displayFiles.length;
 
   return (
     <EmailLayout
-      previewText={`New files for "${requestTitle}"`}
+      previewText={s.preview(requestTitle)}
       ctaUrl={requestUrl}
-      ctaLabel="View Files"
+      ctaLabel={s.cta}
+      locale={locale}
     >
-      <Heading style={heading}>
-        {fileCount === 1 ? "New File Uploaded" : `${fileCount} New Files`}
-      </Heading>
+      <Heading style={heading}>{s.heading(fileCount)}</Heading>
       <Text style={meta}>{requestTitle}</Text>
 
       <Section style={fileList}>
-        <Text style={uploaderStyle}>
-          Uploaded by {uploaderName}
-        </Text>
+        <Text style={uploaderStyle}>{s.uploadedBy(uploaderName)}</Text>
         {displayFiles.map((name, i) => (
           <Text key={i} style={fileName}>
             {name}
           </Text>
         ))}
-        {remaining > 0 && (
-          <Text style={moreFiles}>+{remaining} more file{remaining > 1 ? "s" : ""}</Text>
-        )}
+        {remaining > 0 && <Text style={moreFiles}>{s.more(remaining)}</Text>}
       </Section>
     </EmailLayout>
   );
