@@ -59,6 +59,66 @@ export type Database = {
           },
         ]
       }
+      client_milestones: {
+        Row: {
+          client_done: boolean
+          client_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          needs_client: boolean
+          request_id: string | null
+          sort: number
+          status: string
+          title: string
+          track: string
+          week: number
+        }
+        Insert: {
+          client_done?: boolean
+          client_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          needs_client?: boolean
+          request_id?: string | null
+          sort?: number
+          status?: string
+          title: string
+          track: string
+          week: number
+        }
+        Update: {
+          client_done?: boolean
+          client_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          needs_client?: boolean
+          request_id?: string | null
+          sort?: number
+          status?: string
+          title?: string
+          track?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_milestones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_milestones_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           accent_color: string | null
