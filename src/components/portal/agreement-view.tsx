@@ -1,15 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "./locale-provider";
 import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 import { STUDIO_WHATSAPP_URL } from "@/lib/studio";
 import {
   docBadge,
-  formatFileSize,
   isPreviewable,
   type EngagementMonth,
 } from "@/lib/agreement";
+import { DocViewer } from "./doc-viewer";
 
 export interface HubDoc {
   id: string;
@@ -65,6 +66,8 @@ export function AgreementView({
   // screen-share price toggle is on.
   const { hidden: pricesHidden } = usePricePrivacy();
   const priceMasked = isImpersonatingAdmin && pricesHidden;
+
+  const [activeDoc, setActiveDoc] = useState<HubDoc | null>(null);
 
   const showDeal = retainerAmount != null || (dealTerms?.trim().length ?? 0) > 0;
   const amountText =
@@ -180,7 +183,7 @@ export function AgreementView({
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3.5">
           {docs.map((doc) => (
-            <DocCard key={doc.id} doc={doc} />
+            <DocCard key={doc.id} doc={doc} onOpen={setActiveDoc} />
           ))}
         </div>
       )}
@@ -264,6 +267,12 @@ export function AgreementView({
           </Link>
         </div>
       </div>
+
+      <DocViewer
+        doc={activeDoc}
+        open={!!activeDoc}
+        onOpenChange={(o) => !o && setActiveDoc(null)}
+      />
     </div>
   );
 }
@@ -271,11 +280,16 @@ export function AgreementView({
 /**
  * A single document card. Three states:
  *  - placeholder (no file_path): muted, non-clickable, "En preparación…"
- *  - ready + previewable: opens the file (interim: new tab; modal wired in the
- *    doc-viewer commit)
+ *  - ready + previewable: opens the doc-viewer modal
  *  - download-only (non-previewable mime): direct download anchor
  */
-function DocCard({ doc }: { doc: HubDoc }) {
+function DocCard({
+  doc,
+  onOpen,
+}: {
+  doc: HubDoc;
+  onOpen: (doc: HubDoc) => void;
+}) {
   const { t } = useLocale();
   const isPlaceholder = !doc.file_path || !doc.signedUrl;
   const previewable = !isPlaceholder && isPreviewable(doc.mime_type);
@@ -337,15 +351,30 @@ function DocCard({ doc }: { doc: HubDoc }) {
     );
   }
 
-  // Both previewable and download-only currently open the signed URL. The
-  // previewable branch is upgraded to the modal viewer in the next commit.
+  const hoverClass =
+    "bg-white transition-transform hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(28,27,31,0.08)]";
+
+  // Previewable docs open the in-app viewer modal; everything else is a direct
+  // download tile.
+  if (previewable) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(doc)}
+        className={`${cardClass} ${hoverClass}`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
   return (
     <a
       href={doc.signedUrl ?? "#"}
       target="_blank"
       rel="noopener noreferrer"
-      {...(previewable ? {} : { download: doc.file_name ?? undefined })}
-      className={`${cardClass} bg-white transition-transform hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(28,27,31,0.08)]`}
+      download={doc.file_name ?? undefined}
+      className={`${cardClass} ${hoverClass}`}
     >
       {inner}
     </a>
