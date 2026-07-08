@@ -24,4 +24,13 @@ export const plan = {
   "plan.saveError": { en: "Couldn't save. Please try again.", es: "No se pudo guardar. Inténtalo de nuevo." },
   "plan.expand": { en: "Show plan", es: "Ver plan" },
   "plan.collapse": { en: "Hide plan", es: "Ocultar plan" },
+
+  // Week rail (expanded view)
+  "plan.railWeek": { en: "WK {n}", es: "SEM {n}" },
+  "plan.railFinal": { en: "DAY 30", es: "DÍA 30" },
+  "plan.railNow": { en: "NOW", es: "AHORA" },
+  "plan.weekEmpty": {
+    en: "Nothing scheduled for this week yet.",
+    es: "Nada programado para esta semana todavía.",
+  },
 } as const;
