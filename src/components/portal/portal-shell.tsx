@@ -2,6 +2,7 @@
 
 import { type User } from "@supabase/supabase-js";
 import { AdminSidebar } from "./admin-sidebar";
+import { ClientSidebar } from "./client-sidebar";
 import { ClientBottomTabs } from "./client-bottom-tabs";
 import { ClientHeader } from "./client-header";
 import { PortalHeader } from "./portal-header";
@@ -19,6 +20,9 @@ interface Client {
   locale?: string;
   logo_url?: string | null;
   accent_color?: string | null;
+  /** Optional per-client note shown in the sidebar studio card. Undefined
+   *  before the migration lands (column absent) → treated as hidden. */
+  studio_note?: string | null;
 }
 
 export interface Profile {
@@ -80,11 +84,17 @@ export function PortalShell({
   return (
     <LocaleProvider locale={locale}>
       <div
-        className="min-h-dvh flex flex-col bg-[var(--vimi-page)] font-sans text-[color:var(--vimi-ink)]"
+        className="min-h-dvh bg-[var(--vimi-page)] font-sans text-[color:var(--vimi-ink)]"
         style={accentStyle}
       >
-        <ClientHeader user={user} profile={profile} impersonating={impersonating} />
-        <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>
+        <div className="flex min-h-dvh">
+          {/* Desktop-only sidebar (identity, nav, studio contact) */}
+          <ClientSidebar profile={profile} />
+          <div className="flex flex-1 min-w-0 flex-col">
+            <ClientHeader user={user} profile={profile} impersonating={impersonating} />
+            <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>
+          </div>
+        </div>
         {/* Bottom tabs only on mobile */}
         <div className="md:hidden">
           <ClientBottomTabs />

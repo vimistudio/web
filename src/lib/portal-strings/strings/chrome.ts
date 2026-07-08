@@ -72,6 +72,10 @@ export const chrome = {
   "team.errorInvalid": { en: "Enter a valid email address.", es: "Ingresa un correo válido." },
   "team.errorPermission": { en: "We couldn't send that invite. Please ask your studio for help.", es: "No pudimos enviar la invitación. Pídele ayuda a tu estudio." },
 
+  // Studio sidebar card (client shell)
+  "studio.tagline": { en: "your studio", es: "tu estudio" },
+  "studio.whatsapp": { en: "WhatsApp us", es: "WhatsApp directo" },
+
   // Common
   "common.for": { en: "for", es: "para" },
   "common.on": { en: "on", es: "en" },

@@ -56,6 +56,13 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
   );
 }
 
+// Milestones map onto a fixed 5-segment month rail: SEM 01-04, then a final
+// delivery bucket (any milestone in week ≥ 5). Defensive clamp keeps stray
+// week numbers in range.
+const segmentOf = (week: number) => Math.min(5, Math.max(1, week));
+// Circumference of the r=16 collapsed-bar progress ring.
+const RING_C = 2 * Math.PI * 16;
+
 export function PlanTracker({
   clientId,
   milestones: initial,
@@ -92,16 +99,14 @@ export function PlanTracker({
   // needed" signals (auto-expand heuristic, collapsed chip, pulse dot).
   const needsClientItems = milestones.filter((m) => m.needs_client);
   const needsItems = needsClientItems.filter((m) => !m.client_done);
-  const hasCurrent = milestones.some((m) => m.status === "current");
 
   const storageKey = `vimi_plan_open_${clientId}`;
 
-  // Heuristic default: expand when something is current or waiting on the
-  // client. A stored user preference always wins (applied after mount to keep
-  // SSR output deterministic and avoid a hydration mismatch).
-  const [expanded, setExpanded] = useState(
-    () => needsItems.length > 0 || hasCurrent
-  );
+  // Collapsed by default for everyone — the board leads; the plan is a glance.
+  // A stored user preference (applied after mount to keep SSR deterministic and
+  // avoid a hydration mismatch) or the welcome overlay's "see my plan" event
+  // can expand it.
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey);
@@ -166,23 +171,35 @@ export function PlanTracker({
     isImpersonatingAdmin && pricesHidden
   );
 
-  // Group milestones by week, weeks ascending, rows by sort then title.
-  const weekGroups = useMemo(() => {
-    const byWeek: Record<number, Milestone[]> = {};
-    for (const m of milestones) {
-      if (!byWeek[m.week]) byWeek[m.week] = [];
-      byWeek[m.week].push(m);
-    }
-    return Object.keys(byWeek)
-      .map(Number)
-      .sort((a, b) => a - b)
-      .map((week) => ({
-        week,
-        items: byWeek[week].sort(
-          (a, b) => a.sort - b.sort || a.title.localeCompare(b.title)
-        ),
-      }));
+  // Fixed 5-segment month rail; each segment carries its milestones plus a
+  // short note (the segment's milestone titles) for the quiet chips.
+  const railSegments = useMemo(
+    () =>
+      [1, 2, 3, 4, 5].map((seg) => {
+        const items = milestones
+          .filter((m) => segmentOf(m.week) === seg)
+          .sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title));
+        return { seg, items, note: items.map((i) => i.title).join(" · ") };
+      }),
+    [milestones]
+  );
+
+  // Current segment = lowest segment with unfinished work (max 5). When the
+  // plan is complete, feature the last segment that has milestones.
+  const currentSegment = useMemo(() => {
+    const open = milestones
+      .filter((m) => m.status !== "done")
+      .map((m) => segmentOf(m.week));
+    if (open.length > 0) return Math.min(...open);
+    const all = milestones.map((m) => segmentOf(m.week));
+    return all.length > 0 ? Math.max(...all) : 1;
   }, [milestones]);
+
+  const [selectedWeek, setSelectedWeek] = useState(currentSegment);
+  const selectedItems =
+    railSegments.find((s) => s.seg === selectedWeek)?.items ?? [];
+  const currentSummary =
+    railSegments.find((s) => s.seg === currentSegment)?.note ?? "";
 
   if (total === 0) return null;
 
@@ -212,7 +229,7 @@ export function PlanTracker({
     const { error } = await persistClientDone(id, false);
     if (error) {
       setClientDone(id, true);
-      toast.error(t("plan.saveError"));
+      toast.error(t("plan.saveError"), { id: `milestone-${id}` });
       return;
     }
     router.refresh();
@@ -237,7 +254,7 @@ export function PlanTracker({
 
     if (error) {
       setClientDone(id, !next);
-      toast.error(t("plan.saveError"));
+      toast.error(t("plan.saveError"), { id: `milestone-${id}` });
       return;
     }
 
@@ -253,150 +270,221 @@ export function PlanTracker({
       }, 8000);
       notifyTimers.current.set(id, timer);
 
+      // Stable per-milestone id so check / undo / uncheck REPLACE each other
+      // instead of stacking (a fast check→uncheck used to show two toasts).
       toast.success(t("plan.checkedToast"), {
+        id: `milestone-${id}`,
         duration: 7000,
         action: { label: t("plan.undo"), onClick: () => undoCheck(id) },
       });
     } else {
       // Unchecking: kill any pending notify, never send one.
       cancelNotify(id);
-      toast(t("plan.uncheckedToast"));
+      toast(t("plan.uncheckedToast"), { id: `milestone-${id}` });
     }
     router.refresh();
   }
-
-  const weekLabel = (week: number) =>
-    week >= 5 ? t("plan.final") : t("plan.weekLabel", { n: String(week).padStart(2, "0") });
 
   return (
     <section
       className="rounded-2xl border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] overflow-hidden shadow-[0_2px_8px_rgba(28,27,31,0.04)]"
       aria-label={t("plan.title")}
     >
-      {/* Header — always visible, toggles expand/collapse */}
-      <button
-        type="button"
-        onClick={toggleExpanded}
-        aria-expanded={expanded}
-        className="w-full text-left px-4 md:px-5 py-4 flex items-center gap-4 min-h-[44px]"
-      >
-        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <h2 className="font-serif italic text-xl md:text-[26px] leading-tight text-[color:var(--vimi-ink)]">
+      {!expanded ? (
+        /* ── COLLAPSED BAR — one row, the whole thing clickable ── */
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          aria-expanded={false}
+          className="w-full text-left px-4 md:px-5 py-4 flex items-center gap-4 min-h-[72px]"
+        >
+          {/* Progress ring */}
+          <span className="relative w-[38px] h-[38px] shrink-0">
+            <svg viewBox="0 0 38 38" className="-rotate-90">
+              <circle cx="19" cy="19" r="16" fill="none" stroke="rgba(28,27,31,0.08)" strokeWidth="4" />
+              <circle
+                cx="19"
+                cy="19"
+                r="16"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={RING_C}
+                strokeDashoffset={RING_C * (1 - progressPct / 100)}
+                className="transition-[stroke-dashoffset] duration-500"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-extrabold text-[color:var(--vimi-ink)]">
+              {progressPct}%
+            </span>
+          </span>
+
+          <span className="flex flex-col gap-0.5 min-w-0 flex-1">
+            <span className="font-serif italic text-lg md:text-xl leading-tight text-[color:var(--vimi-ink)]">
               {t("plan.title")}
-            </h2>
-            <span className="text-xs font-semibold tracking-[0.06em] text-[color:var(--vimi-faint)] uppercase">
+            </span>
+            <span className="text-[12.5px] text-[color:var(--vimi-muted)] truncate">
+              {allDone
+                ? t("plan.progress", { done: doneCount, total })
+                : `${t("plan.week", { n: currentWeek })}${currentSummary ? ` · ${currentSummary}` : ""}`}
+            </span>
+          </span>
+
+          {/* Zeigarnik signal: amber count of client-owed items */}
+          {needsItems.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0"
+              style={{ background: "var(--status-review-chip)", color: "var(--status-review-ink)" }}
+            >
+              <span
+                className="w-[7px] h-[7px] rounded-full animate-pulse"
+                style={{ background: "var(--status-review)" }}
+              />
+              {t("plan.waitingChip", { n: needsItems.length })}
+            </span>
+          )}
+          <span className="shrink-0 text-[color:var(--vimi-faint)]" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        </button>
+      ) : (
+        /* ── EXPANDED — week rail + selected week detail ── */
+        <div className="flex flex-col animate-in fade-in duration-300">
+          {/* Header, clickable to collapse */}
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            aria-expanded
+            className="w-full text-left px-4 md:px-5 pt-4 pb-1 flex items-baseline gap-3 min-h-[44px]"
+          >
+            <span className="font-serif italic text-xl md:text-2xl leading-tight text-[color:var(--vimi-ink)]">
+              {t("plan.title")}
+            </span>
+            <span className="text-xs font-semibold tracking-[0.08em] text-[color:var(--vimi-faint)] uppercase">
               {allDone ? t("plan.progress", { done: doneCount, total }) : t("plan.week", { n: currentWeek })}
             </span>
-            {/* Zeigarnik signal survives collapse: amber count of client-owed items */}
-            {!expanded && needsItems.length > 0 && (
-              <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
-                style={{ background: "var(--status-review-chip)", color: "var(--status-review-ink)" }}
-              >
-                <span
-                  className="w-[7px] h-[7px] rounded-full animate-pulse"
-                  style={{ background: "var(--status-review)" }}
-                />
-                {t("plan.waitingChip", { n: needsItems.length })}
-              </span>
-            )}
-          </div>
-          {showDeal && (
-            <div className="text-[13px] text-[color:var(--vimi-muted)]">
-              {dealLineDisplay}
-            </div>
-          )}
-          {/* Goal-gradient progress */}
-          <div className="flex items-center gap-3">
-            <div className="h-[5px] flex-1 max-w-[220px] rounded-full bg-[color:rgba(28,27,31,0.08)] overflow-hidden">
-              <div
-                className="h-full rounded-full transition-[width] duration-500"
-                style={{ width: `${progressPct}%`, background: "var(--accent)" }}
-              />
-            </div>
-            <span className="text-xs text-[color:var(--vimi-muted)] shrink-0">
-              {t("plan.progress", { done: doneCount, total })}
+            <span className="ml-auto shrink-0 text-[color:var(--vimi-faint)]" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
             </span>
-          </div>
-        </div>
-        <span
-          className="shrink-0 text-[color:var(--vimi-faint)] transition-transform duration-200"
-          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
-          aria-hidden="true"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 6 15 12 9 18" />
-          </svg>
-        </span>
-      </button>
+          </button>
 
-      {expanded && (
-        <div className="px-4 md:px-5 pb-5 pt-1 flex flex-col gap-6 animate-in fade-in duration-300">
-          {allDone && (
-            <p className="text-sm text-[color:var(--vimi-muted)] font-serif italic">
-              {t("plan.complete")}
-            </p>
-          )}
-
-          {/* Milestones grouped by week */}
-          <div className="flex flex-col gap-5">
-            {weekGroups.map(({ week, items }) => (
-              <div key={week} className="flex flex-col gap-2.5">
-                <div className="text-[11px] font-semibold tracking-[0.12em] text-[color:var(--vimi-faint)]">
-                  {weekLabel(week)}
-                </div>
-                <div className="flex flex-col gap-2.5">
-                  {items.map((m) => (
-                    <div key={m.id} className="flex items-start gap-3">
-                      <div className="mt-0.5">
-                        <StatusDot status={m.status} />
-                      </div>
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-bold tracking-[0.08em] px-2 py-0.5 rounded-md bg-[color:rgba(28,27,31,0.06)] text-[color:var(--vimi-muted)] uppercase">
-                            {m.track}
-                          </span>
-                          <span
-                            className={`text-sm leading-snug text-pretty ${
-                              m.status === "done"
-                                ? "text-[color:var(--vimi-muted)] line-through decoration-[color:var(--vimi-faint)]"
-                                : "text-[color:var(--vimi-ink)] font-medium"
-                            }`}
-                          >
-                            {m.title}
-                          </span>
-                        </div>
-                        {m.status === "current" && m.description && (
-                          <p className="text-[13px] text-[color:var(--vimi-muted)] leading-relaxed">
-                            {m.description}
-                          </p>
-                        )}
-                        {m.status === "delayed" && m.delay_note && (
-                          <p
-                            className="text-[13px] leading-relaxed font-medium"
-                            style={{ color: "#B03A5B" }}
-                          >
-                            {t("plan.delayed", { note: m.delay_note })}
-                          </p>
-                        )}
-                        {m.request_id && (
-                          <Link
-                            href={`/portal/requests/${m.request_id}`}
-                            className="inline-flex items-center gap-1 text-[13px] font-semibold w-fit"
-                            style={{ color: "var(--accent)" }}
-                          >
-                            {t("plan.viewCard")}
-                            <ArrowRight01Icon size={14} color="currentColor" />
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div className="px-4 md:px-5 pb-5 flex flex-col gap-5">
+            {showDeal && (
+              <div className="text-[13px] text-[color:var(--vimi-muted)]">
+                {dealLineDisplay}
               </div>
-            ))}
-          </div>
+            )}
+
+            {allDone && (
+              <p className="text-sm text-[color:var(--vimi-muted)] font-serif italic">
+                {t("plan.complete")}
+              </p>
+            )}
+
+            {/* Week rail — scrolls horizontally on mobile */}
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+              {railSegments.map(({ seg, note }) => {
+                const isSelected = seg === selectedWeek;
+                const isCurrent = seg === currentSegment;
+                const name =
+                  seg >= 5
+                    ? t("plan.railFinal")
+                    : t("plan.railWeek", { n: String(seg).padStart(2, "0") });
+                return (
+                  <button
+                    key={seg}
+                    type="button"
+                    onClick={() => setSelectedWeek(seg)}
+                    aria-pressed={isSelected}
+                    className={`shrink-0 min-h-[44px] flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                      isSelected ? "min-w-[180px] max-w-[220px]" : "min-w-[120px] max-w-[150px]"
+                    }`}
+                    style={{
+                      borderColor: isSelected ? "var(--accent)" : "var(--vimi-border)",
+                      borderWidth: isSelected ? "1.5px" : "1px",
+                      background: isSelected
+                        ? "color-mix(in srgb, var(--accent) 6%, var(--vimi-card))"
+                        : "var(--vimi-card)",
+                    }}
+                  >
+                    <span
+                      className="text-[10px] font-extrabold tracking-[0.1em]"
+                      style={{ color: isSelected ? "var(--accent)" : "var(--vimi-faint)" }}
+                    >
+                      {name}
+                      {isCurrent && ` · ${t("plan.railNow")}`}
+                    </span>
+                    <span
+                      className="text-xs font-medium truncate max-w-full"
+                      style={{ color: isSelected ? "var(--vimi-ink)" : "var(--vimi-faint)" }}
+                    >
+                      {note || "—"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected week detail */}
+            <div className="flex flex-col gap-2.5">
+              {selectedItems.length === 0 ? (
+                <p className="text-[13px] text-[color:var(--vimi-muted)]">
+                  {t("plan.weekEmpty")}
+                </p>
+              ) : (
+                selectedItems.map((m) => (
+                  <div key={m.id} className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <StatusDot status={m.status} />
+                    </div>
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-bold tracking-[0.08em] px-2 py-0.5 rounded-md bg-[color:rgba(28,27,31,0.06)] text-[color:var(--vimi-muted)] uppercase">
+                          {m.track}
+                        </span>
+                        <span
+                          className={`text-sm leading-snug text-pretty ${
+                            m.status === "done"
+                              ? "text-[color:var(--vimi-muted)] line-through decoration-[color:var(--vimi-faint)]"
+                              : "text-[color:var(--vimi-ink)] font-medium"
+                          }`}
+                        >
+                          {m.title}
+                        </span>
+                      </div>
+                      {m.description && (
+                        <p className="text-[13px] text-[color:var(--vimi-muted)] leading-relaxed">
+                          {m.description}
+                        </p>
+                      )}
+                      {m.status === "delayed" && m.delay_note && (
+                        <p
+                          className="text-[13px] leading-relaxed font-medium"
+                          style={{ color: "#B03A5B" }}
+                        >
+                          {t("plan.delayed", { note: m.delay_note })}
+                        </p>
+                      )}
+                      {m.request_id && (
+                        <Link
+                          href={`/portal/requests/${m.request_id}`}
+                          className="inline-flex items-center gap-1 text-[13px] font-semibold w-fit"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          {t("plan.viewCard")}
+                          <ArrowRight01Icon size={14} color="currentColor" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
 
           {/* What we need from you (Von Restorff amber) — a toggleable
               checklist; checked items stay so a mis-tap can be undone. */}
@@ -465,6 +553,7 @@ export function PlanTracker({
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
     </section>

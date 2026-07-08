@@ -51,8 +51,10 @@ export function AdminSidebar({ user, profile }: AdminSidebarProps) {
 
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
 
+  // Soft active treatment (light pill + ink text) — matches the client
+  // sidebar's active nav so admin and client shells feel like one product.
   const navButtonClass =
-    "rounded-full min-h-[44px] px-3 text-[color:var(--vimi-muted)] hover:bg-[color:rgba(28,27,31,0.06)] hover:text-[color:var(--vimi-ink)] data-[active=true]:bg-[color:var(--vimi-ink)] data-[active=true]:text-[var(--vimi-page)] data-[active=true]:hover:bg-[color:var(--vimi-ink)] data-[active=true]:hover:text-[var(--vimi-page)]";
+    "rounded-full min-h-[44px] px-3 text-[color:var(--vimi-muted)] hover:bg-[color:rgba(28,27,31,0.06)] hover:text-[color:var(--vimi-ink)] data-[active=true]:bg-[color:rgba(28,27,31,0.06)] data-[active=true]:text-[color:var(--vimi-ink)] data-[active=true]:hover:bg-[color:rgba(28,27,31,0.06)] data-[active=true]:hover:text-[color:var(--vimi-ink)]";
 
   return (
     <Sidebar className="border-r border-[color:var(--vimi-border)]">
