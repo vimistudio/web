@@ -63,7 +63,7 @@ export default async function PortalPage() {
   // Fetch client name
   const { data: client } = await supabase
     .from("clients")
-    .select("name, retainer_amount")
+    .select("name, retainer_amount, logo_url")
     .eq("id", clientId)
     .single();
 
@@ -108,7 +108,9 @@ export default async function PortalPage() {
     <>
       <SetLastVisited />
       <ClientBoard
+        clientId={clientId}
         clientName={clientName}
+        clientLogoUrl={client?.logo_url ?? null}
         firstName={(profile?.full_name ?? "").trim().split(/\s+/)[0] || null}
         requests={requestsWithPreviews}
         requestCount={requestsWithPreviews.filter((r) => r.status !== "done").length}
