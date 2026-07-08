@@ -51,6 +51,7 @@ export const detail = {
 
   // Edit mode
   "edit.title": { en: "Edit Request", es: "Editar Solicitud" },
+  "edit.heading": { en: "Edit this request", es: "Edita esta solicitud" },
   "edit.save": { en: "Save Changes", es: "Guardar Cambios" },
   "edit.saving": { en: "Saving...", es: "Guardando..." },
   "edit.cancel": { en: "Cancel", es: "Cancelar" },
