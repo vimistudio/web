@@ -47,6 +47,7 @@ interface ClientBoardProps {
   isAdmin?: boolean;
   lastVisitedAt?: string | null;
   milestones?: Milestone[];
+  retainerAmount?: number | null;
 }
 
 const statusColumns = [
@@ -267,6 +268,7 @@ export function ClientBoard({
   isAdmin = false,
   lastVisitedAt,
   milestones = [],
+  retainerAmount = null,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -449,7 +451,9 @@ export function ClientBoard({
       </Link>
 
       {/* ── Plan tracker (renders nothing when the client has no plan) ── */}
-      {milestones.length > 0 && <PlanTracker milestones={milestones} />}
+      {milestones.length > 0 && (
+        <PlanTracker milestones={milestones} retainerAmount={retainerAmount} />
+      )}
 
       {/* ── Needs-you banner (amber) — highest priority ── */}
       {showNeedsYou && firstReview && (

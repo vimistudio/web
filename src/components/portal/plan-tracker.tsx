@@ -55,7 +55,13 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
   );
 }
 
-export function PlanTracker({ milestones: initial }: { milestones: Milestone[] }) {
+export function PlanTracker({
+  milestones: initial,
+  retainerAmount = null,
+}: {
+  milestones: Milestone[];
+  retainerAmount?: number | null;
+}) {
   const { t } = useLocale();
   const router = useRouter();
   const [milestones, setMilestones] = useState<Milestone[]>(initial);
@@ -90,6 +96,9 @@ export function PlanTracker({ milestones: initial }: { milestones: Milestone[] }
   }, [milestones]);
 
   const allDone = total > 0 && doneCount === total;
+
+  const showDeal = retainerAmount != null && retainerAmount > 0;
+  const dealAmount = showDeal ? retainerAmount.toLocaleString() : "";
 
   // Group milestones by week, weeks ascending, rows by sort then title.
   const weekGroups = useMemo(() => {
@@ -171,6 +180,11 @@ export function PlanTracker({ milestones: initial }: { milestones: Milestone[] }
               {allDone ? t("plan.progress", { done: doneCount, total }) : t("plan.week", { n: currentWeek })}
             </span>
           </div>
+          {showDeal && (
+            <div className="text-[13px] text-[color:var(--vimi-muted)]">
+              {t("plan.dealLine", { amount: dealAmount })}
+            </div>
+          )}
           {/* Goal-gradient progress */}
           <div className="flex items-center gap-3">
             <div className="h-[5px] flex-1 max-w-[220px] rounded-full bg-[color:rgba(28,27,31,0.08)] overflow-hidden">

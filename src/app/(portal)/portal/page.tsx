@@ -63,7 +63,7 @@ export default async function PortalPage() {
   // Fetch client name
   const { data: client } = await supabase
     .from("clients")
-    .select("name")
+    .select("name, retainer_amount")
     .eq("id", clientId)
     .single();
 
@@ -115,6 +115,7 @@ export default async function PortalPage() {
         isAdmin={isImpersonating}
         lastVisitedAt={lastVisitedAt}
         milestones={(milestones ?? []) as Milestone[]}
+        retainerAmount={client?.retainer_amount ?? null}
       />
     </>
   );
