@@ -15,7 +15,7 @@ export default async function PortalPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, client_id, locale, clients(id, name, slug, locale)")
+    .select("role, client_id, locale, full_name, clients(id, name, slug, locale)")
     .eq("id", user.id)
     .single();
 
@@ -98,6 +98,7 @@ export default async function PortalPage() {
       <SetLastVisited />
       <ClientBoard
         clientName={clientName}
+        firstName={(profile?.full_name ?? "").trim().split(/\s+/)[0] || null}
         requests={requestsWithPreviews}
         requestCount={requestsWithPreviews.filter((r) => r.status !== "done").length}
         isAdmin={isImpersonating}
