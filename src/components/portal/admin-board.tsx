@@ -55,6 +55,7 @@ interface Client {
   retainer_amount: number | null;
   is_active: boolean;
   studio_note?: string | null;
+  locale?: string | null;
 }
 
 interface PlanMilestone {
@@ -505,6 +506,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [],
           <PlanEditorDialog
             clientId={client.id}
             clientName={client.name}
+            clientLocale={(client.locale as "en" | "es") ?? "en"}
             requests={requests.map((r) => ({ id: r.id, title: r.title }))}
             milestones={milestones}
           />
