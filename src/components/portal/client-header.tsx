@@ -27,9 +27,13 @@ import { useLocale } from "./locale-provider";
 interface ClientHeaderProps {
   user: User;
   profile: Profile;
+  /** True when an admin is previewing this shell via impersonation. The
+   *  notification bell is hidden because notifications are admin-owned and
+   *  cross-client — showing them would make the client preview dishonest. */
+  impersonating?: boolean;
 }
 
-export function ClientHeader({ user, profile }: ClientHeaderProps) {
+export function ClientHeader({ user, profile, impersonating = false }: ClientHeaderProps) {
   const router = useRouter();
   const { t } = useLocale();
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
@@ -88,7 +92,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
           <SearchIcon size={18} />
         </button>
 
-        <NotificationDropdown variant="light" />
+        {!impersonating && <NotificationDropdown variant="light" />}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -160,7 +164,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
 
         {/* Right: notification + avatar */}
         <div className="flex items-center gap-4">
-          <NotificationDropdown variant="light" />
+          {!impersonating && <NotificationDropdown variant="light" />}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

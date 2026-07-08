@@ -117,7 +117,7 @@ export default async function PortalLayout({
           <Toaster position="top-center" richColors />
           <div className="min-h-screen flex flex-col">
             <ImpersonateBanner clientName={impersonatedClient.name} />
-            <PortalShell user={user} profile={clientProfile}>
+            <PortalShell user={user} profile={clientProfile} impersonating>
               {children}
             </PortalShell>
           </div>

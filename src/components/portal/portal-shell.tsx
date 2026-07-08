@@ -35,9 +35,17 @@ interface PortalShellProps {
   user: User;
   profile: Profile;
   children: React.ReactNode;
+  /** Admin previewing the client shell via impersonation. Suppresses
+   *  admin-owned surfaces (e.g. the notification bell) inside the preview. */
+  impersonating?: boolean;
 }
 
-export function PortalShell({ user, profile, children }: PortalShellProps) {
+export function PortalShell({
+  user,
+  profile,
+  children,
+  impersonating = false,
+}: PortalShellProps) {
   const isAdmin = profile.role === "admin";
   // Fall back to the client's configured locale when the user hasn't made an
   // explicit language choice, so an invited client sees their studio's default
@@ -75,7 +83,7 @@ export function PortalShell({ user, profile, children }: PortalShellProps) {
         className="min-h-dvh flex flex-col bg-[var(--vimi-page)] font-sans text-[color:var(--vimi-ink)]"
         style={accentStyle}
       >
-        <ClientHeader user={user} profile={profile} />
+        <ClientHeader user={user} profile={profile} impersonating={impersonating} />
         <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>
         {/* Bottom tabs only on mobile */}
         <div className="md:hidden">
