@@ -13,6 +13,8 @@ export const form = {
   "form.type.title": { en: "What do you need?", es: "¿Qué necesitas?" },
   "form.type.subtitle": { en: "Pick the closest match. You can always add details next.", es: "Elige la opción más cercana. Siempre puedes agregar detalles después." },
   "form.type.startFresh": { en: "Or start fresh", es: "O empieza de cero" },
+  "form.history.heading": { en: "Based on your history", es: "Según tu historial" },
+  "form.history.reuse": { en: "Reuse brief", es: "Reutilizar brief" },
 
   "form.essentials.title": { en: "Tell us the essentials", es: "Cuéntanos lo esencial" },
   "form.essentials.subtitle": { en: "Just what your designer needs to start — nothing more.", es: "Solo lo que tu diseñador necesita para empezar — nada más." },

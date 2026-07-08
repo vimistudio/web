@@ -43,16 +43,26 @@ const priorities = [
 
 type RequestType = (typeof requestTypes)[number]["value"];
 
+interface PastRequest {
+  title: string;
+  type: string;
+}
+
 interface NewRequestFormProps {
   clientId: string;
   userId: string;
   clientName?: string;
   isAdmin?: boolean;
+  pastRequests?: PastRequest[];
 }
 
 const TOTAL_STEPS = 3;
 
-export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewRequestFormProps) {
+const typeByValue = new Map<string, (typeof requestTypes)[number]>(
+  requestTypes.map((rt) => [rt.value, rt])
+);
+
+export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequests = [] }: NewRequestFormProps) {
   const router = useRouter();
   const { t } = useLocale();
   const [step, setStep] = useState(0);
@@ -96,6 +106,16 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
     setDirection("forward");
     setStep(1);
   }, []);
+
+  // Reuse a past brief: prefill type + a versioned title, then to essentials
+  const reuseBrief = useCallback((r: PastRequest) => {
+    setType((typeByValue.has(r.type) ? r.type : "other") as RequestType);
+    setTitle(`${r.title} (v2)`);
+    setDirection("forward");
+    setStep(1);
+  }, []);
+
+  const suggestions = pastRequests.slice(0, 3);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -250,6 +270,44 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                 <p className="text-sm text-muted-foreground">
                   {t("form.type.subtitle")}
                 </p>
+
+                {/* Based on your history — reuse a past brief (Jakob's Law) */}
+                {suggestions.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                      {t("form.history.heading")}
+                    </p>
+                    {suggestions.map((r, i) => {
+                      const rt = typeByValue.get(r.type) ?? typeByValue.get("other")!;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => reuseBrief(r)}
+                          className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 hover:border-primary bg-white transition-all active:scale-[0.98] touch-manipulation text-left"
+                        >
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-gray-100 text-muted-foreground">
+                            <rt.Icon size={18} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-foreground truncate">{r.title}</div>
+                            <div className="text-xs text-muted-foreground">{t(rt.labelKey)}</div>
+                          </div>
+                          <span className="flex items-center gap-1 text-xs font-semibold text-primary shrink-0">
+                            {t("form.history.reuse")}
+                            <ArrowRight01Icon size={13} />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {suggestions.length > 0 && (
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)] pt-1">
+                    {t("form.type.startFresh")}
+                  </p>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   {requestTypes.map((rt) => {
                     const selected = type === rt.value;
