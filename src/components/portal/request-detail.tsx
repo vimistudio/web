@@ -867,6 +867,20 @@ export function RequestDetail({
     addSuffix: true,
   });
 
+  // Review header meta line — real delivered date + visible file count.
+  const reviewMeta = (() => {
+    if (visibleDeliverables.length === 0) return null;
+    const latest = visibleDeliverables.reduce((acc, d) =>
+      new Date(d.created_at) > new Date(acc.created_at) ? d : acc
+    );
+    const when = new Date(latest.created_at).toLocaleDateString(
+      locale === "es" ? "es-ES" : "en-US",
+      { month: "short", day: "numeric" }
+    );
+    const n = visibleDeliverables.length;
+    return `${t("detail.deliveredOn")} ${when} · ${n} ${n === 1 ? t("gallery.deliverable") : t("gallery.deliverables")}`;
+  })();
+
   // Clear optimistic comments when server data updates
   useEffect(() => {
     setOptimisticComments([]);
@@ -1455,9 +1469,25 @@ export function RequestDetail({
         />
       )}
       {currentStatus === "review" && !hasDirections && !isAdmin && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center space-y-1">
-          <p className="font-semibold text-amber-900">{t("detail.reviewHero")}</p>
-          <p className="text-sm text-amber-700">{t("detail.reviewHeroSub")}</p>
+        <div
+          className="rounded-2xl border p-5 space-y-2"
+          style={{ background: "var(--status-review-bg)", borderColor: "rgba(201,130,27,0.35)" }}
+        >
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span
+              className="text-[10.5px] font-bold tracking-[0.08em] rounded-md px-2 py-1"
+              style={{ background: "var(--status-review-chip)", color: "var(--status-review-ink)" }}
+            >
+              {t("detail.readyChip")}
+            </span>
+            {reviewMeta && (
+              <span className="text-[12.5px] text-[color:var(--vimi-muted)]">{reviewMeta}</span>
+            )}
+          </div>
+          <p className="font-serif italic text-[22px] leading-tight text-[color:var(--vimi-ink)]">
+            {t("detail.reviewHero")}
+          </p>
+          <p className="text-sm text-[color:var(--vimi-muted)]">{t("detail.reviewHeroSub")}</p>
         </div>
       )}
 

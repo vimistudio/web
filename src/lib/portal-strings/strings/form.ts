@@ -50,6 +50,12 @@ export const form = {
   "form.inspiration.subtitle": { en: "Screenshots from Pinterest, Instagram, or anywhere work great. Or skip this step.", es: "Capturas de Pinterest, Instagram o donde sea van perfecto. O sáltate este paso." },
   "form.inspiration.addFile": { en: "Add file", es: "Agregar" },
 
+  "form.summary.heading": { en: "Quick review", es: "Revisión rápida" },
+  "form.summary.request": { en: "Request", es: "Solicitud" },
+  "form.summary.type": { en: "Type", es: "Tipo" },
+  "form.summary.timeline": { en: "Timeline", es: "Plazo" },
+  "form.summary.untitled": { en: "Untitled request", es: "Solicitud sin título" },
+
   "form.continue": { en: "Continue", es: "Continuar" },
   "form.back": { en: "Back", es: "Atrás" },
   "form.submit": { en: "Send to Designer", es: "Enviar al diseñador" },

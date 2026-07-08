@@ -200,8 +200,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               <path d="M12 20L18 26L28 14" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-2">{t("form.success.title")}</h2>
-          <p className="text-muted-foreground max-w-xs">
+          <h2 className="font-serif italic text-3xl mb-2 text-[color:var(--vimi-ink)]">{t("form.success.title")}</h2>
+          <p className="text-[color:var(--vimi-muted)] max-w-xs">
             {t("form.success.body")}
           </p>
         </div>
@@ -220,20 +220,19 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
           </div>
 
-          {/* Progress dots — left aligned */}
+          {/* Progress — thin 4px segment bars (prototype) */}
           <div className="flex items-center gap-1.5 mb-8">
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div
+              <span
                 key={i}
-                className={`rounded-full transition-all duration-500 ease-out ${
-                  i === step
-                    ? "w-6 h-1.5 bg-primary"
-                    : i < step
-                      ? "w-1.5 h-1.5 bg-primary"
-                      : "w-1.5 h-1.5 bg-gray-200"
+                className={`h-1 flex-1 rounded-full transition-colors duration-500 ease-out ${
+                  i <= step ? "bg-primary" : "bg-[color:rgba(28,27,31,0.1)]"
                 }`}
               />
             ))}
+            <span className="ml-2 shrink-0 text-xs font-semibold text-[color:var(--vimi-faint)]">
+              {step + 1} / {TOTAL_STEPS}
+            </span>
           </div>
 
           {/* Step content */}
@@ -245,7 +244,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
             {step === 0 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.name.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -264,7 +263,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.type.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -312,7 +311,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
             {step === 2 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.details.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -388,7 +387,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             {step === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                     {t("form.timeline.title")}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -432,6 +431,35 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                     min={new Date().toISOString().split("T")[0]}
                     className="h-12"
                   />
+                </div>
+
+                {/* Review summary — label/value rows in a soft card */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)] mb-2">
+                    {t("form.summary.heading")}
+                  </p>
+                  <div className="rounded-2xl border border-[color:var(--vimi-border)] bg-[color:rgba(28,27,31,0.02)] p-4 flex flex-col gap-3">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.request")}</span>
+                      <span className="text-[13px] font-bold text-right text-[color:var(--vimi-ink)]">{title.trim() || t("form.summary.untitled")}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.type")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">
+                        {type ? t(requestTypes.find((rt) => rt.value === type)!.labelKey) : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.timeline")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">
+                        {t(priorities.find((p) => p.value === priority)!.labelKey)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.timeline.dueDate")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">{dueDate || "—"}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
