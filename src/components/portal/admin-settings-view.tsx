@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/lib/supabase/client";
-import { assignAsClient } from "@/lib/portal/invites";
+import { assignAsClient, applyInvite } from "@/lib/portal/invites";
 import { toast } from "sonner";
 import Image from "next/image";
 import { TeamRolesSection, type Profile } from "@/components/portal/team-roles-section";
@@ -69,9 +69,52 @@ export function AdminSettingsView({
   } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
+  const [inviteToResolve, setInviteToResolve] = useState<Invite | null>(null);
+  const [isResolvingInvite, setIsResolvingInvite] = useState(false);
 
   const selectedClientName =
     clients.find((c) => c.id === clientId)?.name ?? "this project";
+
+  // Which pending-invite emails already have an account (invite will never
+  // apply on sign-in — needs manual resolution).
+  const profileByEmail = useMemo(() => {
+    const map = new Map<string, Profile>();
+    for (const p of profiles) {
+      if (p.email) map.set(p.email.toLowerCase(), p);
+    }
+    return map;
+  }, [profiles]);
+
+  const handleResolveInvite = async () => {
+    if (!inviteToResolve) return;
+    const existing = profileByEmail.get(inviteToResolve.email.toLowerCase());
+    if (!existing) return;
+    setIsResolvingInvite(true);
+    const supabase = createClient();
+    const result = await applyInvite(supabase, {
+      profileId: existing.id,
+      email: inviteToResolve.email,
+      clientId: inviteToResolve.client_id,
+    });
+    setIsResolvingInvite(false);
+    if (result.error) {
+      toast.error(
+        result.partial
+          ? `Role updated but couldn't clear the invite: ${result.error}`
+          : result.error
+      );
+      if (result.partial) {
+        setInviteToResolve(null);
+        router.refresh();
+      }
+      return;
+    }
+    toast.success(
+      `${existing.full_name || existing.email} is now a Client of ${inviteToResolve.clients?.name ?? "their project"}`
+    );
+    setInviteToResolve(null);
+    router.refresh();
+  };
 
   const resetConflict = () => {
     if (conflict) setConflict(null);
@@ -302,33 +345,61 @@ export function AdminSettingsView({
 
         {invites.length > 0 ? (
           <div className="space-y-2">
-            {invites.map((invite) => (
-              <Card key={invite.email}>
-                <CardContent className="py-3 px-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{invite.email}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0"
-                      >
-                        {invite.clients?.name ?? "Unknown"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        Invited{" "}
-                        {new Date(invite.created_at).toLocaleDateString()}
-                      </span>
+            {invites.map((invite) => {
+              const conflictProfile = profileByEmail.get(
+                invite.email.toLowerCase()
+              );
+              return (
+                <Card key={invite.email}>
+                  <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {invite.email}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0"
+                        >
+                          {invite.clients?.name ?? "Unknown"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Invited{" "}
+                          {new Date(invite.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {conflictProfile ? (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] text-[color:var(--status-review-ink)]">
+                            {invite.email} already has{" "}
+                            {conflictProfile.role === "admin"
+                              ? "an Admin"
+                              : "a Client"}{" "}
+                            account — this invite will never apply
+                          </span>
+                          <button
+                            onClick={() => setInviteToResolve(invite)}
+                            className="inline-flex items-center rounded-full bg-[#FFF3DE] text-[color:var(--status-review-ink)] text-[11px] px-2.5 py-1 hover:bg-[#FFE9C7] transition-colors"
+                          >
+                            Resolve
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          Awaiting first sign-in
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleRevokeInvite(invite.email)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                  >
-                    <Cancel01Icon size={16} />
-                  </button>
-                </CardContent>
-              </Card>
-            ))}
+                    <button
+                      onClick={() => handleRevokeInvite(invite.email)}
+                      className="text-muted-foreground hover:text-red-500 transition-colors p-1 shrink-0"
+                    >
+                      <Cancel01Icon size={16} />
+                    </button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -344,6 +415,44 @@ export function AdminSettingsView({
         invites={invites}
         currentUserId={currentUserId}
       />
+
+      {/* Resolve stale invite confirmation */}
+      <AlertDialog
+        open={!!inviteToResolve}
+        onOpenChange={(open) => !open && setInviteToResolve(null)}
+      >
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Apply invite to {inviteToResolve?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This makes them a{" "}
+              <span className="font-medium">client</span> of{" "}
+              <span className="font-medium">
+                {inviteToResolve?.clients?.name ?? "their project"}
+              </span>{" "}
+              and clears this pending invite. If they were an Admin, they&apos;ll
+              lose studio-wide access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResolvingInvite}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleResolveInvite();
+              }}
+              disabled={isResolvingInvite}
+              className="bg-[var(--vimi-ink)] hover:bg-[var(--vimi-ink)]/90 text-white"
+            >
+              {isResolvingInvite ? "Applying..." : "Apply invite"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Studio Info */}
       <div className="space-y-4">
