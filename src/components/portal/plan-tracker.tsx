@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useLocale } from "./locale-provider";
+import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 import { ArrowRight01Icon, CheckmarkCircle01Icon } from "@/components/ui/icons";
 
 export interface Milestone {
@@ -58,11 +59,16 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
 export function PlanTracker({
   milestones: initial,
   retainerAmount = null,
+  isImpersonatingAdmin = false,
 }: {
   milestones: Milestone[];
   retainerAmount?: number | null;
+  isImpersonatingAdmin?: boolean;
 }) {
   const { t } = useLocale();
+  // Client sees their own price (correct). An admin viewing via impersonation
+  // gets it masked when the screen-share price toggle is on.
+  const { hidden: pricesHidden } = usePricePrivacy();
   const router = useRouter();
   const [milestones, setMilestones] = useState<Milestone[]>(initial);
   const [pending, setPending] = useState<Set<string>>(new Set());
@@ -98,7 +104,9 @@ export function PlanTracker({
   const allDone = total > 0 && doneCount === total;
 
   const showDeal = retainerAmount != null && retainerAmount > 0;
-  const dealAmount = showDeal ? retainerAmount.toLocaleString() : "";
+  const dealAmount = showDeal
+    ? maskPrice(retainerAmount.toLocaleString(), isImpersonatingAdmin && pricesHidden)
+    : "";
 
   // Group milestones by week, weeks ascending, rows by sort then title.
   const weekGroups = useMemo(() => {

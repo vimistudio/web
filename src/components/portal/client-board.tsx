@@ -452,7 +452,11 @@ export function ClientBoard({
 
       {/* ── Plan tracker (renders nothing when the client has no plan) ── */}
       {milestones.length > 0 && (
-        <PlanTracker milestones={milestones} retainerAmount={retainerAmount} />
+        <PlanTracker
+          milestones={milestones}
+          retainerAmount={retainerAmount}
+          isImpersonatingAdmin={isAdmin}
+        />
       )}
 
       {/* ── Needs-you banner (amber) — highest priority ── */}

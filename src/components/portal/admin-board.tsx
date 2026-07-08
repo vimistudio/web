@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
 import { EditClientDialog } from "./edit-client-form";
 import { PlanEditorDialog } from "./plan-editor";
+import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 
 interface Request {
   id: string;
@@ -301,6 +302,7 @@ function DroppableColumn({
 
 export function AdminBoard({ client, requests: initialRequests, milestones = [] }: AdminBoardProps) {
   const router = useRouter();
+  const { hidden: pricesHidden } = usePricePrivacy();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -468,7 +470,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [] 
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              ${client.retainer_amount ?? 0}/mo &middot; {openCount} open{" "}
+              {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot; {openCount} open{" "}
               {openCount === 1 ? "request" : "requests"}
             </p>
           </div>
