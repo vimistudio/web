@@ -17,6 +17,8 @@ import {
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { usePricePrivacy, maskPrice, PRICE_MASK } from "@/hooks/use-price-privacy";
+import { useWorkScope } from "@/hooks/use-work-scope";
+import { AssigneeAvatar, type Admin } from "./assignee-control";
 
 interface ClientSummary {
   id: string;
@@ -25,6 +27,7 @@ interface ClientSummary {
   retainer_amount: number | null;
   is_active: boolean;
   logo_url?: string | null;
+  designer_id?: string | null;
   counts: {
     queued: number;
     in_progress: number;
@@ -61,6 +64,7 @@ interface AttentionItem {
   clientColor: string;
   text: string;
   href: string;
+  mine?: boolean;
 }
 
 interface AdminDashboardProps {
@@ -69,6 +73,8 @@ interface AdminDashboardProps {
   recentActivity: Activity[];
   attention?: AttentionItem[];
   adminName?: string;
+  adminId?: string;
+  admins?: Admin[];
 }
 
 const attentionConfig: Record<
@@ -144,7 +150,7 @@ const statusPills = [
   { key: "done" as const, label: "Delivered", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
 ];
 
-function ClientCard({ client }: { client: ClientSummary }) {
+function ClientCard({ client, admins }: { client: ClientSummary; admins: Admin[] }) {
   const { hidden: pricesHidden } = usePricePrivacy();
   const totalRequests = client.counts.queued + client.counts.in_progress + client.counts.review + client.counts.done;
   const completedPercent = totalRequests > 0 ? Math.round((client.counts.done / totalRequests) * 100) : 0;
@@ -172,16 +178,19 @@ function ClientCard({ client }: { client: ClientSummary }) {
                 </p>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={
-                client.is_active
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-gray-50 text-gray-500 border-gray-200"
-              }
-            >
-              {client.is_active ? "Active" : "Paused"}
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0">
+              <AssigneeAvatar assigneeId={client.designer_id} admins={admins} />
+              <Badge
+                variant="outline"
+                className={
+                  client.is_active
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-gray-50 text-gray-500 border-gray-200"
+                }
+              >
+                {client.is_active ? "Active" : "Paused"}
+              </Badge>
+            </div>
           </div>
 
           {/* Status pills */}
@@ -288,14 +297,26 @@ function ClientCard({ client }: { client: ClientSummary }) {
   );
 }
 
-export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName }: AdminDashboardProps) {
+export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName, adminId, admins = [] }: AdminDashboardProps) {
   const { hidden: pricesHidden } = usePricePrivacy();
+  const { scope, setScope } = useWorkScope();
   const [showPaused, setShowPaused] = useState(false);
   const activeClients = clients.filter((c) => c.is_active);
   const pausedClients = clients.filter((c) => !c.is_active);
+  // Mine-first ordering (never hide): my clients bubble up, everyone else follows.
+  const mineFirst = (list: ClientSummary[]) =>
+    [...list].sort(
+      (a, b) =>
+        Number(b.designer_id === adminId) - Number(a.designer_id === adminId)
+    );
   const visibleClients = showPaused
-    ? [...activeClients, ...pausedClients]
-    : activeClients;
+    ? [...mineFirst(activeClients), ...mineFirst(pausedClients)]
+    : mineFirst(activeClients);
+
+  // Attention strip respects the shared work scope; a quiet toggle flips it.
+  const mineAttentionCount = attention.filter((i) => i.mine).length;
+  const scopedAttention =
+    scope === "mine" ? attention.filter((i) => i.mine) : attention;
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
   const firstName = adminName ? adminName.split(" ")[0] : "";
@@ -370,19 +391,35 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
       {/* Needs attention (Pareto) — hidden entirely when nothing needs action */}
       {attention.length > 0 && (
         <div>
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-[color:var(--vimi-ink)]">
-              Needs attention
-            </h2>
-            <p className="text-sm text-[color:var(--vimi-muted)] mt-0.5">
-              The 20% that matters today. Everything else can wait.
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[color:var(--vimi-ink)]">
+                Needs attention
+              </h2>
+              <p className="text-sm text-[color:var(--vimi-muted)] mt-0.5">
+                The 20% that matters today. Everything else can wait.
+              </p>
+            </div>
+            <button
+              onClick={() => setScope(scope === "mine" ? "everyone" : "mine")}
+              className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline mt-1"
+            >
+              {scope === "mine"
+                ? `Show everyone's (${attention.length})`
+                : `Show mine (${mineAttentionCount})`}
+            </button>
+          </div>
+          {scopedAttention.length > 0 ? (
+            <div className="flex flex-col gap-2.5">
+              {scopedAttention.map((item) => (
+                <AttentionRow key={item.id} item={item} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[color:var(--vimi-muted)]">
+              Nothing assigned to you needs action right now.
             </p>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            {attention.map((item) => (
-              <AttentionRow key={item.id} item={item} />
-            ))}
-          </div>
+          )}
         </div>
       )}
 
@@ -410,7 +447,7 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
 
         <div className="grid gap-4 md:grid-cols-2">
           {visibleClients.map((client) => (
-            <ClientCard key={client.id} client={client} />
+            <ClientCard key={client.id} client={client} admins={admins} />
           ))}
 
           {clients.length === 0 && (

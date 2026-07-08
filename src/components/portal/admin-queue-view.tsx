@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/icons";
 import { formatDistanceToNow } from "date-fns";
 import { AssigneeAvatar, type Admin } from "./assignee-control";
+import { useWorkScope } from "@/hooks/use-work-scope";
 
 // --- Types ---
 
@@ -111,6 +112,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   const [sortBy, setSortBy] = useState<SortOption>("priority");
   const [showPaused, setShowPaused] = useState(false);
   const [clientFilter, setClientFilter] = useState<string>("all");
+  const { scope, setScope } = useWorkScope();
 
   // Requests belonging to paused clients — hidden from the default view
   const pausedCount = useMemo(
@@ -124,10 +126,27 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     [requests, showPaused]
   );
 
+  // "Mine" = assigned to me OR unassigned, so nothing slips through the cracks.
+  const isMine = useCallback(
+    (r: QueueRequest) => r.assignee_id === adminId || r.assignee_id == null,
+    [adminId]
+  );
+  const mineCount = useMemo(
+    () => baseRequests.filter(isMine).length,
+    [baseRequests, isMine]
+  );
+  const everyoneCount = baseRequests.length;
+
+  // Work-scope layer sits above every other filter.
+  const scopedRequests = useMemo(
+    () => (scope === "mine" ? baseRequests.filter(isMine) : baseRequests),
+    [baseRequests, scope, isMine]
+  );
+
   // Clients with open requests in the current inclusion set (for filter chips)
   const clientChips = useMemo(() => {
     const map = new Map<string, { slug: string; name: string; count: number }>();
-    for (const r of baseRequests) {
+    for (const r of scopedRequests) {
       if (!r.clients) continue;
       const existing = map.get(r.clients.slug);
       if (existing) existing.count++;
@@ -141,15 +160,15 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     return Array.from(map.values()).sort(
       (a, b) => b.count - a.count || a.name.localeCompare(b.name)
     );
-  }, [baseRequests]);
+  }, [scopedRequests]);
 
   // Narrow to the selected client (drives both list and status-tab counts)
   const clientScoped = useMemo(
     () =>
       clientFilter === "all"
-        ? baseRequests
-        : baseRequests.filter((r) => r.clients?.slug === clientFilter),
-    [baseRequests, clientFilter]
+        ? scopedRequests
+        : scopedRequests.filter((r) => r.clients?.slug === clientFilter),
+    [scopedRequests, clientFilter]
   );
 
   // Count per status (reflects inclusion set + selected client)
@@ -221,12 +240,52 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Queue</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Open requests across {showPaused ? "all" : "active"} clients, sorted by
-          what needs attention first.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Queue</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Open requests across {showPaused ? "all" : "active"} clients, sorted by
+            what needs attention first.
+          </p>
+        </div>
+
+        {/* Work scope: Mine (assigned to me + unassigned) vs Everyone */}
+        <div
+          className="inline-flex items-center rounded-full bg-gray-100 p-0.5 shrink-0 self-start"
+          role="tablist"
+          aria-label="Work scope"
+        >
+          <button
+            role="tab"
+            aria-selected={scope === "mine"}
+            onClick={() => setScope("mine")}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              scope === "mine"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Mine{" "}
+            <span className={scope === "mine" ? "text-muted-foreground" : "text-gray-400"}>
+              ({mineCount})
+            </span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={scope === "everyone"}
+            onClick={() => setScope("everyone")}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              scope === "everyone"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Everyone{" "}
+            <span className={scope === "everyone" ? "text-muted-foreground" : "text-gray-400"}>
+              ({everyoneCount})
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs + Sort */}

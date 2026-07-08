@@ -40,6 +40,12 @@ export default async function AdminDashboardPage() {
     .from("requests")
     .select("*");
 
+  // Admin roster for the designer avatar chip on client cards (joined in JS).
+  const { data: admins } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("role", "admin");
+
   // Client-owed plan items (milestones the client still has to tick off)
   const { data: owedMilestones } = await supabase
     .from("client_milestones")
@@ -85,6 +91,12 @@ export default async function AdminDashboardPage() {
   const accentFor = (id: string) =>
     (clientById.get(id)?.accent_color as string | null) || "#5B4BD6";
   const nameFor = (id: string) => clientById.get(id)?.name ?? "Client";
+  const designerFor = (id: string) => clientById.get(id)?.designer_id ?? null;
+
+  // Whether an attention item belongs to the signed-in admin: the request's
+  // assignee when set, else the client's designer (mirrors notify precedence).
+  const requestIsMine = (r: { assignee_id?: string | null; client_id: string }) =>
+    r.assignee_id ? r.assignee_id === user.id : designerFor(r.client_id) === user.id;
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -103,6 +115,7 @@ export default async function AdminDashboardPage() {
     clientColor: accentFor(r.client_id),
     text: r.title,
     href: `/portal/requests/${r.id}`,
+    mine: requestIsMine(r),
   }));
 
   const overdueItems = activeRequests
@@ -125,6 +138,7 @@ export default async function AdminDashboardPage() {
       clientColor: accentFor(r.client_id),
       text: r.title,
       href: `/portal/requests/${r.id}`,
+      mine: requestIsMine(r),
     }));
 
   const owedItems = (owedMilestones ?? [])
@@ -138,6 +152,7 @@ export default async function AdminDashboardPage() {
       href: m.request_id
         ? `/portal/requests/${m.request_id}`
         : `/portal/admin/clients/${clientById.get(m.client_id)?.slug ?? ""}`,
+      mine: designerFor(m.client_id) === user.id,
     }));
 
   const attention = [...reviewItems, ...overdueItems, ...owedItems].slice(0, 5);
@@ -211,6 +226,8 @@ export default async function AdminDashboardPage() {
         recentActivity={activeActivity}
         attention={attention}
         adminName={profile.full_name ?? undefined}
+        adminId={user.id}
+        admins={admins ?? []}
       />
     </>
   );
