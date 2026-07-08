@@ -17,7 +17,7 @@ export const board = {
   "board.updates": { en: "{count} update{s} on your designs", es: "{count} actualización{es} en tus diseños" },
   "board.nothingHere": { en: "Nothing here just yet", es: "Nada por aquí aún" },
   "board.empty.queued": { en: "All caught up!", es: "¡Todo al día!" },
-  "board.empty.in_progress": { en: "Your designer is heads-down on your work", es: "Tu diseñador está libre por ahora" },
+  "board.empty.in_progress": { en: "Your designer is heads-down on your work", es: "Tu diseñador está concentrado en tu trabajo" },
   "board.empty.review": { en: "Nothing to review right now", es: "Nada que revisar por ahora" },
   "board.empty.done": { en: "Completed designs will show up here", es: "Los diseños completados aparecerán aquí" },
 } as const;
