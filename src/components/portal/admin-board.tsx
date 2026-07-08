@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
 import { EditClientDialog } from "./edit-client-form";
+import { PlanEditorDialog } from "./plan-editor";
 
 interface Request {
   id: string;
@@ -50,9 +51,22 @@ interface Client {
   is_active: boolean;
 }
 
+interface PlanMilestone {
+  id: string;
+  track: string;
+  week: number;
+  title: string;
+  description: string | null;
+  status: string;
+  needs_client: boolean;
+  request_id: string | null;
+  sort: number;
+}
+
 interface AdminBoardProps {
   client: Client;
   requests: Request[];
+  milestones?: PlanMilestone[];
 }
 
 const columns = [
@@ -284,7 +298,7 @@ function DroppableColumn({
   );
 }
 
-export function AdminBoard({ client, requests: initialRequests }: AdminBoardProps) {
+export function AdminBoard({ client, requests: initialRequests, milestones = [] }: AdminBoardProps) {
   const router = useRouter();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -470,6 +484,12 @@ export function AdminBoard({ client, requests: initialRequests }: AdminBoardProp
               {showArchived ? "Hide" : "Show"} archived ({archivedCount})
             </Button>
           )}
+          <PlanEditorDialog
+            clientId={client.id}
+            clientName={client.name}
+            requests={requests.map((r) => ({ id: r.id, title: r.title }))}
+            milestones={milestones}
+          />
           <Link href={`/portal/requests/new?client=${client.id}`}>
             <Button variant="outline" className="gap-2">
               <PlusSignIcon size={16} />
