@@ -4,12 +4,13 @@ import { CommentAddedEmail } from "@/lib/email/templates/comment";
 import { StatusChangedEmail } from "@/lib/email/templates/status";
 import { DeliverableUploadedEmail } from "@/lib/email/templates/deliverable";
 import { InviteEmail } from "@/lib/email/templates/invite";
+import { TeamInviteEmail } from "@/lib/email/templates/team-invite";
 import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { DirectionVotedEmail } from "@/lib/email/templates/direction-voted";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "request_created", "client_signed_in", "direction_voted"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "team_invite", "request_created", "client_signed_in", "direction_voted"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -78,6 +79,65 @@ export async function POST(request: Request) {
         }),
       });
       return NextResponse.json({ success: result.success, sent: result.success ? 1 : 0 });
+    }
+
+    // Handle team_invite — a client invited a teammate to their own client.
+    // Email the invited person (same InviteEmail as admin invites) AND send a
+    // heads-up to admins so the studio knows a client grew their team.
+    if (type === "team_invite") {
+      if (!invite_email || !client_name) {
+        return NextResponse.json(
+          { error: "invite_email and client_name required" },
+          { status: 400 }
+        );
+      }
+      // Only clients trigger this; admins use the "invite" flow.
+      if (callerProfile.role === "admin") {
+        return NextResponse.json({ success: true, sent: 0 });
+      }
+      const inviterName = callerProfile.full_name || "A teammate";
+
+      // 1. Invite the teammate.
+      const inviteResult = await sendEmail({
+        to: invite_email,
+        subject: `You're invited to your ${client_name} design portal`,
+        react: InviteEmail({
+          clientName: client_name,
+          portalUrl: "https://vimistudio.com/portal/login",
+          invitedByName: inviterName,
+        }),
+      });
+
+      // 2. Heads-up to admins.
+      const { data: admins } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("role", "admin");
+      const eligibleAdmins = (admins ?? []).filter(
+        (a) => a.email && a.id !== user.id
+      );
+      const adminResults = await Promise.allSettled(
+        eligibleAdmins.map((admin) =>
+          sendEmail({
+            to: admin.email!,
+            subject: `${inviterName} invited a teammate to ${client_name}`,
+            react: TeamInviteEmail({
+              inviterName,
+              inviterEmail: user.email || "",
+              invitedEmail: invite_email,
+              clientName: client_name,
+              portalUrl: "https://vimistudio.com/portal/admin",
+            }),
+          })
+        )
+      );
+      const adminsSent = adminResults.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
+      return NextResponse.json({
+        success: inviteResult.success,
+        sent: (inviteResult.success ? 1 : 0) + adminsSent,
+      });
     }
 
     // Handle client_signed_in — notify admin(s) that a client just signed in

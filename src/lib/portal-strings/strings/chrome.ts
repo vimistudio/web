@@ -57,6 +57,21 @@ export const chrome = {
   "login.privacy": { en: "Privacy Policy", es: "Política de Privacidad" },
   "login.continueGoogle": { en: "Continue with Google", es: "Continuar con Google" },
 
+  // Team invites (client-side)
+  "team.title": { en: "Invite your team", es: "Invita a tu equipo" },
+  "team.subtitle": { en: "Add a teammate by email. They'll sign in with Google and join your project.", es: "Agrega a un compañero por correo. Iniciará sesión con Google y se unirá a tu proyecto." },
+  "team.emailPlaceholder": { en: "teammate@example.com", es: "companero@ejemplo.com" },
+  "team.invite": { en: "Invite", es: "Invitar" },
+  "team.inviting": { en: "Inviting...", es: "Invitando..." },
+  "team.pending": { en: "Pending invites", es: "Invitaciones pendientes" },
+  "team.noPending": { en: "No pending invites yet.", es: "Aún no hay invitaciones pendientes." },
+  "team.invited": { en: "Invited", es: "Invitado" },
+  "team.revoke": { en: "Revoke invite", es: "Revocar invitación" },
+  "team.success": { en: "Invite sent!", es: "¡Invitación enviada!" },
+  "team.errorDuplicate": { en: "That email is already invited.", es: "Ese correo ya está invitado." },
+  "team.errorInvalid": { en: "Enter a valid email address.", es: "Ingresa un correo válido." },
+  "team.errorPermission": { en: "We couldn't send that invite. Please ask your studio for help.", es: "No pudimos enviar la invitación. Pídele ayuda a tu estudio." },
+
   // Common
   "common.for": { en: "for", es: "para" },
   "common.on": { en: "on", es: "en" },
