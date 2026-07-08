@@ -23,6 +23,12 @@ import { useLocale } from "./locale-provider";
 import { PlanTracker, type Milestone } from "./plan-tracker";
 import { WelcomeOverlay } from "./welcome-overlay";
 import { type PortalKey } from "@/lib/portal-i18n";
+import {
+  STUDIO_WHATSAPP_URL,
+  isStudioNoteFresh,
+  studioNoteFreshness,
+} from "@/lib/studio";
+import type { StudioDesigner } from "./portal-shell";
 
 interface Request {
   id: string;
@@ -52,6 +58,9 @@ interface ClientBoardProps {
   milestones?: Milestone[];
   retainerAmount?: number | null;
   dealTerms?: string | null;
+  studioNote?: string | null;
+  studioNoteUpdatedAt?: string | null;
+  designer?: StudioDesigner | null;
 }
 
 const statusColumns = [
@@ -276,10 +285,21 @@ export function ClientBoard({
   milestones = [],
   retainerAmount = null,
   dealTerms = null,
+  studioNote = null,
+  studioNoteUpdatedAt = null,
+  designer = null,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, locale } = useLocale();
+
+  // Ambient studio presence on mobile (the sidebar is desktop-only). Only
+  // shown while the note is fresh — a stale note reads as neglect.
+  const noteText = studioNote?.trim();
+  const showStudioStrip = isStudioNoteFresh(noteText, studioNoteUpdatedAt);
+  const studioStripAge = showStudioStrip
+    ? studioNoteFreshness(studioNoteUpdatedAt, locale)
+    : null;
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(() => {
@@ -466,6 +486,40 @@ export function ClientBoard({
         </div>
         {NewRequestPill}
       </div>
+
+      {/* ── Mobile studio strip (ambient presence; sidebar is desktop-only) ──
+          Intentionally quiet so it never competes with the needs-you banner. */}
+      {showStudioStrip && noteText && (
+        <a
+          href={STUDIO_WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="md:hidden flex items-center gap-3 rounded-2xl bg-[color:rgba(28,27,31,0.03)] px-3.5 py-2.5"
+        >
+          {designer?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={designer.avatar_url}
+              alt={designer.full_name ?? "Vimi Studio"}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <span className="w-8 h-8 rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-xs shrink-0">
+              {designer?.full_name?.charAt(0).toUpperCase() || "V"}
+            </span>
+          )}
+          <div className="flex flex-col min-w-0">
+            <span className="font-serif italic text-[13px] leading-snug text-[color:var(--vimi-muted)] truncate">
+              &ldquo;{noteText}&rdquo;
+            </span>
+            {studioStripAge && (
+              <span className="text-[10.5px] text-[color:var(--vimi-faint)]">
+                {studioStripAge}
+              </span>
+            )}
+          </div>
+        </a>
+      )}
 
       {/* Mobile FAB */}
       <Link href="/portal/requests/new">

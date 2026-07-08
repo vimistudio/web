@@ -13,7 +13,7 @@ export default async function GalleryPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, client_id, clients(name)")
+    .select("role, client_id, clients!profiles_client_id_fkey(name)")
     .eq("id", user.id)
     .single();
 

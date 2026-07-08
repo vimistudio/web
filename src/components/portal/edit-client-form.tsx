@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,16 @@ interface Client {
   accent_color?: string | null;
   deal_terms?: string | null;
   studio_note?: string | null;
+  designer_id?: string | null;
 }
+
+interface AdminOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+const UNASSIGNED = "none";
 
 export function EditClientDialog({ client }: { client: Client }) {
   const router = useRouter();
@@ -50,7 +59,21 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [accentColor, setAccentColor] = useState(client.accent_color ?? "#5B4BD6");
   const [dealTerms, setDealTerms] = useState(client.deal_terms ?? "");
   const [studioNote, setStudioNote] = useState(client.studio_note ?? "");
+  const [designerId, setDesignerId] = useState(client.designer_id ?? UNASSIGNED);
+  const [admins, setAdmins] = useState<AdminOption[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load studio admins to populate the designer picker (only while open).
+  useEffect(() => {
+    if (!open) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("role", "admin")
+      .order("full_name")
+      .then(({ data }) => setAdmins(data ?? []));
+  }, [open]);
 
   const handleSave = async () => {
     if (!name.trim() || !slug.trim()) {
@@ -60,6 +83,10 @@ export function EditClientDialog({ client }: { client: Client }) {
 
     setIsSaving(true);
     const supabase = createClient();
+    // Re-stamp the note's freshness only when its text actually changed, so
+    // editing unrelated fields doesn't falsely refresh the "hace X días" caption.
+    const noteChanged =
+      (studioNote.trim() || null) !== (client.studio_note ?? null);
     const { error } = await supabase
       .from("clients")
       .update({
@@ -72,6 +99,12 @@ export function EditClientDialog({ client }: { client: Client }) {
         accent_color: accentColor.trim() || null,
         deal_terms: dealTerms.trim() || null,
         studio_note: studioNote.trim() || null,
+        designer_id: designerId === UNASSIGNED ? null : designerId,
+        ...(noteChanged && {
+          studio_note_updated_at: studioNote.trim()
+            ? new Date().toISOString()
+            : null,
+        }),
       })
       .eq("id", client.id);
 
@@ -152,6 +185,22 @@ export function EditClientDialog({ client }: { client: Client }) {
               <SelectContent position="popper" className="bg-white border shadow-lg z-50">
                 <SelectItem value="en">English</SelectItem>
                 <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client-designer">Designer</Label>
+            <Select value={designerId} onValueChange={setDesignerId}>
+              <SelectTrigger id="client-designer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper" className="bg-white border shadow-lg z-50">
+                <SelectItem value={UNASSIGNED}>Studio default</SelectItem>
+                {admins.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.full_name || a.email || "Admin"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

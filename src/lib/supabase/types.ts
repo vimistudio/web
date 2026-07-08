@@ -127,6 +127,7 @@ export type Database = {
           accent_color: string | null
           created_at: string
           deal_terms: string | null
+          designer_id: string | null
           id: string
           is_active: boolean
           locale: string
@@ -135,12 +136,14 @@ export type Database = {
           retainer_amount: number | null
           slug: string
           studio_note: string | null
+          studio_note_updated_at: string | null
           updated_at: string
         }
         Insert: {
           accent_color?: string | null
           created_at?: string
           deal_terms?: string | null
+          designer_id?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -149,12 +152,14 @@ export type Database = {
           retainer_amount?: number | null
           slug: string
           studio_note?: string | null
+          studio_note_updated_at?: string | null
           updated_at?: string
         }
         Update: {
           accent_color?: string | null
           created_at?: string
           deal_terms?: string | null
+          designer_id?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -163,9 +168,18 @@ export type Database = {
           retainer_amount?: number | null
           slug?: string
           studio_note?: string | null
+          studio_note_updated_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_designer_id_fkey"
+            columns: ["designer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comments: {
         Row: {

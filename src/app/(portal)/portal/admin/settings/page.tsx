@@ -34,7 +34,7 @@ export default async function AdminSettingsPage() {
   // Fetch ALL profiles for the Team & Roles section
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, email, full_name, avatar_url, client_id, role, first_login_at, created_at, clients(id, name)")
+    .select("id, email, full_name, avatar_url, client_id, role, first_login_at, created_at, clients!profiles_client_id_fkey(id, name)")
     .order("created_at", { ascending: false });
 
   return (

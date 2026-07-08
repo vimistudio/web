@@ -4,8 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "./locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
-import { STUDIO_WHATSAPP_URL } from "@/lib/studio";
-import type { Profile } from "./portal-shell";
+import {
+  STUDIO_WHATSAPP_URL,
+  isStudioNoteFresh,
+  studioNoteFreshness,
+} from "@/lib/studio";
+import type { Profile, StudioDesigner } from "./portal-shell";
 
 const navItems: { titleKey: PortalKey; href: string }[] = [
   { titleKey: "tab.board", href: "/portal" },
@@ -19,15 +23,26 @@ const navItems: { titleKey: PortalKey; href: string }[] = [
  * Client identity chip on top, soft-pill nav in the middle, studio contact
  * card pinned to the bottom.
  */
-export function ClientSidebar({ profile }: { profile: Profile }) {
+export function ClientSidebar({
+  profile,
+  designer,
+}: {
+  profile: Profile;
+  designer?: StudioDesigner | null;
+}) {
   const pathname = usePathname();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const client = profile.clients;
   const clientName = client?.name ?? "";
   const clientLogo = client?.logo_url;
-  // Admin-authored, per-client. Undefined before the migration lands → hidden.
+  // Admin-authored, per-client. Only shown while fresh (≤14d) — a stale
+  // presence note erodes trust more than showing nothing.
   const studioNote = client?.studio_note?.trim();
+  const noteFresh = isStudioNoteFresh(studioNote, client?.studio_note_updated_at);
+  const noteAge = noteFresh
+    ? studioNoteFreshness(client?.studio_note_updated_at, locale)
+    : null;
 
   const isActive = (href: string) =>
     href === "/portal"
@@ -84,25 +99,44 @@ export function ClientSidebar({ profile }: { profile: Profile }) {
         );
       })}
 
-      {/* Studio contact card */}
+      {/* Studio contact card — shows the assigned designer when set, else a
+          generic studio card. */}
       <div className="mt-auto flex flex-col gap-2.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white p-3.5">
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-xs shrink-0">
-            V
-          </span>
+          {designer?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={designer.avatar_url}
+              alt={designer.full_name ?? "Vimi Studio"}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <span className="w-8 h-8 rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-xs shrink-0">
+              {designer?.full_name?.charAt(0).toUpperCase() || "V"}
+            </span>
+          )}
           <div className="flex flex-col min-w-0">
             <span className="text-[12.5px] font-bold truncate text-[color:var(--vimi-ink)]">
-              Vimi Studio · Carlos
+              {designer?.full_name || "Vimi Studio"}
             </span>
-            <span className="text-[11.5px] text-[color:var(--vimi-muted)]">
-              {t("studio.tagline")}
-            </span>
+            {designer && (
+              <span className="text-[11.5px] text-[color:var(--vimi-muted)]">
+                Vimi Studio
+              </span>
+            )}
           </div>
         </div>
-        {studioNote && (
-          <p className="font-serif italic text-xs leading-relaxed text-[color:var(--vimi-muted)]">
-            &ldquo;{studioNote}&rdquo;
-          </p>
+        {noteFresh && studioNote && (
+          <div className="flex flex-col gap-1">
+            <p className="font-serif italic text-xs leading-relaxed text-[color:var(--vimi-muted)]">
+              &ldquo;{studioNote}&rdquo;
+            </p>
+            {noteAge && (
+              <span className="text-[10.5px] text-[color:var(--vimi-faint)]">
+                {noteAge}
+              </span>
+            )}
+          </div>
         )}
         <a
           href={STUDIO_WHATSAPP_URL}

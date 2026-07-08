@@ -43,6 +43,36 @@ const TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+// Resolve who receives a client-originated notification: the client's assigned
+// designer when set (and still an admin), otherwise every admin. Keeps the
+// null-designer path behaving exactly as before (fan out to all admins).
+async function resolveClientNotifyAdmins(
+  supabase: ReturnType<typeof createClient>,
+  clientId: string | null | undefined
+): Promise<{ id: string; email: string | null }[]> {
+  if (clientId) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("designer_id")
+      .eq("id", clientId)
+      .single();
+    if (client?.designer_id) {
+      const { data: designer } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("id", client.designer_id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (designer?.email) return [designer];
+    }
+  }
+  const { data: admins } = await supabase
+    .from("profiles")
+    .select("id, email")
+    .eq("role", "admin");
+  return admins ?? [];
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -151,12 +181,12 @@ export async function POST(request: Request) {
         }),
       });
 
-      // 2. Heads-up to admins.
-      const { data: admins } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .eq("role", "admin");
-      const eligibleAdmins = (admins ?? []).filter(
+      // 2. Heads-up to the client's designer (or all admins if unassigned).
+      const admins = await resolveClientNotifyAdmins(
+        supabase,
+        callerProfile.client_id
+      );
+      const eligibleAdmins = admins.filter(
         (a) => a.email && a.id !== user.id
       );
       const adminResults = await Promise.allSettled(
@@ -190,14 +220,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, sent: 0 });
       }
 
-      const { data: admins } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .eq("role", "admin");
+      const admins = await resolveClientNotifyAdmins(
+        supabase,
+        callerProfile.client_id
+      );
 
       const clientName = client_name || "a project";
       const callerName = callerProfile.full_name || "A client";
-      const eligible = (admins ?? []).filter(
+      const eligible = admins.filter(
         (a) => a.email && a.id !== user.id
       );
       const results = await Promise.allSettled(
@@ -246,11 +276,11 @@ export async function POST(request: Request) {
         "a client";
       const callerName = callerProfile.full_name || "A client";
 
-      const { data: admins } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .eq("role", "admin");
-      const eligible = (admins ?? []).filter((a) => a.email && a.id !== user.id);
+      const admins = await resolveClientNotifyAdmins(
+        supabase,
+        callerProfile.client_id
+      );
+      const eligible = admins.filter((a) => a.email && a.id !== user.id);
       const results = await Promise.allSettled(
         eligible.map((admin) =>
           sendEmail({
@@ -312,12 +342,8 @@ export async function POST(request: Request) {
         .eq("client_id", req.client_id);
       recipients = data ?? [];
     } else {
-      // Client action → notify admin(s)
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .eq("role", "admin");
-      recipients = data ?? [];
+      // Client action → notify the client's designer (or all admins if unassigned)
+      recipients = await resolveClientNotifyAdmins(supabase, req.client_id);
     }
 
     // Client-facing sends (admin → clients) localize per recipient; admin-facing
