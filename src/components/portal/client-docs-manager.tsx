@@ -72,6 +72,7 @@ export function ClientDocsDialog({
   const [rows, setRows] = useState<EditorDoc[]>([]);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Load this client's documents when the dialog opens (admin RLS allows it).
@@ -236,6 +237,17 @@ export function ClientDocsDialog({
     router.refresh();
   }
 
+  function handleDrop(row: EditorDoc, e: React.DragEvent) {
+    e.preventDefault();
+    setDraggingKey(null);
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length === 0) return;
+    if (dropped.length > 1) {
+      toast.message("One file per document — using the first one");
+    }
+    handleUpload(row, dropped[0]);
+  }
+
   async function deleteRow(row: EditorDoc) {
     if (!row.id) {
       setRows((prev) => prev.filter((r) => r.key !== row.key));
@@ -362,8 +374,18 @@ export function ClientDocsDialog({
                 />
               </div>
 
-              {/* File cell */}
-              <div className="flex flex-col gap-2 rounded-md border border-dashed p-2.5">
+              {/* File cell — click-to-browse or drag-and-drop */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDraggingKey(row.key);
+                }}
+                onDragLeave={() => setDraggingKey((k) => (k === row.key ? null : k))}
+                onDrop={(e) => handleDrop(row, e)}
+                className={`flex flex-col gap-2 rounded-md border border-dashed p-2.5 transition-colors ${
+                  draggingKey === row.key ? "border-primary bg-primary/5" : ""
+                }`}
+              >
                 {row.file_path ? (
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col min-w-0">
@@ -393,6 +415,7 @@ export function ClientDocsDialog({
                     fileInputs.current[row.key] = el;
                   }}
                   type="file"
+                  accept="application/pdf,image/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
