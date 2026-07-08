@@ -18,6 +18,9 @@ export const plan = {
 
   "plan.viewCard": { en: "View card", es: "Ver tarjeta" },
   "plan.checkedToast": { en: "Done — we've been notified", es: "¡Listo! Ya nos avisamos" },
+  "plan.undo": { en: "Undo", es: "Deshacer" },
+  "plan.uncheckedToast": { en: "Unchecked", es: "Desmarcado" },
+  "plan.waitingChip": { en: "{n} waiting on you", es: "{n} pendientes tuyos" },
   "plan.saveError": { en: "Couldn't save. Please try again.", es: "No se pudo guardar. Inténtalo de nuevo." },
   "plan.expand": { en: "Show plan", es: "Ver plan" },
   "plan.collapse": { en: "Hide plan", es: "Ocultar plan" },
