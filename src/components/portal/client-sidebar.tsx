@@ -117,11 +117,13 @@ export function ClientSidebar({
           )}
           <div className="flex flex-col min-w-0">
             <span className="text-[12.5px] font-bold truncate text-[color:var(--vimi-ink)]">
-              {designer?.full_name || "Vimi Studio · Carlos"}
+              {designer?.full_name || "Vimi Studio"}
             </span>
-            <span className="text-[11.5px] text-[color:var(--vimi-muted)]">
-              {designer ? t("studio.yourDesigner") : t("studio.tagline")}
-            </span>
+            {designer && (
+              <span className="text-[11.5px] text-[color:var(--vimi-muted)]">
+                Vimi Studio
+              </span>
+            )}
           </div>
         </div>
         {noteFresh && studioNote && (
