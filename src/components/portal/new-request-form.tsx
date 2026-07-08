@@ -468,7 +468,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           </div>
 
           {/* Bottom bar: Back + Continue — sticky on mobile above bottom tabs */}
-          <div className="fixed bottom-14 left-0 right-0 bg-[#FAF9F7]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
+          <div className="fixed bottom-14 left-0 right-0 bg-[var(--vimi-page)]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
             <div className="flex items-center gap-3 max-w-lg mx-auto md:max-w-none">
             {step > 0 ? (
               <Button

@@ -120,8 +120,8 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
         </DropdownMenu>
       </header>
 
-      {/* Desktop: dark header matching Paper design */}
-      <header className="hidden md:flex items-center justify-between bg-[#0d0f1a] px-8 py-4">
+      {/* Desktop: light header (Vimi Client Journey — cream, not dark) */}
+      <header className="hidden md:flex items-center justify-between bg-[var(--vimi-page)]/80 backdrop-blur-sm border-b border-[color:var(--vimi-border)] px-8 py-4 sticky top-0 z-40">
         {/* Logo */}
         <Link href="/portal" className="flex items-center gap-3">
           {clientLogo ? (
@@ -135,7 +135,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
             </>
           ) : (
             <Image
-              src="/vimi-logo-light.svg"
+              src="/vimi-logo-dark.svg"
               alt="Vimi Studio"
               width={140}
               height={45}
@@ -147,12 +147,12 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
         {/* Search */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="bg-[#1a1d2e] rounded-lg px-5 py-2.5 w-[400px] text-left hover:bg-[#1e2136] transition-colors"
+          className="bg-white border border-[color:var(--vimi-border)] rounded-full px-5 py-2.5 w-[400px] text-left hover:border-[color:rgba(28,27,31,0.16)] transition-colors"
         >
-          <span className="text-[#4a4d66] text-sm">
+          <span className="text-[color:var(--vimi-faint)] text-sm">
             {t("header.searchPlaceholder")}
           </span>
-          <kbd className="text-[10px] text-[#4a4d66] float-right mt-0.5 border border-[#2a2d46] rounded px-1.5 py-0.5">
+          <kbd className="text-[10px] text-[color:var(--vimi-faint)] float-right mt-0.5 border border-[color:var(--vimi-border)] rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
         </button>
@@ -160,7 +160,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
 
         {/* Right: notification + avatar */}
         <div className="flex items-center gap-4">
-          <NotificationDropdown variant="dark" />
+          <NotificationDropdown variant="light" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
