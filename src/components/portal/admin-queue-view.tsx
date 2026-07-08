@@ -107,6 +107,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
   const [sortBy, setSortBy] = useState<SortOption>("priority");
   const [showPaused, setShowPaused] = useState(false);
+  const [clientFilter, setClientFilter] = useState<string>("all");
 
   // Requests belonging to paused clients — hidden from the default view
   const pausedCount = useMemo(
@@ -120,23 +121,58 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
     [requests, showPaused]
   );
 
-  // Count per status (reflects the current inclusion set)
-  const counts = useMemo(() => {
-    const c = { all: baseRequests.length, queued: 0, in_progress: 0, review: 0 };
+  // Clients with open requests in the current inclusion set (for filter chips)
+  const clientChips = useMemo(() => {
+    const map = new Map<string, { slug: string; name: string; count: number }>();
     for (const r of baseRequests) {
+      if (!r.clients) continue;
+      const existing = map.get(r.clients.slug);
+      if (existing) existing.count++;
+      else
+        map.set(r.clients.slug, {
+          slug: r.clients.slug,
+          name: r.clients.name,
+          count: 1,
+        });
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name)
+    );
+  }, [baseRequests]);
+
+  // Narrow to the selected client (drives both list and status-tab counts)
+  const clientScoped = useMemo(
+    () =>
+      clientFilter === "all"
+        ? baseRequests
+        : baseRequests.filter((r) => r.clients?.slug === clientFilter),
+    [baseRequests, clientFilter]
+  );
+
+  // Count per status (reflects inclusion set + selected client)
+  const counts = useMemo(() => {
+    const c = { all: clientScoped.length, queued: 0, in_progress: 0, review: 0 };
+    for (const r of clientScoped) {
       if (r.status in c) {
         c[r.status as keyof typeof c]++;
       }
     }
     return c;
-  }, [baseRequests]);
+  }, [clientScoped]);
+
+  const filtersActive = activeTab !== "all" || clientFilter !== "all";
+
+  const clearFilters = () => {
+    setActiveTab("all");
+    setClientFilter("all");
+  };
 
   // Filter + sort
   const filteredRequests = useMemo(() => {
     let filtered =
       activeTab === "all"
-        ? baseRequests
-        : baseRequests.filter((r) => r.status === activeTab);
+        ? clientScoped
+        : clientScoped.filter((r) => r.status === activeTab);
 
     const sorted = [...filtered];
 
@@ -177,7 +213,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
     }
 
     return sorted;
-  }, [baseRequests, activeTab, sortBy]);
+  }, [clientScoped, activeTab, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -249,11 +285,62 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
         </div>
       </div>
 
+      {/* Client filter chips */}
+      {clientChips.length > 0 && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
+          role="tablist"
+          aria-label="Filter by client"
+        >
+          <button
+            role="tab"
+            aria-selected={clientFilter === "all"}
+            onClick={() => setClientFilter("all")}
+            className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
+              clientFilter === "all"
+                ? "bg-foreground text-white"
+                : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
+            }`}
+          >
+            All clients
+          </button>
+          {clientChips.map((chip) => {
+            const selected = clientFilter === chip.slug;
+            return (
+              <button
+                key={chip.slug}
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setClientFilter(chip.slug)}
+                className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
+                  selected
+                    ? "bg-foreground text-white"
+                    : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
+                }`}
+              >
+                {chip.name}{" "}
+                <span className={selected ? "text-white/70" : "text-gray-400"}>
+                  &middot; {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Request list */}
       {filteredRequests.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg font-medium">All clear</p>
           <p className="text-sm mt-1">No requests match this filter.</p>
+          {filtersActive && (
+            <button
+              onClick={clearFilters}
+              className="mt-4 text-sm text-primary hover:underline underline-offset-2"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="border border-gray-200 rounded-xl bg-white overflow-hidden divide-y divide-gray-100">
