@@ -44,6 +44,7 @@ import { type PortalKey } from "@/lib/portal-i18n";
 import { InstagramCarouselPreview } from "./social/instagram-carousel-preview";
 import { DirectionOrganizer } from "./admin/direction-organizer";
 import { DirectionsVoting } from "./directions-voting";
+import { AssigneeMenu, type Admin } from "./assignee-control";
 
 // --- Types ---
 
@@ -101,6 +102,7 @@ interface Request {
   updated_at: string;
   due_date: string | null;
   client_id: string;
+  assignee_id: string | null;
   voting_mode?: string | null;
   clients: { name: string; slug: string } | null;
   deliverables: Deliverable[];
@@ -154,6 +156,7 @@ interface RequestDetailProps {
   isImpersonating: boolean;
   activityLog?: ActivityEntry[];
   socialPosts?: SocialPost[];
+  admins?: Admin[];
 }
 
 // --- Carousel Tag Input (small, for admin) ---
@@ -763,6 +766,7 @@ export function RequestDetail({
   isImpersonating,
   activityLog = [],
   socialPosts = [],
+  admins = [],
 }: RequestDetailProps) {
   const router = useRouter();
   const [comment, setComment] = useState("");
@@ -1644,6 +1648,20 @@ export function RequestDetail({
                 </span>
               )}
             </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Assigned to
+                </span>
+                <AssigneeMenu
+                  requestId={request.id}
+                  assigneeId={request.assignee_id}
+                  admins={admins}
+                  size="md"
+                  showName
+                />
+              </div>
+            )}
           </div>
 
           {/* Description */}

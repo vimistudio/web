@@ -29,5 +29,17 @@ export default async function QueuePage() {
     .order("priority", { ascending: false })
     .order("updated_at", { ascending: false });
 
-  return <AdminQueueView requests={requests ?? []} adminId={user.id} />;
+  // Admin roster for the read-only assignee avatars (joined in JS, no embed).
+  const { data: admins } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("role", "admin");
+
+  return (
+    <AdminQueueView
+      requests={requests ?? []}
+      adminId={user.id}
+      admins={admins ?? []}
+    />
+  );
 }

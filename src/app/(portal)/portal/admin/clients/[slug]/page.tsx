@@ -52,11 +52,19 @@ export default async function AdminClientBoardPage({
     .order("week", { ascending: true })
     .order("sort", { ascending: true });
 
+  // Admin roster for the per-request assignee control (joined in JS, never
+  // embedded on requests — keeps requests↔profiles embed-free).
+  const { data: admins } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("role", "admin");
+
   return (
     <AdminBoard
       client={client}
       requests={requests ?? []}
       milestones={milestones ?? []}
+      admins={admins ?? []}
     />
   );
 }

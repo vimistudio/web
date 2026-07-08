@@ -12,6 +12,7 @@ import {
   Download01Icon,
 } from "@/components/ui/icons";
 import { formatDistanceToNow } from "date-fns";
+import { AssigneeAvatar, type Admin } from "./assignee-control";
 
 // --- Types ---
 
@@ -21,6 +22,7 @@ interface QueueRequest {
   type: string;
   status: "queued" | "in_progress" | "review" | "done";
   priority: number;
+  assignee_id: string | null;
   created_at: string;
   updated_at: string;
   due_date: string | null;
@@ -32,6 +34,7 @@ interface QueueRequest {
 interface AdminQueueViewProps {
   requests: QueueRequest[];
   adminId: string;
+  admins: Admin[];
 }
 
 // --- Constants ---
@@ -103,7 +106,7 @@ function isOverdue(dueDate: string): boolean {
 
 // --- Component ---
 
-export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
+export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProps) {
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
   const [sortBy, setSortBy] = useState<SortOption>("priority");
   const [showPaused, setShowPaused] = useState(false);
@@ -350,6 +353,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
               key={request.id}
               request={request}
               adminId={adminId}
+              admins={admins}
             />
           ))}
         </div>
@@ -363,9 +367,11 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
 function QueueRow({
   request,
   adminId,
+  admins,
 }: {
   request: QueueRequest;
   adminId: string;
+  admins: Admin[];
 }) {
   const router = useRouter();
   const newComment = hasNewComment(request, adminId);
@@ -448,6 +454,11 @@ function QueueRow({
           {/* Due date */}
           <DueDateLabel dueDate={request.due_date} />
 
+          {/* Assignee (read-only here; reassign on the board or detail page) */}
+          <span className="shrink-0">
+            <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
+          </span>
+
           {/* Time since update */}
           <span className="shrink-0 text-xs text-muted-foreground w-20 text-right">
             {formatDistanceToNow(new Date(request.updated_at), {
@@ -482,6 +493,8 @@ function QueueRow({
             )}
 
             {paused && <PausedChip />}
+
+            <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">

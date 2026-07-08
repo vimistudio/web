@@ -107,6 +107,16 @@ export default async function RequestDetailPage({
 
   const clientName = request.clients?.name ?? "Client";
 
+  // Admin roster for the assignee control (admins only; joined in JS, never
+  // embedded on the request — keeps requests↔profiles embed-free).
+  const { data: admins } =
+    profile.role === "admin"
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .eq("role", "admin")
+      : { data: [] };
+
   // Fetch social posts for this request (if any)
   const { data: socialPosts } = await supabase
     .from("social_posts")
@@ -141,6 +151,7 @@ export default async function RequestDetailPage({
       isImpersonating={isImpersonating}
       activityLog={activityLog ?? []}
       socialPosts={socialPostsWithUrls}
+      admins={admins ?? []}
     />
   );
 }
