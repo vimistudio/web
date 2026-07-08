@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -23,6 +30,8 @@ interface Client {
   slug: string;
   retainer_amount: number | null;
   is_active: boolean;
+  locale?: string | null;
+  logo_url?: string | null;
 }
 
 export function EditClientDialog({ client }: { client: Client }) {
@@ -32,6 +41,8 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [slug, setSlug] = useState(client.slug);
   const [retainer, setRetainer] = useState(client.retainer_amount ?? 0);
   const [isActive, setIsActive] = useState(client.is_active);
+  const [locale, setLocale] = useState(client.locale ?? "en");
+  const [logoUrl, setLogoUrl] = useState(client.logo_url ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -49,6 +60,8 @@ export function EditClientDialog({ client }: { client: Client }) {
         slug: slug.trim().toLowerCase().replace(/\s+/g, "-"),
         retainer_amount: retainer,
         is_active: isActive,
+        locale,
+        logo_url: logoUrl.trim() || null,
       })
       .eq("id", client.id);
 
@@ -118,6 +131,28 @@ export function EditClientDialog({ client }: { client: Client }) {
               type="number"
               value={retainer}
               onChange={(e) => setRetainer(Number(e.target.value))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client-locale">Language</Label>
+            <Select value={locale} onValueChange={setLocale}>
+              <SelectTrigger id="client-locale">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper" className="bg-white border shadow-lg z-50">
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client-logo">Logo URL</Label>
+            <Input
+              id="client-logo"
+              type="url"
+              placeholder="https://…/logo.svg"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
             />
           </div>
           <div className="flex items-center justify-between">

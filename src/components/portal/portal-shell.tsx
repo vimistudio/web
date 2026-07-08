@@ -37,7 +37,13 @@ interface PortalShellProps {
 
 export function PortalShell({ user, profile, children }: PortalShellProps) {
   const isAdmin = profile.role === "admin";
-  const locale = (profile.locale as Locale) || "en";
+  // Fall back to the client's configured locale when the user hasn't made an
+  // explicit language choice, so an invited client sees their studio's default
+  // language (e.g. Spanish for SCARTS) before touching profile settings.
+  const locale =
+    (profile.locale as Locale) ||
+    (profile.clients?.locale as Locale) ||
+    "en";
 
   if (isAdmin) {
     return (

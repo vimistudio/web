@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PlusSignIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import Image from "next/image";
@@ -39,6 +46,8 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [retainer, setRetainer] = useState("");
+  const [locale, setLocale] = useState("en");
+  const [logoUrl, setLogoUrl] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateClient = async () => {
@@ -56,11 +65,15 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       name: name.trim(),
       slug,
       retainer_amount: retainer ? parseInt(retainer) : 0,
+      locale,
+      logo_url: logoUrl.trim() || null,
     });
 
     if (!error) {
       setName("");
       setRetainer("");
+      setLocale("en");
+      setLogoUrl("");
       setIsOpen(false);
       router.refresh();
     }
@@ -99,6 +112,27 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                   placeholder="e.g. 400"
                   value={retainer}
                   onChange={(e) => setRetainer(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <Select value={locale} onValueChange={setLocale}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="bg-white border shadow-lg z-50">
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Español</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Logo URL</Label>
+                <Input
+                  type="url"
+                  placeholder="https://…/logo.svg"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
                 />
               </div>
               <Button
