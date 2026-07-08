@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -86,12 +86,28 @@ export function PlanTracker({
   const doneCount = milestones.filter((m) => m.status === "done").length;
   const progressPct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
-  const needsItems = milestones.filter((m) => m.needs_client && !m.client_done);
+  // All client-owed items form the checklist; pending ones drive the "action
+  // needed" signals (auto-expand heuristic, collapsed chip, pulse dot).
+  const needsClientItems = milestones.filter((m) => m.needs_client);
+  const needsItems = needsClientItems.filter((m) => !m.client_done);
   const hasCurrent = milestones.some((m) => m.status === "current");
 
   const [expanded, setExpanded] = useState(
     () => needsItems.length > 0 || hasCurrent
   );
+
+  // Admin notify fires only after the undo window; keyed by milestone id so
+  // multiple check-offs stay independent. Cleared on undo, uncheck, or unmount.
+  const notifyTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
+  useEffect(() => {
+    const timers = notifyTimers.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   // Lowest week with an unfinished milestone → "Semana X de 4" (display clamps
   // to 4; week 5 is the final-delivery bucket).
@@ -140,39 +156,82 @@ export function PlanTracker({
 
   if (total === 0) return null;
 
-  async function handleCheck(id: string) {
-    if (pending.has(id)) return;
-    setPending((p) => new Set(p).add(id));
+  const setClientDone = (id: string, value: boolean) =>
     setMilestones((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, client_done: true } : m))
+      prev.map((m) => (m.id === id ? { ...m, client_done: value } : m))
     );
 
-    const supabase = createClient();
-    const { error } = await supabase
+  const persistClientDone = (id: string, value: boolean) =>
+    createClient()
       .from("client_milestones")
-      .update({ client_done: true })
+      .update({ client_done: value })
       .eq("id", id);
 
+  function cancelNotify(id: string) {
+    const timer = notifyTimers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      notifyTimers.current.delete(id);
+    }
+  }
+
+  // Revert a just-checked item before the notify fires — no email is sent.
+  async function undoCheck(id: string) {
+    cancelNotify(id);
+    setClientDone(id, false);
+    const { error } = await persistClientDone(id, false);
+    if (error) {
+      setClientDone(id, true);
+      toast.error(t("plan.saveError"));
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleToggle(id: string) {
+    if (pending.has(id)) return;
+    const current = milestones.find((m) => m.id === id);
+    if (!current) return;
+    const next = !current.client_done;
+
+    setPending((p) => new Set(p).add(id));
+    setClientDone(id, next);
+
+    const { error } = await persistClientDone(id, next);
+
     setPending((p) => {
-      const next = new Set(p);
-      next.delete(id);
-      return next;
+      const nextPending = new Set(p);
+      nextPending.delete(id);
+      return nextPending;
     });
 
     if (error) {
-      setMilestones((prev) =>
-        prev.map((m) => (m.id === id ? { ...m, client_done: false } : m))
-      );
+      setClientDone(id, !next);
       toast.error(t("plan.saveError"));
       return;
     }
 
-    toast.success(t("plan.checkedToast"));
-    fetch("/api/portal/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "milestone_done", milestone_id: id }),
-    }).catch(() => {});
+    if (next) {
+      // Delay the admin notify past the undo window; cancel on undo/uncheck.
+      const timer = setTimeout(() => {
+        notifyTimers.current.delete(id);
+        fetch("/api/portal/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "milestone_done", milestone_id: id }),
+        }).catch(() => {});
+      }, 8000);
+      notifyTimers.current.set(id, timer);
+
+      toast.success(t("plan.checkedToast"), {
+        duration: 7000,
+        action: { label: t("plan.undo"), onClick: () => undoCheck(id) },
+      });
+    } else {
+      // Unchecking: kill any pending notify, never send one.
+      cancelNotify(id);
+      toast(t("plan.uncheckedToast"));
+    }
     router.refresh();
   }
 
@@ -296,8 +355,9 @@ export function PlanTracker({
             ))}
           </div>
 
-          {/* What we need from you (Von Restorff amber) */}
-          {needsItems.length > 0 && (
+          {/* What we need from you (Von Restorff amber) — a toggleable
+              checklist; checked items stay so a mis-tap can be undone. */}
+          {needsClientItems.length > 0 && (
             <div
               className="rounded-2xl border p-4 flex flex-col gap-3"
               style={{ background: "var(--status-review-bg)", borderColor: "rgba(201,130,27,0.35)" }}
@@ -305,7 +365,7 @@ export function PlanTracker({
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="w-[9px] h-[9px] rounded-full animate-pulse shrink-0"
+                    className={`w-[9px] h-[9px] rounded-full shrink-0 ${needsItems.length > 0 ? "animate-pulse" : ""}`}
                     style={{ background: "var(--status-review)" }}
                   />
                   <span className="text-sm font-bold text-[color:var(--vimi-ink)]">
@@ -313,28 +373,42 @@ export function PlanTracker({
                   </span>
                 </div>
                 <span className="text-[13px] text-[color:var(--vimi-muted)] pl-[17px]">
-                  {t("plan.needsSub")}
+                  {needsItems.length > 0 ? t("plan.needsSub") : t("plan.allCaughtUp")}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                {needsItems.map((m) => (
+                {needsClientItems.map((m) => (
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => handleCheck(m.id)}
+                    onClick={() => handleToggle(m.id)}
                     disabled={pending.has(m.id)}
+                    aria-pressed={m.client_done}
                     className="flex items-start gap-3 text-left rounded-xl px-2 py-2 min-h-[44px] transition-colors hover:bg-[color:rgba(201,130,27,0.08)] disabled:opacity-60"
                   >
                     <span
                       className="mt-0.5 w-5 h-5 rounded-md border-2 shrink-0 flex items-center justify-center"
-                      style={{ borderColor: "var(--status-review)" }}
+                      style={{
+                        borderColor: "var(--status-review)",
+                        background: m.client_done ? "var(--status-review)" : "transparent",
+                      }}
                     >
-                      {pending.has(m.id) && (
-                        <span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-review)" }} />
+                      {m.client_done ? (
+                        <CheckmarkCircle01Icon size={14} color="#fff" />
+                      ) : (
+                        pending.has(m.id) && (
+                          <span className="w-2 h-2 rounded-sm" style={{ background: "var(--status-review)" }} />
+                        )
                       )}
                     </span>
                     <span className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-sm font-medium text-[color:var(--vimi-ink)] leading-snug text-pretty">
+                      <span
+                        className={`text-sm font-medium leading-snug text-pretty ${
+                          m.client_done
+                            ? "text-[color:var(--vimi-muted)] line-through decoration-[color:var(--vimi-faint)]"
+                            : "text-[color:var(--vimi-ink)]"
+                        }`}
+                      >
                         {m.title}
                       </span>
                       {m.description && (
