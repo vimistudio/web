@@ -210,6 +210,7 @@ export function AdminSettingsView({
       <TeamRolesSection
         profiles={profiles}
         clients={clients}
+        invites={invites}
         currentUserId={currentUserId}
       />
 

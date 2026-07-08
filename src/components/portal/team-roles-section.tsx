@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontalIcon } from "@/components/ui/icons";
+import { MoreHorizontalIcon, CheckmarkCircle01Icon } from "@/components/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/lib/supabase/client";
+import { applyInvite } from "@/lib/portal/invites";
 import { toast } from "sonner";
 
 interface Client {
@@ -53,9 +54,17 @@ export interface Profile {
   clients: { id: string; name: string } | null;
 }
 
+interface PendingInvite {
+  email: string;
+  client_id: string;
+  role: string;
+  clients: { name: string } | null;
+}
+
 interface TeamRolesSectionProps {
   profiles: Profile[];
   clients: Client[];
+  invites: PendingInvite[];
   currentUserId: string;
 }
 
@@ -64,6 +73,7 @@ const displayName = (p: Profile) => p.full_name || p.email || "Unknown user";
 export function TeamRolesSection({
   profiles,
   clients,
+  invites,
   currentUserId,
 }: TeamRolesSectionProps) {
   const router = useRouter();
@@ -77,6 +87,40 @@ export function TeamRolesSection({
     () => profiles.filter((p) => p.role === "admin").length,
     [profiles]
   );
+
+  // Map lowercased email -> pending invite, to surface stale-invite hints.
+  const inviteByEmail = useMemo(() => {
+    const map = new Map<string, PendingInvite>();
+    for (const inv of invites) map.set(inv.email.toLowerCase(), inv);
+    return map;
+  }, [invites]);
+
+  const handleApplyInvite = async (
+    profile: Profile,
+    invite: PendingInvite
+  ) => {
+    setBusyId(profile.id);
+    const supabase = createClient();
+    const result = await applyInvite(supabase, {
+      profileId: profile.id,
+      email: invite.email,
+      clientId: invite.client_id,
+    });
+    setBusyId(null);
+    if (result.error) {
+      toast.error(
+        result.partial
+          ? `Role updated but couldn't clear the invite: ${result.error}`
+          : result.error
+      );
+      if (result.partial) router.refresh();
+      return;
+    }
+    toast.success(
+      `${displayName(profile)} is now a Client of ${invite.clients?.name ?? "their project"}`
+    );
+    router.refresh();
+  };
 
   const changeRole = async (profile: Profile, newRole: "admin" | "client") => {
     setBusyId(profile.id);
@@ -142,6 +186,10 @@ export function TeamRolesSection({
               const isSelf = profile.id === currentUserId;
               const isAdmin = profile.role === "admin";
               const isLastAdmin = isAdmin && adminCount <= 1;
+              const pendingInvite = profile.email
+                ? inviteByEmail.get(profile.email.toLowerCase())
+                : undefined;
+              const showStaleHint = isAdmin && !!pendingInvite;
               const busy = busyId === profile.id;
 
               // Guards for demotion / de-access.
@@ -194,6 +242,18 @@ export function TeamRolesSection({
                               : profile.clients?.name ?? "—"}
                           </span>
                         </div>
+                        {showStaleHint && (
+                          <button
+                            onClick={() =>
+                              handleApplyInvite(profile, pendingInvite!)
+                            }
+                            disabled={busy}
+                            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#FFF3DE] text-[color:var(--status-review-ink)] text-[11px] px-2.5 py-1 hover:bg-[#FFE9C7] transition-colors disabled:opacity-50"
+                          >
+                            <CheckmarkCircle01Icon size={13} />
+                            Has a pending client invite — Apply invite
+                          </button>
+                        )}
                       </div>
                     </div>
 
