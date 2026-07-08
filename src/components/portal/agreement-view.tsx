@@ -220,11 +220,12 @@ export function AgreementView({
               </span>
             </div>
           </div>
+          {/* Mobile only: on desktop the sidebar already carries this WhatsApp CTA. */}
           <a
             href={STUDIO_WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-full bg-[#1FAF5A] px-3 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            className="md:hidden flex items-center justify-center gap-2 rounded-full bg-[#1FAF5A] px-3 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
           >
             {t("agreement.whatsapp")}
           </a>
