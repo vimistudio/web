@@ -674,6 +674,15 @@ export function PlanEditorDialog({
   const doneCount = rows.filter((r) => r.status === "done").length;
   const owedCount = rows.filter((r) => r.needs_client).length;
 
+  const progressPct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  const previewItems = useMemo(
+    () =>
+      rows
+        .filter((r) => segOf(r.week) === currentWeek)
+        .sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title)),
+    [rows, currentWeek]
+  );
+
   const templates = useMemo(
     () => sources.filter((s) => s.isTemplate && s.count > 0),
     [sources]
@@ -1493,13 +1502,200 @@ export function PlanEditorDialog({
           </div>
         )}
 
-        {/* TAB: CLIENT PREVIEW (built in a later commit) */}
+        {/* TAB: CLIENT PREVIEW — derived live from editor state */}
         {tab === "preview" && (
           <div
-            style={{ padding: "20px 28px 28px", flex: 1, overflowY: "auto" }}
-            className="text-sm text-[color:var(--vimi-muted)]"
+            style={{
+              padding: "20px 28px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              flex: 1,
+              overflowY: "auto",
+            }}
           >
-            Vista del cliente — próximamente.
+            <p style={{ margin: 0, fontSize: 12.5, color: "var(--vimi-faint)" }}>
+              Exactamente lo que {clientName} ve en su tablero — se actualiza en
+              vivo con cada cambio del plan.
+            </p>
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid rgba(28,27,31,.08)",
+                borderRadius: 18,
+                padding: "22px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  className="font-serif italic"
+                  style={{ fontSize: 19 }}
+                >
+                  Tu plan del mes 01
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: ".1em",
+                    color: "var(--vimi-muted)",
+                  }}
+                >
+                  SEMANA {Math.min(4, currentWeek)} DE 4
+                </span>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "var(--accent)",
+                  }}
+                >
+                  {progressPct}% completado
+                </span>
+              </div>
+              <div
+                style={{
+                  height: 5,
+                  borderRadius: 99,
+                  background: "rgba(28,27,31,.07)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${progressPct}%`,
+                    borderRadius: 99,
+                    background: "var(--accent)",
+                    transition: "width .4s ease",
+                  }}
+                />
+              </div>
+              {previewItems.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
+                  Aún no hay hitos en esta semana.
+                </p>
+              ) : (
+                previewItems.map((p) => {
+                  const color =
+                    p.status === "done"
+                      ? "var(--status-done)"
+                      : p.status === "current"
+                        ? "var(--accent)"
+                        : p.status === "delayed"
+                          ? "#B03A5B"
+                          : "var(--vimi-faint)";
+                  return (
+                    <div
+                      key={p.key}
+                      style={{ display: "flex", gap: 11, alignItems: "flex-start" }}
+                    >
+                      <span
+                        className={
+                          p.status === "current" ? "motion-safe:animate-pulse" : ""
+                        }
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 99,
+                          background: color,
+                          marginTop: 5,
+                          flex: "none",
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 9.5,
+                              fontWeight: 800,
+                              letterSpacing: ".08em",
+                              background: "rgba(28,27,31,.06)",
+                              borderRadius: 5,
+                              padding: "3px 6px",
+                              color: "var(--vimi-muted)",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {p.track}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 13.5,
+                              fontWeight: 700,
+                              textDecoration:
+                                p.status === "done" ? "line-through" : "none",
+                              color:
+                                p.status === "done"
+                                  ? "var(--vimi-muted)"
+                                  : "var(--vimi-ink)",
+                            }}
+                          >
+                            {p.title || "Sin título"}
+                          </span>
+                          {p.needs_client && (
+                            <span
+                              style={{
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                letterSpacing: ".06em",
+                                background: "var(--status-review-chip)",
+                                color: "var(--status-review-ink)",
+                                borderRadius: 5,
+                                padding: "3px 6px",
+                              }}
+                            >
+                              TE TOCA
+                            </span>
+                          )}
+                        </div>
+                        {p.description.trim() && (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: "var(--vimi-faint)",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {p.description}
+                          </span>
+                        )}
+                        {p.status === "delayed" && p.delay_note.trim() && (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: "#B03A5B",
+                              lineHeight: 1.5,
+                              fontWeight: 500,
+                            }}
+                          >
+                            {p.delay_note}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
 
