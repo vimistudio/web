@@ -37,7 +37,14 @@ export default async function AdminDashboardPage() {
   // Get request counts per status
   const { data: requests } = await supabase
     .from("requests")
-    .select("id, client_id, status, updated_at, created_at, title");
+    .select("id, client_id, status, updated_at, created_at, title, due_date");
+
+  // Client-owed plan items (milestones the client still has to tick off)
+  const { data: owedMilestones } = await supabase
+    .from("client_milestones")
+    .select("id, client_id, title, request_id")
+    .eq("needs_client", true)
+    .eq("client_done", false);
 
   // Get recent comments for activity feed (exclude admin's own)
   // Uses explicit FK hint since author_id has FKs to both auth.users and profiles
@@ -70,6 +77,69 @@ export default async function AdminDashboardPage() {
     (sum, c) => sum + (c.retainer_amount ?? 0),
     0
   ) ?? 0;
+
+  // Needs-attention strip (Pareto): the few things that actually need action
+  // today, active clients only, ordered review > overdue > owed, capped at 5.
+  const clientById = new Map((clients ?? []).map((c) => [c.id, c]));
+  const accentFor = (id: string) =>
+    (clientById.get(id)?.accent_color as string | null) || "#5B4BD6";
+  const nameFor = (id: string) => clientById.get(id)?.name ?? "Client";
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const reviewRequests = activeRequests
+    .filter((r) => r.status === "review")
+    .sort(
+      (a, b) =>
+        new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+    );
+  const reviewRequestIds = new Set(reviewRequests.map((r) => r.id));
+  const reviewItems = reviewRequests.map((r) => ({
+    id: `review-${r.id}`,
+    kind: "review" as const,
+    clientName: nameFor(r.client_id),
+    clientColor: accentFor(r.client_id),
+    text: r.title,
+    href: `/portal/requests/${r.id}`,
+  }));
+
+  const overdueItems = activeRequests
+    .filter(
+      (r) =>
+        r.status !== "done" &&
+        r.due_date &&
+        new Date(r.due_date) < todayStart &&
+        !reviewRequestIds.has(r.id)
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.due_date as string).getTime() -
+        new Date(b.due_date as string).getTime()
+    )
+    .map((r) => ({
+      id: `overdue-${r.id}`,
+      kind: "overdue" as const,
+      clientName: nameFor(r.client_id),
+      clientColor: accentFor(r.client_id),
+      text: r.title,
+      href: `/portal/requests/${r.id}`,
+    }));
+
+  const owedItems = (owedMilestones ?? [])
+    .filter((m) => activeClientIds.has(m.client_id))
+    .map((m) => ({
+      id: `owed-${m.id}`,
+      kind: "owed" as const,
+      clientName: nameFor(m.client_id),
+      clientColor: accentFor(m.client_id),
+      text: m.title,
+      href: m.request_id
+        ? `/portal/requests/${m.request_id}`
+        : `/portal/admin/clients/${clientById.get(m.client_id)?.slug ?? ""}`,
+    }));
+
+  const attention = [...reviewItems, ...overdueItems, ...owedItems].slice(0, 5);
 
   // Build per-client request summaries with hot requests and last-active
   const clientSummaries = (clients ?? []).map((client) => {
@@ -129,6 +199,7 @@ export default async function AdminDashboardPage() {
         }}
         clients={clientSummaries}
         recentActivity={recentComments ?? []}
+        attention={attention}
         adminName={profile.full_name ?? undefined}
       />
     </>

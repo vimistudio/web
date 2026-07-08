@@ -51,11 +51,82 @@ interface Activity {
   requests: { id: string; title: string; client_id: string; clients: { name: string } | null } | null;
 }
 
+type AttentionKind = "review" | "overdue" | "owed";
+
+interface AttentionItem {
+  id: string;
+  kind: AttentionKind;
+  clientName: string;
+  clientColor: string;
+  text: string;
+  href: string;
+}
+
 interface AdminDashboardProps {
   stats: Stats;
   clients: ClientSummary[];
   recentActivity: Activity[];
+  attention?: AttentionItem[];
   adminName?: string;
+}
+
+const attentionConfig: Record<
+  AttentionKind,
+  { badge: string; badgeBg: string; badgeColor: string; border: string; cta: string }
+> = {
+  review: {
+    badge: "REVIEW",
+    badgeBg: "var(--status-review-chip)",
+    badgeColor: "var(--status-review-ink)",
+    border: "rgba(201,130,27,0.40)",
+    cta: "Review",
+  },
+  overdue: {
+    badge: "OVERDUE",
+    badgeBg: "#FBEAEE",
+    badgeColor: "#B03A5B",
+    border: "rgba(176,58,91,0.40)",
+    cta: "Open",
+  },
+  owed: {
+    badge: "AWAITING CLIENT",
+    badgeBg: "#F1EEFB",
+    badgeColor: "#5B4BD6",
+    border: "rgba(91,75,214,0.35)",
+    cta: "View",
+  },
+};
+
+function AttentionRow({ item }: { item: AttentionItem }) {
+  const cfg = attentionConfig[item.kind];
+  return (
+    <div
+      className="rounded-2xl border-[1.5px] bg-[var(--vimi-card)] px-4 sm:px-5 py-3.5 flex items-center gap-3 flex-wrap"
+      style={{ borderColor: cfg.border }}
+    >
+      <span
+        className="w-2.5 h-2.5 rounded-[4px] shrink-0"
+        style={{ background: item.clientColor }}
+      />
+      <span className="text-[13px] font-bold text-[color:var(--vimi-ink)] shrink-0">
+        {item.clientName}
+      </span>
+      <span className="text-[13.5px] text-[color:var(--vimi-muted)] flex-1 min-w-[180px]">
+        {item.text}
+      </span>
+      <span
+        className="text-[11px] font-bold tracking-[0.06em] rounded-md px-2 py-1 shrink-0"
+        style={{ background: cfg.badgeBg, color: cfg.badgeColor }}
+      >
+        {cfg.badge}
+      </span>
+      <Link href={item.href} className="shrink-0">
+        <button className="inline-flex items-center bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] rounded-full px-4 py-2 text-[12.5px] font-semibold transition-transform hover:-translate-y-0.5 min-h-[36px]">
+          {cfg.cta}
+        </button>
+      </Link>
+    </div>
+  );
 }
 
 const statCards = [
@@ -216,7 +287,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
   );
 }
 
-export function AdminDashboard({ stats, clients, recentActivity, adminName }: AdminDashboardProps) {
+export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName }: AdminDashboardProps) {
   const { hidden: pricesHidden } = usePricePrivacy();
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
@@ -288,6 +359,25 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
           );
         })}
       </div>
+
+      {/* Needs attention (Pareto) — hidden entirely when nothing needs action */}
+      {attention.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-[color:var(--vimi-ink)]">
+              Needs attention
+            </h2>
+            <p className="text-sm text-[color:var(--vimi-muted)] mt-0.5">
+              The 20% that matters today. Everything else can wait.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {attention.map((item) => (
+              <AttentionRow key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Clients Section */}
       <div>
