@@ -10,8 +10,20 @@ export const form = {
   "form.name.subtitle": { en: "A short name so your designer knows what to expect.", es: "Un nombre corto para que tu diseñador sepa qué esperar." },
   "form.name.placeholder": { en: "e.g. Instagram story templates, Logo refresh...", es: "ej. Plantillas para Instagram, Rediseño de logo..." },
 
-  "form.type.title": { en: "What kind of project is this?", es: "¿Qué tipo de proyecto es?" },
-  "form.type.subtitle": { en: "Pick the closest match. You can always add details later.", es: "Elige la opción más cercana. Siempre puedes agregar detalles después." },
+  "form.type.title": { en: "What do you need?", es: "¿Qué necesitas?" },
+  "form.type.subtitle": { en: "Pick the closest match. You can always add details next.", es: "Elige la opción más cercana. Siempre puedes agregar detalles después." },
+  "form.type.startFresh": { en: "Or start fresh", es: "O empieza de cero" },
+
+  "form.essentials.title": { en: "Tell us the essentials", es: "Cuéntanos lo esencial" },
+  "form.essentials.subtitle": { en: "Just what your designer needs to start — nothing more.", es: "Solo lo que tu diseñador necesita para empezar — nada más." },
+  "form.essentials.titleLabel": { en: "Title", es: "Título" },
+  "form.essentials.briefLabel": { en: "Brief", es: "Brief" },
+  "form.essentials.timelineLabel": { en: "Timeline", es: "Plazo" },
+  "form.essentials.needTitle": { en: "Add a title to continue", es: "Agrega un título para continuar" },
+
+  "form.review.title": { en: "Looks right?", es: "¿Se ve bien?" },
+  "form.review.subtitle": { en: "This lands directly with your designer.", es: "Esto llega directo a tu diseñador." },
+  "form.reviewAndSend": { en: "Review & send", es: "Revisar y enviar" },
   "form.type.logo": { en: "Logo Design", es: "Diseño de logo" },
   "form.type.logo.desc": { en: "A logo or icon for your brand", es: "Un logo o ícono para tu marca" },
   "form.type.social": { en: "Social Media", es: "Redes sociales" },
@@ -54,6 +66,7 @@ export const form = {
   "form.summary.request": { en: "Request", es: "Solicitud" },
   "form.summary.type": { en: "Type", es: "Tipo" },
   "form.summary.timeline": { en: "Timeline", es: "Plazo" },
+  "form.summary.priority": { en: "Priority", es: "Prioridad" },
   "form.summary.untitled": { en: "Untitled request", es: "Solicitud sin título" },
 
   "form.continue": { en: "Continue", es: "Continuar" },
