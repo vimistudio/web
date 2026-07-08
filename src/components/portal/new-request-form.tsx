@@ -288,7 +288,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 {/* Based on your history — reuse a past brief (Jakob's Law) */}
                 {suggestions.length > 0 && (
                   <div className="space-y-2 pt-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                       {t("form.history.heading")}
                     </p>
                     {suggestions.map((r, i) => {
@@ -317,7 +317,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 )}
 
                 {suggestions.length > 0 && (
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)] pt-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)] pt-1">
                     {t("form.type.startFresh")}
                   </p>
                 )}
@@ -368,7 +368,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.titleLabel")}
                   </label>
                   <Input
@@ -382,7 +382,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.briefLabel")}
                   </label>
                   <Textarea
@@ -472,7 +472,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.timelineLabel")}
                   </label>
                   <div className="space-y-2">
