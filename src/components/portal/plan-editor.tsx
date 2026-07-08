@@ -33,6 +33,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Status = "upcoming" | "current" | "done" | "delayed";
 type TabKey = "editor" | "templates" | "preview";
@@ -75,7 +85,21 @@ interface PlanEditorProps {
 }
 
 const NONE = "__none__";
+const TEMPLATE_PREFIX = "Plantilla";
 let draftSeq = 0;
+
+// A plan source = any client that has milestones (a "Plantilla …" client is a
+// studio template; everyone else copies as a client/month rollover).
+interface SourceAgg {
+  id: string;
+  name: string; // raw client name
+  displayName: string; // template prefix stripped for cards
+  count: number;
+  weeks: number; // distinct weeks spanned
+  owed: number; // needs_client count
+  isTemplate: boolean;
+  isCurrent: boolean;
+}
 
 // Track chip palette — distinct hue per track label, assigned by order.
 const TRACK_PALETTE = ["#5B4BD6", "#4064C9", "#2E8B57", "#C9821B", "#B03A5B", "#7A5CD0"];
@@ -510,6 +534,126 @@ export function PlanEditorDialog({
     router.refresh();
   }
 
+  // ── Plantillas tab: roster of clients-with-milestones ──
+  const [sources, setSources] = useState<SourceAgg[]>([]);
+  const [loadingSources, setLoadingSources] = useState(false);
+  const [pendingSource, setPendingSource] = useState<SourceAgg | null>(null);
+
+  useEffect(() => {
+    if (!open || tab !== "templates") return;
+    let cancelled = false;
+    (async () => {
+      setLoadingSources(true);
+      const supabase = createClient();
+      // Single-FK embed client_milestones → clients (safe, not a
+      // profiles↔clients relationship).
+      const { data } = await supabase
+        .from("client_milestones")
+        .select("client_id, week, needs_client, clients(name)");
+      if (cancelled) return;
+      const grouped = new Map<
+        string,
+        { name: string; count: number; weeks: Set<number>; owed: number }
+      >();
+      for (const row of data ?? []) {
+        const name =
+          (row as { clients?: { name?: string } | null }).clients?.name ??
+          "Cliente";
+        const g =
+          grouped.get(row.client_id) ??
+          { name, count: 0, weeks: new Set<number>(), owed: 0 };
+        g.count += 1;
+        g.weeks.add(segOf(row.week));
+        if (row.needs_client) g.owed += 1;
+        grouped.set(row.client_id, g);
+      }
+      const aggregated: SourceAgg[] = Array.from(grouped.entries()).map(
+        ([id, g]) => {
+          const isTemplate = g.name.startsWith(TEMPLATE_PREFIX);
+          const displayName = isTemplate
+            ? g.name.replace(/^Plantilla\s*[—-]\s*/, "").trim() || g.name
+            : g.name;
+          return {
+            id,
+            name: g.name,
+            displayName,
+            count: g.count,
+            weeks: g.weeks.size,
+            owed: g.owed,
+            isTemplate,
+            isCurrent: id === clientId,
+          };
+        }
+      );
+      setSources(aggregated.sort((a, b) => a.name.localeCompare(b.name)));
+      setLoadingSources(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, tab, clientId]);
+
+  async function applyPlan(source: SourceAgg, mode: "replace" | "add") {
+    setPendingSource(null);
+    const supabase = createClient();
+    // request_id / delay_note / client_done are always reset, so not even read.
+    const { data: srcRows, error: readErr } = await supabase
+      .from("client_milestones")
+      .select("track, week, title, description, needs_client, sort")
+      .eq("client_id", source.id)
+      .order("week", { ascending: true })
+      .order("sort", { ascending: true });
+    if (readErr || !srcRows || srcRows.length === 0) {
+      toast.error("No se pudo leer ese plan");
+      return;
+    }
+    const payload = srcRows.map((r) => ({
+      client_id: clientId,
+      track: r.track,
+      week: r.week,
+      title: r.title,
+      description: r.description,
+      status: "upcoming",
+      needs_client: r.needs_client,
+      client_done: false,
+      delay_note: null,
+      request_id: null,
+      sort: r.sort,
+    }));
+    beginSave();
+    if (mode === "replace") {
+      const { error: delErr } = await supabase
+        .from("client_milestones")
+        .delete()
+        .eq("client_id", clientId);
+      if (delErr) {
+        endSave();
+        toast.error("No se pudo limpiar el plan actual");
+        return;
+      }
+    }
+    const { error: insErr } = await supabase
+      .from("client_milestones")
+      .insert(payload);
+    endSave();
+    if (insErr) {
+      toast.error("No se pudo aplicar el plan");
+      reloadRows();
+      return;
+    }
+    toast.success(
+      `Se aplicaron ${payload.length} hito${payload.length === 1 ? "" : "s"}`
+    );
+    await reloadRows();
+    setTab("editor");
+    router.refresh();
+  }
+
+  function onApplyClick(source: SourceAgg) {
+    if (rows.length > 0) setPendingSource(source);
+    else applyPlan(source, "add");
+  }
+
   const toggleExpand = (key: string) =>
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -529,6 +673,15 @@ export function PlanEditorDialog({
   const total = rows.length;
   const doneCount = rows.filter((r) => r.status === "done").length;
   const owedCount = rows.filter((r) => r.needs_client).length;
+
+  const templates = useMemo(
+    () => sources.filter((s) => s.isTemplate && s.count > 0),
+    [sources]
+  );
+  const otherClients = useMemo(
+    () => sources.filter((s) => !s.isTemplate && s.count > 0),
+    [sources]
+  );
 
   const rowsByWeek = (w: number) =>
     rows
@@ -1172,13 +1325,171 @@ export function PlanEditorDialog({
           </div>
         )}
 
-        {/* TAB: TEMPLATES (built in a later commit) */}
+        {/* TAB: TEMPLATES */}
         {tab === "templates" && (
           <div
-            style={{ padding: "20px 28px 28px", flex: 1, overflowY: "auto" }}
-            className="text-sm text-[color:var(--vimi-muted)]"
+            style={{
+              padding: "20px 28px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 18,
+              flex: 1,
+              overflowY: "auto",
+            }}
           >
-            Plantillas — próximamente.
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13.5,
+                color: "var(--vimi-muted)",
+                lineHeight: 1.55,
+                maxWidth: 520,
+              }}
+            >
+              Nunca armes un plan desde cero. Aplica una plantilla del estudio o
+              copia el plan de otro cliente — después ajustas los detalles en el
+              editor.
+            </p>
+
+            {loadingSources && (
+              <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>Cargando…</p>
+            )}
+
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 800,
+                letterSpacing: ".14em",
+                color: "var(--vimi-faint)",
+              }}
+            >
+              PLANTILLAS DEL ESTUDIO
+            </div>
+            {templates.length === 0 && !loadingSources ? (
+              <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
+                Aún no hay plantillas del estudio.
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                {templates.map((t) => (
+                  <div
+                    key={t.id}
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1.5px solid rgba(28,27,31,.08)",
+                      borderRadius: 16,
+                      padding: 18,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                      <span
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 4,
+                          background: "var(--accent)",
+                          flex: "none",
+                        }}
+                      />
+                      <span style={{ fontSize: 14.5, fontWeight: 700 }}>
+                        {t.displayName}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        fontSize: 11.5,
+                        color: "var(--vimi-faint)",
+                      }}
+                    >
+                      <span>
+                        <b style={{ color: "var(--vimi-ink)" }}>{t.count}</b> hitos
+                      </span>
+                      <span>{t.weeks} semanas</span>
+                      <span>{t.owed} del cliente</span>
+                    </div>
+                    <button
+                      onClick={() => onApplyClick(t)}
+                      style={{
+                        marginTop: 4,
+                        background: "var(--vimi-ink)",
+                        color: "#FFF",
+                        border: "1.5px solid var(--vimi-ink)",
+                        borderRadius: 10,
+                        padding: 10,
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Aplicar plantilla
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 800,
+                letterSpacing: ".14em",
+                color: "var(--vimi-faint)",
+                marginTop: 4,
+              }}
+            >
+              O COPIAR DE OTRO CLIENTE
+            </div>
+            {otherClients.length === 0 && !loadingSources ? (
+              <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
+                No hay otros planes para copiar.
+              </p>
+            ) : (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {otherClients.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => onApplyClick(c)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(28,27,31,.1)",
+                      borderRadius: 99,
+                      padding: "10px 16px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 3,
+                        background: c.isCurrent ? "var(--accent)" : "var(--vimi-faint)",
+                      }}
+                    />
+                    {c.isCurrent ? `${c.displayName} (mes anterior)` : c.displayName}
+                    <span style={{ color: "var(--vimi-faint)", fontWeight: 500 }}>
+                      · {c.count} hito{c.count === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1191,6 +1502,47 @@ export function PlanEditorDialog({
             Vista del cliente — próximamente.
           </div>
         )}
+
+        {/* Replace-vs-add confirmation when the target plan is non-empty */}
+        <AlertDialog
+          open={pendingSource !== null}
+          onOpenChange={(o) => {
+            if (!o) setPendingSource(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {clientName} ya tiene un plan
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Este cliente ya tiene {total} hito{total === 1 ? "" : "s"}.
+                {pendingSource
+                  ? ` ¿Reemplazarlo con ${pendingSource.count} de ${pendingSource.displayName}, o agregarlos al plan actual?`
+                  : ""}{" "}
+                Reemplazar borra los hitos actuales y no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  pendingSource && applyPlan(pendingSource, "add")
+                }
+              >
+                Agregar al plan
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() =>
+                  pendingSource && applyPlan(pendingSource, "replace")
+                }
+                style={{ background: "#B03A5B" }}
+              >
+                Reemplazar ({total})
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
