@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DOC_KINDS, formatFileSize } from "@/lib/agreement";
+import { sanitizeFileName } from "@/lib/files";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50MB — docs, not video
 
@@ -71,6 +72,7 @@ export function ClientDocsDialog({
   const [rows, setRows] = useState<EditorDoc[]>([]);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Load this client's documents when the dialog opens (admin RLS allows it).
@@ -171,12 +173,15 @@ export function ClientDocsDialog({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const newPath = `${clientId}/${crypto.randomUUID()}/${file.name}`;
+    // Storage key must be sanitized (rejects "×", spaces, accents, …); the
+    // pretty original name is preserved in the file_name column below.
+    const newPath = `${clientId}/${crypto.randomUUID()}/${sanitizeFileName(file.name)}`;
     const { error: upErr } = await supabase.storage
       .from("client-docs")
       .upload(newPath, file);
     if (upErr) {
-      toast.error("Upload failed");
+      console.error("client-docs upload failed", upErr);
+      toast.error(`Upload failed: ${upErr.message}`);
       setUploadingKey(null);
       return;
     }
@@ -196,8 +201,9 @@ export function ClientDocsDialog({
         .update(meta)
         .eq("id", row.id);
       if (error) {
+        console.error("client-docs metadata update failed", error);
         await supabase.storage.from("client-docs").remove([newPath]);
-        toast.error("Couldn't attach file");
+        toast.error(`Couldn't attach file: ${error.message}`);
         setUploadingKey(null);
         return;
       }
@@ -210,8 +216,9 @@ export function ClientDocsDialog({
         .select("id")
         .single();
       if (error || !data) {
+        console.error("client-docs metadata insert failed", error);
         await supabase.storage.from("client-docs").remove([newPath]);
-        toast.error("Couldn't save document");
+        toast.error(`Couldn't save document${error ? `: ${error.message}` : ""}`);
         setUploadingKey(null);
         return;
       }
@@ -228,6 +235,17 @@ export function ClientDocsDialog({
     if (fileInputs.current[row.key]) fileInputs.current[row.key]!.value = "";
     toast.success("File uploaded");
     router.refresh();
+  }
+
+  function handleDrop(row: EditorDoc, e: React.DragEvent) {
+    e.preventDefault();
+    setDraggingKey(null);
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length === 0) return;
+    if (dropped.length > 1) {
+      toast.message("One file per document — using the first one");
+    }
+    handleUpload(row, dropped[0]);
   }
 
   async function deleteRow(row: EditorDoc) {
@@ -356,8 +374,18 @@ export function ClientDocsDialog({
                 />
               </div>
 
-              {/* File cell */}
-              <div className="flex flex-col gap-2 rounded-md border border-dashed p-2.5">
+              {/* File cell — click-to-browse or drag-and-drop */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDraggingKey(row.key);
+                }}
+                onDragLeave={() => setDraggingKey((k) => (k === row.key ? null : k))}
+                onDrop={(e) => handleDrop(row, e)}
+                className={`flex flex-col gap-2 rounded-md border border-dashed p-2.5 transition-colors ${
+                  draggingKey === row.key ? "border-primary bg-primary/5" : ""
+                }`}
+              >
                 {row.file_path ? (
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col min-w-0">
@@ -387,6 +415,7 @@ export function ClientDocsDialog({
                     fileInputs.current[row.key] = el;
                   }}
                   type="file"
+                  accept="application/pdf,image/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
