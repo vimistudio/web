@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusSignIcon, Comment01Icon, Cancel01Icon, Download01Icon, PenToolIcon } from "@/components/ui/icons";
+import { PlusSignIcon, Comment01Icon, Cancel01Icon, Download01Icon, CanvasIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -591,7 +591,7 @@ export function ClientBoard({
             className="w-14 h-14 rounded-full flex items-center justify-center mb-5"
             style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}
           >
-            <PenToolIcon size={24} color="currentColor" />
+            <CanvasIcon size={24} color="currentColor" />
           </div>
           <h2 className="font-serif italic text-[32px] leading-tight mb-2 text-[color:var(--vimi-ink)]">
             {t("board.emptyTitle")}
@@ -670,7 +670,7 @@ export function ClientBoard({
               className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
               style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}
             >
-              <PenToolIcon size={24} color="currentColor" />
+              <CanvasIcon size={24} color="currentColor" />
             </div>
             <h2 className="font-serif italic text-2xl mb-2 text-[color:var(--vimi-ink)]">{t("board.emptyTitle")}</h2>
             <p className="text-[color:var(--vimi-muted)] max-w-sm mb-6">
