@@ -34,10 +34,11 @@ export default async function AdminDashboardPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  // Get request counts per status
+  // Get request counts per status. `select *` (no assignee embed) so assignee_id
+  // is available for my-work stamping; the admin roster is joined in JS.
   const { data: requests } = await supabase
     .from("requests")
-    .select("id, client_id, status, updated_at, created_at, title, due_date");
+    .select("*");
 
   // Client-owed plan items (milestones the client still has to tick off)
   const { data: owedMilestones } = await supabase
