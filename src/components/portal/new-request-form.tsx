@@ -19,6 +19,7 @@ import {
   FireIcon,
   ArrowRight01Icon,
   ArrowLeft01Icon,
+  Task01Icon,
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -73,6 +74,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
   const [dueDate, setDueDate] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
@@ -117,20 +119,32 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
 
   const suggestions = pastRequests.slice(0, 3);
 
+  const addFiles = useCallback((newFiles: File[]) => {
+    if (newFiles.length === 0) return;
+    setFiles((prev) => [...prev, ...newFiles]);
+    newFiles.forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => setPreviews((prev) => [...prev, reader.result as string]);
+        reader.readAsDataURL(file);
+      } else {
+        setPreviews((prev) => [...prev, ""]);
+      }
+    });
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prev) => [...prev, ...newFiles]);
-      newFiles.forEach((file) => {
-        if (file.type.startsWith("image/")) {
-          const reader = new FileReader();
-          reader.onloadend = () => setPreviews((prev) => [...prev, reader.result as string]);
-          reader.readAsDataURL(file);
-        } else {
-          setPreviews((prev) => [...prev, ""]);
-        }
-      });
-    }
+    if (e.target.files) addFiles(Array.from(e.target.files));
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = Array.from(e.dataTransfer.files).filter(
+      (f) => f.type.startsWith("image/") || f.type === "application/pdf"
+    );
+    addFiles(dropped);
   };
 
   const removeFile = (index: number) => {
@@ -274,7 +288,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 {/* Based on your history — reuse a past brief (Jakob's Law) */}
                 {suggestions.length > 0 && (
                   <div className="space-y-2 pt-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                       {t("form.history.heading")}
                     </p>
                     {suggestions.map((r, i) => {
@@ -303,7 +317,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 )}
 
                 {suggestions.length > 0 && (
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)] pt-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)] pt-1">
                     {t("form.type.startFresh")}
                   </p>
                 )}
@@ -354,7 +368,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.titleLabel")}
                   </label>
                   <Input
@@ -368,7 +382,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.briefLabel")}
                   </label>
                   <Textarea
@@ -383,49 +397,70 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                     onPaste={(e) => {
                       const items = e.clipboardData?.items;
                       if (!items) return;
-                      for (const item of Array.from(items)) {
-                        if (item.type.startsWith("image/")) {
-                          const file = item.getAsFile();
-                          if (!file) return;
-                          setFiles((prev) => [...prev, file]);
-                          const reader = new FileReader();
-                          reader.onloadend = () => setPreviews((prev) => [...prev, reader.result as string]);
-                          reader.readAsDataURL(file);
-                        }
-                      }
+                      const pasted = Array.from(items)
+                        .filter((item) => item.type.startsWith("image/"))
+                        .map((item) => item.getAsFile())
+                        .filter((f): f is File => f !== null);
+                      addFiles(pasted);
                     }}
                   />
 
-                  {/* Inline references — paste or upload images alongside the brief */}
+                  {/* Inline references — paste, drag, or upload files alongside the brief */}
                   {files.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2.5">
                       {files.map((file, i) => (
-                        <div
-                          key={i}
-                          className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center group"
-                        >
-                          {previews[i] ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[9px] text-muted-foreground">
-                              {file.name.split(".").pop()?.toUpperCase()}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => removeFile(i)}
-                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          >
-                            <Cancel01Icon size={10} />
-                          </button>
+                        <div key={i} className="flex flex-col gap-1 min-w-0">
+                          <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-[color:var(--vimi-border)]">
+                            {previews[i] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={previews[i]} alt={file.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground">
+                                <Task01Icon size={22} />
+                                <span className="text-[9px] font-semibold uppercase tracking-wide">
+                                  {file.name.split(".").pop()?.slice(0, 4)}
+                                </span>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeFile(i)}
+                              aria-label={`Remove ${file.name}`}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/65 hover:bg-black/80 text-white flex items-center justify-center transition-colors"
+                            >
+                              <Cancel01Icon size={12} />
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground truncate leading-tight">
+                            {file.name}
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary cursor-pointer transition-colors w-fit">
-                    <PlusSignIcon size={14} />
-                    <span>{t("form.inspiration.addFile")}</span>
+                  <label
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`flex flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-dashed cursor-pointer text-center transition-colors ${
+                      files.length > 0 ? "px-4 py-3" : "px-4 py-6"
+                    } ${
+                      isDragging
+                        ? "border-primary bg-primary/5"
+                        : "border-[color:rgba(28,27,31,0.12)] hover:border-primary"
+                    }`}
+                  >
+                    <PlusSignIcon
+                      size={files.length > 0 ? 16 : 20}
+                      className={isDragging ? "text-primary" : "text-muted-foreground"}
+                    />
+                    <span className="text-xs text-muted-foreground leading-snug">
+                      {files.length > 0 ? t("form.inspiration.addFile") : t("form.inspiration.dropzone")}
+                    </span>
                     <input
                       type="file"
                       accept="image/*,.pdf"
@@ -437,7 +472,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                  <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
                     {t("form.essentials.timelineLabel")}
                   </label>
                   <div className="space-y-2">
@@ -540,7 +575,11 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                   <Button
                     onClick={isLastStep ? handleSubmit : goNext}
                     disabled={!canAdvance || isSubmitting}
-                    className="flex-1 h-14 md:h-12 bg-primary hover:bg-primary/90 text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
+                    className={`flex-1 h-14 md:h-12 font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2 disabled:opacity-100 disabled:bg-[color:rgba(28,27,31,0.06)] disabled:text-[#9A96A3] disabled:shadow-none ${
+                      isLastStep
+                        ? "bg-primary hover:bg-primary/90 text-white shadow-[0_10px_24px_rgba(28,27,31,0.14)]"
+                        : "bg-[color:var(--vimi-ink)] hover:bg-[color:var(--vimi-ink)]/90 text-[color:var(--vimi-page)]"
+                    }`}
                   >
                     {isSubmitting ? (
                       <>

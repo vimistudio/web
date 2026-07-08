@@ -40,6 +40,7 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "./locale-provider";
+import { type PortalKey } from "@/lib/portal-i18n";
 import { InstagramCarouselPreview } from "./social/instagram-carousel-preview";
 import { DirectionOrganizer } from "./admin/direction-organizer";
 import { DirectionsVoting } from "./directions-voting";
@@ -259,10 +260,10 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   done: { label: "Delivered", color: "bg-emerald-100 text-emerald-700" },
 };
 
-const priorityLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "Low", color: "text-gray-500" },
-  2: { label: "Medium", color: "text-amber-600" },
-  3: { label: "High", color: "text-red-600" },
+const priorityLabels: Record<number, { labelKey: string; color: string }> = {
+  1: { labelKey: "form.priority.whenever", color: "text-gray-500" },
+  2: { labelKey: "form.priority.thisWeek", color: "text-amber-600" },
+  3: { labelKey: "form.priority.urgent", color: "text-red-600" },
 };
 
 const typeLabels: Record<string, string> = {
@@ -1430,7 +1431,7 @@ export function RequestDetail({
         <div className="flex items-center gap-2">
           {priority && (
             <span className={`text-xs font-medium ${priority.color}`}>
-              {priority.label}
+              {t(priority.labelKey as PortalKey)}
             </span>
           )}
           <Badge className={status.color}>{status.label}</Badge>
@@ -1491,8 +1492,8 @@ export function RequestDetail({
         </div>
       )}
 
-      {/* Queued status reassurance */}
-      {currentStatus === "queued" && !isAdmin && (
+      {/* Queued status reassurance — hidden while editing to reduce competition */}
+      {currentStatus === "queued" && !isAdmin && !isEditing && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
           <p className="text-sm text-blue-800">
             {t("detail.upNext")}
@@ -1510,69 +1511,103 @@ export function RequestDetail({
 
       {/* Title + Meta */}
       {isEditing ? (
-        <div className="space-y-4 bg-white border rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">{t("edit.title")}</h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs">
-                {t("edit.cancel")}
-              </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-primary hover:bg-primary/90">
-                {isSavingEdit ? t("edit.saving") : t("edit.save")}
-              </Button>
+        <div className="bg-white border border-[color:var(--vimi-border)] rounded-[20px] p-6 shadow-[0_2px_8px_rgba(28,27,31,0.04)] space-y-5">
+          <h2 className="font-serif italic text-2xl leading-tight text-[color:var(--vimi-ink)]">
+            {t("edit.heading")}
+          </h2>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
+              {t("form.essentials.titleLabel")}
+            </label>
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder={t("form.name.placeholder")}
+              className="h-12 text-base font-semibold rounded-xl bg-[#FBFAF8] border-[color:rgba(28,27,31,0.14)]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
+              {t("form.essentials.briefLabel")}
+            </label>
+            <Textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder={t("form.details.placeholder")}
+              className="min-h-[120px] resize-none text-base rounded-xl bg-[#FBFAF8] border-[color:rgba(28,27,31,0.14)]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
+              {t("form.step.type")}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(typeLabels) as string[]).map((typeKey) => {
+                const selected = editType === typeKey;
+                return (
+                  <button
+                    key={typeKey}
+                    onClick={() => setEditType(typeKey)}
+                    className={`text-sm font-semibold px-4 py-2 rounded-full border transition-all active:scale-[0.98] touch-manipulation ${
+                      selected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-[color:rgba(28,27,31,0.12)] bg-white text-muted-foreground hover:border-gray-300"
+                    }`}
+                  >
+                    {typeLabels[typeKey]}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            placeholder={t("form.name.placeholder")}
-            className="text-base font-semibold"
-          />
-          <Textarea
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.target.value)}
-            placeholder={t("form.details.placeholder")}
-            className="min-h-[100px] text-sm"
-          />
+
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">{t("form.step.type")}</label>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(typeLabels) as string[]).map((typeKey) => (
-                <button
-                  key={typeKey}
-                  onClick={() => setEditType(typeKey)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    editType === typeKey
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
-                  }`}
-                >
-                  {typeLabels[typeKey]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">{t("form.step.timeline")}</label>
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-muted)]">
+              {t("form.essentials.timelineLabel")}
+            </label>
             <div className="flex gap-2">
               {[
                 { value: 1, label: t("form.priority.whenever") },
                 { value: 2, label: t("form.priority.thisWeek") },
                 { value: 3, label: t("form.priority.urgent") },
-              ].map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => setEditPriority(p.value)}
-                  className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
-                    editPriority === p.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-gray-200 text-muted-foreground hover:border-gray-300"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+              ].map((p) => {
+                const selected = editPriority === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    onClick={() => setEditPriority(p.value)}
+                    className={`flex-1 text-sm font-semibold py-2.5 rounded-xl border transition-all active:scale-[0.98] touch-manipulation ${
+                      selected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-[color:rgba(28,27,31,0.12)] bg-white text-muted-foreground hover:border-gray-300"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {/* Footer actions — Cancel (quiet) + Save (ink), matching every other card */}
+          <div className="flex items-center gap-3 pt-1">
+            <Button
+              variant="outline"
+              onClick={handleCancelEdit}
+              className="h-12 px-6 rounded-xl text-muted-foreground"
+            >
+              {t("edit.cancel")}
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={!editTitle.trim() || isSavingEdit}
+              className="flex-1 h-12 rounded-xl font-semibold bg-[color:var(--vimi-ink)] hover:bg-[color:var(--vimi-ink)]/90 text-[color:var(--vimi-page)] disabled:opacity-100 disabled:bg-[color:rgba(28,27,31,0.06)] disabled:text-[#9A96A3] disabled:shadow-none"
+            >
+              {isSavingEdit ? t("edit.saving") : t("edit.save")}
+            </Button>
           </div>
         </div>
       ) : (
