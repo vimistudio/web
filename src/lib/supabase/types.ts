@@ -122,12 +122,79 @@ export type Database = {
           },
         ]
       }
+      client_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          kind: string
+          mime_type: string | null
+          sort: number
+          status_label: string | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          sort?: number
+          status_label?: string | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          sort?: number
+          status_label?: string | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           accent_color: string | null
           created_at: string
           deal_terms: string | null
           designer_id: string | null
+          engagement_started_at: string | null
           id: string
           is_active: boolean
           locale: string
@@ -144,6 +211,7 @@ export type Database = {
           created_at?: string
           deal_terms?: string | null
           designer_id?: string | null
+          engagement_started_at?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -160,6 +228,7 @@ export type Database = {
           created_at?: string
           deal_terms?: string | null
           designer_id?: string | null
+          engagement_started_at?: string | null
           id?: string
           is_active?: boolean
           locale?: string

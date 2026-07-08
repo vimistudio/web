@@ -14,6 +14,7 @@ import type { Profile, StudioDesigner } from "./portal-shell";
 const navItems: { titleKey: PortalKey; href: string }[] = [
   { titleKey: "tab.board", href: "/portal" },
   { titleKey: "tab.gallery", href: "/portal/gallery" },
+  { titleKey: "tab.agreement", href: "/portal/agreement" },
   { titleKey: "tab.profile", href: "/portal/profile" },
 ];
 

@@ -93,6 +93,16 @@ export function Image01Icon({ size, ...props }: IconProps) {
   );
 }
 
+export function File01Icon({ size, ...props }: IconProps) {
+  return (
+    <Icon size={size} {...props}>
+      <path d="M13 3.5V4.5C13 6.38562 13 7.32843 13.5858 7.91421C14.1716 8.5 15.1144 8.5 17 8.5H18" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M18 8.87336V13.5C18 16.7998 18 18.4497 16.9749 19.4749C15.9497 20.5 14.2998 20.5 11 20.5C7.70017 20.5 6.05025 20.5 5.02513 19.4749C4 18.4497 4 16.7998 4 13.5L4 6.5C4 5.09554 4 4.39331 4.33706 3.88886C4.48298 3.67048 4.67048 3.48298 4.88886 3.33706C5.39331 3 6.09554 3 7.5 3H12.1266C12.5335 3 12.737 3 12.9204 3.07588C13.1037 3.15176 13.2476 3.29565 13.5355 3.58345L17.4165 7.46447C17.7044 7.75227 17.8482 7.89616 17.9241 8.07954C18 8.26295 18 8.46647 18 8.87336Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
+      <path d="M8 13H14M8 16.5H12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </Icon>
+  );
+}
+
 export function UserCircleIcon({ size, ...props }: IconProps) {
   return (
     <Icon size={size} {...props}>
