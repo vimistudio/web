@@ -57,11 +57,13 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
 }
 
 export function PlanTracker({
+  clientId,
   milestones: initial,
   retainerAmount = null,
   dealTerms = null,
   isImpersonatingAdmin = false,
 }: {
+  clientId: string;
   milestones: Milestone[];
   retainerAmount?: number | null;
   dealTerms?: string | null;
@@ -92,9 +94,37 @@ export function PlanTracker({
   const needsItems = needsClientItems.filter((m) => !m.client_done);
   const hasCurrent = milestones.some((m) => m.status === "current");
 
+  const storageKey = `vimi_plan_open_${clientId}`;
+
+  // Heuristic default: expand when something is current or waiting on the
+  // client. A stored user preference always wins (applied after mount to keep
+  // SSR output deterministic and avoid a hydration mismatch).
   const [expanded, setExpanded] = useState(
     () => needsItems.length > 0 || hasCurrent
   );
+
+  useEffect(() => {
+    const stored = localStorage.getItem(storageKey);
+    if (stored === "0") setExpanded(false);
+    else if (stored === "1") setExpanded(true);
+  }, [storageKey]);
+
+  // "Ver mi plan" from the welcome overlay forces the tracker open.
+  useEffect(() => {
+    const onExpand = () => {
+      setExpanded(true);
+      localStorage.setItem(storageKey, "1");
+    };
+    window.addEventListener("vimi:plan-expand", onExpand);
+    return () => window.removeEventListener("vimi:plan-expand", onExpand);
+  }, [storageKey]);
+
+  const toggleExpanded = () =>
+    setExpanded((e) => {
+      const next = !e;
+      localStorage.setItem(storageKey, next ? "1" : "0");
+      return next;
+    });
 
   // Admin notify fires only after the undo window; keyed by milestone id so
   // multiple check-offs stay independent. Cleared on undo, uncheck, or unmount.
@@ -246,7 +276,7 @@ export function PlanTracker({
       {/* Header — always visible, toggles expand/collapse */}
       <button
         type="button"
-        onClick={() => setExpanded((e) => !e)}
+        onClick={toggleExpanded}
         aria-expanded={expanded}
         className="w-full text-left px-4 md:px-5 py-4 flex items-center gap-4 min-h-[44px]"
       >
@@ -258,6 +288,19 @@ export function PlanTracker({
             <span className="text-xs font-semibold tracking-[0.06em] text-[color:var(--vimi-faint)] uppercase">
               {allDone ? t("plan.progress", { done: doneCount, total }) : t("plan.week", { n: currentWeek })}
             </span>
+            {/* Zeigarnik signal survives collapse: amber count of client-owed items */}
+            {!expanded && needsItems.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: "var(--status-review-chip)", color: "var(--status-review-ink)" }}
+              >
+                <span
+                  className="w-[7px] h-[7px] rounded-full animate-pulse"
+                  style={{ background: "var(--status-review)" }}
+                />
+                {t("plan.waitingChip", { n: needsItems.length })}
+              </span>
+            )}
           </div>
           {showDeal && (
             <div className="text-[13px] text-[color:var(--vimi-muted)]">

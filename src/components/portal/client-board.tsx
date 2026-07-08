@@ -408,6 +408,8 @@ export function ClientBoard({
   const scrollToPlan = useCallback(() => {
     const el = document.getElementById("plan-tracker");
     if (!el) return;
+    // Force the tracker open in case the client has it collapsed.
+    window.dispatchEvent(new CustomEvent("vimi:plan-expand"));
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, []);
@@ -479,6 +481,7 @@ export function ClientBoard({
       {milestones.length > 0 && (
         <div id="plan-tracker" className="scroll-mt-24">
           <PlanTracker
+            clientId={clientId}
             milestones={milestones}
             retainerAmount={retainerAmount}
             dealTerms={dealTerms}
