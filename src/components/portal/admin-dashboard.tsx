@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,18 +52,89 @@ interface Activity {
   requests: { id: string; title: string; client_id: string; clients: { name: string } | null } | null;
 }
 
+type AttentionKind = "review" | "overdue" | "owed";
+
+interface AttentionItem {
+  id: string;
+  kind: AttentionKind;
+  clientName: string;
+  clientColor: string;
+  text: string;
+  href: string;
+}
+
 interface AdminDashboardProps {
   stats: Stats;
   clients: ClientSummary[];
   recentActivity: Activity[];
+  attention?: AttentionItem[];
   adminName?: string;
 }
 
+const attentionConfig: Record<
+  AttentionKind,
+  { badge: string; badgeBg: string; badgeColor: string; border: string; cta: string }
+> = {
+  review: {
+    badge: "REVIEW",
+    badgeBg: "var(--status-review-chip)",
+    badgeColor: "var(--status-review-ink)",
+    border: "rgba(201,130,27,0.40)",
+    cta: "Review",
+  },
+  overdue: {
+    badge: "OVERDUE",
+    badgeBg: "#FBEAEE",
+    badgeColor: "#B03A5B",
+    border: "rgba(176,58,91,0.40)",
+    cta: "Open",
+  },
+  owed: {
+    badge: "AWAITING CLIENT",
+    badgeBg: "#F1EEFB",
+    badgeColor: "#5B4BD6",
+    border: "rgba(91,75,214,0.35)",
+    cta: "View",
+  },
+};
+
+function AttentionRow({ item }: { item: AttentionItem }) {
+  const cfg = attentionConfig[item.kind];
+  return (
+    <div
+      className="rounded-2xl border-[1.5px] bg-[var(--vimi-card)] px-4 sm:px-5 py-3.5 flex items-center gap-3 flex-wrap"
+      style={{ borderColor: cfg.border }}
+    >
+      <span
+        className="w-2.5 h-2.5 rounded-[4px] shrink-0"
+        style={{ background: item.clientColor }}
+      />
+      <span className="text-[13px] font-bold text-[color:var(--vimi-ink)] shrink-0">
+        {item.clientName}
+      </span>
+      <span className="text-[13.5px] text-[color:var(--vimi-muted)] flex-1 min-w-[180px]">
+        {item.text}
+      </span>
+      <span
+        className="text-[11px] font-bold tracking-[0.06em] rounded-md px-2 py-1 shrink-0"
+        style={{ background: cfg.badgeBg, color: cfg.badgeColor }}
+      >
+        {cfg.badge}
+      </span>
+      <Link href={item.href} className="shrink-0">
+        <button className="inline-flex items-center bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] rounded-full px-4 py-2 text-[12.5px] font-semibold transition-transform hover:-translate-y-0.5 min-h-[36px]">
+          {cfg.cta}
+        </button>
+      </Link>
+    </div>
+  );
+}
+
 const statCards = [
-  { key: "totalClients" as const, label: "ACTIVE CLIENTS", icon: UserGroupIcon, color: "text-foreground" },
-  { key: "openRequests" as const, label: "OPEN REQUESTS", icon: Task01Icon, color: "text-blue-600" },
-  { key: "needsReview" as const, label: "NEEDS REVIEW", icon: ViewIcon, color: "text-amber-500" },
-  { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-500" },
+  { key: "totalClients" as const, label: "ACTIVE CLIENTS", icon: UserGroupIcon, color: "text-[color:var(--vimi-ink)]", subtitle: undefined },
+  { key: "openRequests" as const, label: "OPEN REQUESTS", icon: Task01Icon, color: "text-blue-600", subtitle: "across active clients" },
+  { key: "needsReview" as const, label: "NEEDS REVIEW", icon: ViewIcon, color: "text-amber-500", subtitle: "across active clients" },
+  { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-600", subtitle: undefined },
 ];
 
 const statusPills = [
@@ -216,36 +288,46 @@ function ClientCard({ client }: { client: ClientSummary }) {
   );
 }
 
-export function AdminDashboard({ stats, clients, recentActivity, adminName }: AdminDashboardProps) {
+export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName }: AdminDashboardProps) {
   const { hidden: pricesHidden } = usePricePrivacy();
+  const [showPaused, setShowPaused] = useState(false);
+  const activeClients = clients.filter((c) => c.is_active);
+  const pausedClients = clients.filter((c) => !c.is_active);
+  const visibleClients = showPaused
+    ? [...activeClients, ...pausedClients]
+    : activeClients;
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const firstName = adminName ? adminName.split(" ")[0] : "";
+  const dateEyebrow = now
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    })
+    .toUpperCase();
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {greeting}{adminName ? `, ${adminName.split(" ")[0]}` : ""}
+      {/* Hero — matches the client board hero language */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-2 md:gap-2.5">
+          <div className="text-[11px] md:text-xs font-semibold tracking-[0.12em] text-[color:var(--vimi-faint)]">
+            {dateEyebrow}
+          </div>
+          <h1 className="font-serif italic text-[30px] md:text-[40px] leading-[1.08] tracking-tight text-[color:var(--vimi-ink)]">
+            {greeting}{firstName ? `, ${firstName}` : ""}.
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{dateStr}</p>
         </div>
-        <Link href="/portal/admin/clients">
-          <Button variant="outline" className="gap-2">
-            <PlusSignIcon size={16} />
+        <Link href="/portal/admin/clients" className="shrink-0">
+          <button className="inline-flex items-center gap-2 bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] rounded-full px-5 py-3 text-sm font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 min-h-[44px]">
+            <PlusSignIcon size={16} color="currentColor" />
             New Client
-          </Button>
+          </button>
         </Link>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — journey card language */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const value = stats[card.key];
@@ -254,44 +336,80 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
               ? maskPrice(`$${value.toLocaleString()}`, pricesHidden)
               : value;
           return (
-            <Card key={card.key}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground tracking-wider">
-                    {card.label}
-                  </p>
-                  <card.icon size={16} className="text-muted-foreground/50" />
-                </div>
-                <p className={`text-3xl font-semibold mt-2 ${card.color}`}>
-                  {display}
+            <div
+              key={card.key}
+              className="rounded-2xl border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] p-5 shadow-[0_2px_8px_rgba(28,27,31,0.04)]"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-[color:var(--vimi-faint)] tracking-[0.12em]">
+                  {card.label}
                 </p>
-                {card.key === "monthlyRevenue" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {pricesHidden
-                      ? `${PRICE_MASK} active clients`
-                      : `${stats.activeClientCount} active ${stats.activeClientCount === 1 ? "client" : "clients"}`}
+                <card.icon size={16} className="text-[color:var(--vimi-faint)]" />
+              </div>
+              <p className={`text-3xl font-semibold mt-2 ${card.color}`}>
+                {display}
+              </p>
+              {card.key === "monthlyRevenue" ? (
+                <p className="text-xs text-[color:var(--vimi-muted)] mt-1">
+                  {pricesHidden
+                    ? `${PRICE_MASK} active clients`
+                    : `${stats.activeClientCount} active ${stats.activeClientCount === 1 ? "client" : "clients"}`}
+                </p>
+              ) : (
+                card.subtitle && (
+                  <p className="text-xs text-[color:var(--vimi-muted)] mt-1">
+                    {card.subtitle}
                   </p>
-                )}
-              </CardContent>
-            </Card>
+                )
+              )}
+            </div>
           );
         })}
       </div>
+
+      {/* Needs attention (Pareto) — hidden entirely when nothing needs action */}
+      {attention.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-[color:var(--vimi-ink)]">
+              Needs attention
+            </h2>
+            <p className="text-sm text-[color:var(--vimi-muted)] mt-0.5">
+              The 20% that matters today. Everything else can wait.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {attention.map((item) => (
+              <AttentionRow key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Clients Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Your Clients</h2>
-          <Link
-            href="/portal/admin/clients"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            View all
-          </Link>
+          <div className="flex items-center gap-4">
+            {pausedClients.length > 0 && (
+              <button
+                onClick={() => setShowPaused((v) => !v)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              >
+                {showPaused ? "Hide paused" : `Show paused (${pausedClients.length})`}
+              </button>
+            )}
+            <Link
+              href="/portal/admin/clients"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {clients.map((client) => (
+          {visibleClients.map((client) => (
             <ClientCard key={client.id} client={client} />
           ))}
 
@@ -369,8 +487,7 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No recent activity yet. Activity will appear here when clients
-                submit requests and leave comments.
+                No recent activity from active clients.
               </p>
             )}
           </CardContent>

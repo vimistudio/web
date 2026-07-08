@@ -1,7 +1,7 @@
 /** Client plan tracker (month-plan hand-holding surface) */
 export const plan = {
   "plan.title": { en: "Your plan, month 01", es: "Tu plan del mes 01" },
-  "plan.dealLine": { en: "USD ${amount}/mo · No lock-in", es: "USD ${amount}/mes · Sin permanencia" },
+  "plan.dealLine": { en: "USD ${amount}/mo", es: "USD ${amount}/mes" },
   "plan.delayed": { en: "Timing moved — {note}", es: "Se movió — {note}" },
   "plan.week": { en: "Week {n} of 4", es: "Semana {n} de 4" },
   "plan.weekLabel": { en: "WEEK {n}", es: "SEMANA {n}" },

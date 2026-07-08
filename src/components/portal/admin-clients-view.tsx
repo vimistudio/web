@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +34,7 @@ interface ClientSummary {
   is_active: boolean;
   created_at: string;
   logo_url?: string | null;
+  accent_color?: string | null;
   openCount: number;
   doneCount: number;
 }
@@ -53,7 +52,11 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
   const [locale, setLocale] = useState("en");
   const [logoUrl, setLogoUrl] = useState("");
   const [accentColor, setAccentColor] = useState("#5B4BD6");
+  const [dealTerms, setDealTerms] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  const activeClients = clients.filter((c) => c.is_active);
+  const pausedClients = clients.filter((c) => !c.is_active);
 
   const handleCreateClient = async () => {
     if (!name.trim() || isCreating) return;
@@ -73,6 +76,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       locale,
       logo_url: logoUrl.trim() || null,
       accent_color: accentColor.trim() || null,
+      deal_terms: dealTerms.trim() || null,
     });
 
     if (!error) {
@@ -81,6 +85,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       setLocale("en");
       setLogoUrl("");
       setAccentColor("#5B4BD6");
+      setDealTerms("");
       setIsOpen(false);
       router.refresh();
     }
@@ -90,14 +95,16 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Clients</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-serif italic text-[28px] md:text-[34px] leading-tight tracking-tight text-[color:var(--vimi-ink)]">
+          Clients
+        </h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <PlusSignIcon size={16} />
+            <button className="inline-flex items-center gap-2 bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] rounded-full px-5 py-3 text-sm font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 min-h-[44px] shrink-0">
+              <PlusSignIcon size={16} color="currentColor" />
               New Client
-            </Button>
+            </button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -143,6 +150,14 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                 />
               </div>
               <AccentColorPicker value={accentColor} onChange={setAccentColor} />
+              <div className="space-y-2">
+                <Label>Deal terms (client-facing)</Label>
+                <Input
+                  placeholder="e.g. Sin permanencia · cancelan con 30 días"
+                  value={dealTerms}
+                  onChange={(e) => setDealTerms(e.target.value)}
+                />
+              </div>
               <Button
                 onClick={handleCreateClient}
                 disabled={!name.trim() || isCreating}
@@ -155,64 +170,108 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {clients.map((client) => (
-          <Link
-            key={client.id}
-            href={`/portal/admin/clients/${client.slug}`}
-          >
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
-                    {client.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={client.logo_url}
-                        alt={client.name}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    ) : (
-                      <Image
-                        src="/vimi-logo-dark.svg"
-                        alt={client.name}
-                        width={80}
-                        height={26}
-                        className="h-4 w-auto opacity-60"
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{client.name}</h3>
-                      <Badge
-                        variant="outline"
-                        className={
-                          client.is_active
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-gray-50 text-gray-500"
-                        }
-                      >
-                        {client.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot;{" "}
-                      {client.openCount} open &middot; {client.doneCount} done
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      {clients.length === 0 ? (
+        <div className="text-center py-12 text-[color:var(--vimi-muted)]">
+          No clients yet. Add your first client to get started.
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {activeClients.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[color:var(--vimi-faint)]">
+                Active
+              </div>
+              <div className="grid gap-3">
+                {activeClients.map((client) => (
+                  <ClientRow
+                    key={client.id}
+                    client={client}
+                    pricesHidden={pricesHidden}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-        {clients.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            No clients yet. Add your first client to get started.
-          </div>
-        )}
-      </div>
+          {pausedClients.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[color:var(--vimi-faint)]">
+                Paused
+              </div>
+              <div className="grid gap-3 opacity-70">
+                {pausedClients.map((client) => (
+                  <ClientRow
+                    key={client.id}
+                    client={client}
+                    pricesHidden={pricesHidden}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function ClientRow({
+  client,
+  pricesHidden,
+}: {
+  client: ClientSummary;
+  pricesHidden: boolean;
+}) {
+  const accent = client.accent_color || "#5B4BD6";
+  return (
+    <Link href={`/portal/admin/clients/${client.slug}`}>
+      <div className="rounded-2xl border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] p-4 flex items-center justify-between cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(28,27,31,0.08)]">
+        <div className="flex items-center gap-4 min-w-0">
+          <span
+            className="w-2.5 h-2.5 rounded-[4px] shrink-0"
+            style={{ background: accent }}
+          />
+          <div className="w-10 h-10 rounded-lg bg-[color:rgba(28,27,31,0.05)] flex items-center justify-center overflow-hidden shrink-0">
+            {client.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={client.logo_url}
+                alt={client.name}
+                className="w-full h-full object-contain p-1"
+              />
+            ) : (
+              <Image
+                src="/vimi-logo-dark.svg"
+                alt={client.name}
+                width={80}
+                height={26}
+                className="h-4 w-auto opacity-60"
+              />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-[color:var(--vimi-ink)] truncate">
+                {client.name}
+              </h3>
+              <span
+                className="text-[10px] font-bold tracking-[0.06em] rounded-md px-2 py-0.5 shrink-0"
+                style={
+                  client.is_active
+                    ? { background: "#E3F0E8", color: "#22754A" }
+                    : { background: "rgba(28,27,31,0.06)", color: "#6E6B75" }
+                }
+              >
+                {client.is_active ? "ACTIVE" : "PAUSED"}
+              </span>
+            </div>
+            <p className="text-sm text-[color:var(--vimi-muted)]">
+              {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot;{" "}
+              {client.openCount} open &middot; {client.doneCount} done
+            </p>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }

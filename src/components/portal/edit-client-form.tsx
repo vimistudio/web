@@ -34,6 +34,7 @@ interface Client {
   locale?: string | null;
   logo_url?: string | null;
   accent_color?: string | null;
+  deal_terms?: string | null;
 }
 
 export function EditClientDialog({ client }: { client: Client }) {
@@ -46,6 +47,7 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [locale, setLocale] = useState(client.locale ?? "en");
   const [logoUrl, setLogoUrl] = useState(client.logo_url ?? "");
   const [accentColor, setAccentColor] = useState(client.accent_color ?? "#5B4BD6");
+  const [dealTerms, setDealTerms] = useState(client.deal_terms ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -66,6 +68,7 @@ export function EditClientDialog({ client }: { client: Client }) {
         locale,
         logo_url: logoUrl.trim() || null,
         accent_color: accentColor.trim() || null,
+        deal_terms: dealTerms.trim() || null,
       })
       .eq("id", client.id);
 
@@ -160,6 +163,15 @@ export function EditClientDialog({ client }: { client: Client }) {
             />
           </div>
           <AccentColorPicker value={accentColor} onChange={setAccentColor} />
+          <div className="space-y-2">
+            <Label htmlFor="client-deal-terms">Deal terms (client-facing)</Label>
+            <Input
+              id="client-deal-terms"
+              placeholder="e.g. Sin permanencia · cancelan con 30 días"
+              value={dealTerms}
+              onChange={(e) => setDealTerms(e.target.value)}
+            />
+          </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="client-active">Active</Label>
             <Switch

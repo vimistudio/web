@@ -24,7 +24,7 @@ interface QueueRequest {
   created_at: string;
   updated_at: string;
   due_date: string | null;
-  clients: { name: string; slug: string } | null;
+  clients: { name: string; slug: string; is_active: boolean } | null;
   deliverables: { id: string }[];
   comments: { id: string; created_at: string; author_id: string }[];
 }
@@ -85,6 +85,10 @@ function hasNewComment(request: QueueRequest, adminId: string): boolean {
   return latest.author_id !== adminId;
 }
 
+function isPaused(request: QueueRequest): boolean {
+  return request.clients?.is_active === false;
+}
+
 function isDueSoon(dueDate: string): boolean {
   const due = new Date(dueDate);
   const now = new Date();
@@ -102,24 +106,73 @@ function isOverdue(dueDate: string): boolean {
 export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
   const [sortBy, setSortBy] = useState<SortOption>("priority");
+  const [showPaused, setShowPaused] = useState(false);
+  const [clientFilter, setClientFilter] = useState<string>("all");
 
-  // Count per status
+  // Requests belonging to paused clients — hidden from the default view
+  const pausedCount = useMemo(
+    () => requests.filter(isPaused).length,
+    [requests]
+  );
+
+  // Inclusion set: active clients only unless paused clients are shown
+  const baseRequests = useMemo(
+    () => (showPaused ? requests : requests.filter((r) => !isPaused(r))),
+    [requests, showPaused]
+  );
+
+  // Clients with open requests in the current inclusion set (for filter chips)
+  const clientChips = useMemo(() => {
+    const map = new Map<string, { slug: string; name: string; count: number }>();
+    for (const r of baseRequests) {
+      if (!r.clients) continue;
+      const existing = map.get(r.clients.slug);
+      if (existing) existing.count++;
+      else
+        map.set(r.clients.slug, {
+          slug: r.clients.slug,
+          name: r.clients.name,
+          count: 1,
+        });
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name)
+    );
+  }, [baseRequests]);
+
+  // Narrow to the selected client (drives both list and status-tab counts)
+  const clientScoped = useMemo(
+    () =>
+      clientFilter === "all"
+        ? baseRequests
+        : baseRequests.filter((r) => r.clients?.slug === clientFilter),
+    [baseRequests, clientFilter]
+  );
+
+  // Count per status (reflects inclusion set + selected client)
   const counts = useMemo(() => {
-    const c = { all: requests.length, queued: 0, in_progress: 0, review: 0 };
-    for (const r of requests) {
+    const c = { all: clientScoped.length, queued: 0, in_progress: 0, review: 0 };
+    for (const r of clientScoped) {
       if (r.status in c) {
         c[r.status as keyof typeof c]++;
       }
     }
     return c;
-  }, [requests]);
+  }, [clientScoped]);
+
+  const filtersActive = activeTab !== "all" || clientFilter !== "all";
+
+  const clearFilters = () => {
+    setActiveTab("all");
+    setClientFilter("all");
+  };
 
   // Filter + sort
   const filteredRequests = useMemo(() => {
     let filtered =
       activeTab === "all"
-        ? requests
-        : requests.filter((r) => r.status === activeTab);
+        ? clientScoped
+        : clientScoped.filter((r) => r.status === activeTab);
 
     const sorted = [...filtered];
 
@@ -160,7 +213,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
     }
 
     return sorted;
-  }, [requests, activeTab, sortBy]);
+  }, [clientScoped, activeTab, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -168,7 +221,8 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Queue</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          All open requests across clients, sorted by what needs attention first.
+          Open requests across {showPaused ? "all" : "active"} clients, sorted by
+          what needs attention first.
         </p>
       </div>
 
@@ -205,8 +259,18 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
           ))}
         </div>
 
-        {/* Sort */}
-        <div className="flex items-center gap-2">
+        {/* Paused toggle + Sort */}
+        <div className="flex items-center gap-3">
+          {pausedCount > 0 && (
+            <button
+              onClick={() => setShowPaused((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              {showPaused
+                ? "Hide paused clients"
+                : `Show paused clients (${pausedCount})`}
+            </button>
+          )}
           <span className="text-xs text-muted-foreground">Sort:</span>
           <select
             value={sortBy}
@@ -222,11 +286,62 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
         </div>
       </div>
 
+      {/* Client filter chips */}
+      {clientChips.length > 0 && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
+          role="tablist"
+          aria-label="Filter by client"
+        >
+          <button
+            role="tab"
+            aria-selected={clientFilter === "all"}
+            onClick={() => setClientFilter("all")}
+            className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
+              clientFilter === "all"
+                ? "bg-foreground text-white"
+                : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
+            }`}
+          >
+            All clients
+          </button>
+          {clientChips.map((chip) => {
+            const selected = clientFilter === chip.slug;
+            return (
+              <button
+                key={chip.slug}
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setClientFilter(chip.slug)}
+                className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
+                  selected
+                    ? "bg-foreground text-white"
+                    : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
+                }`}
+              >
+                {chip.name}{" "}
+                <span className={selected ? "text-white/70" : "text-gray-400"}>
+                  &middot; {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Request list */}
       {filteredRequests.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg font-medium">All clear</p>
           <p className="text-sm mt-1">No requests match this filter.</p>
+          {filtersActive && (
+            <button
+              onClick={clearFilters}
+              className="mt-4 text-sm text-primary hover:underline underline-offset-2"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="border border-gray-200 rounded-xl bg-white overflow-hidden divide-y divide-gray-100">
@@ -256,6 +371,7 @@ function QueueRow({
   const newComment = hasNewComment(request, adminId);
   const deliverableCount = request.deliverables.length;
   const commentCount = request.comments.length;
+  const paused = isPaused(request);
 
   return (
     <div
@@ -307,6 +423,8 @@ function QueueRow({
               </Link>
             </span>
           )}
+
+          {paused && <PausedChip />}
 
           {/* Deliverables */}
           {deliverableCount > 0 && (
@@ -362,6 +480,8 @@ function QueueRow({
                 {request.clients.name}
               </span>
             )}
+
+            {paused && <PausedChip />}
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -395,6 +515,14 @@ function QueueRow({
 }
 
 // --- Sub-components ---
+
+function PausedChip() {
+  return (
+    <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 text-gray-500 text-[10px] font-medium px-1.5 py-0.5">
+      Paused
+    </span>
+  );
+}
 
 function PriorityIndicator({ priority }: { priority: number }) {
   if (priority >= 3) {
