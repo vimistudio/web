@@ -83,6 +83,10 @@ export function EditClientDialog({ client }: { client: Client }) {
 
     setIsSaving(true);
     const supabase = createClient();
+    // Re-stamp the note's freshness only when its text actually changed, so
+    // editing unrelated fields doesn't falsely refresh the "hace X días" caption.
+    const noteChanged =
+      (studioNote.trim() || null) !== (client.studio_note ?? null);
     const { error } = await supabase
       .from("clients")
       .update({
@@ -96,6 +100,11 @@ export function EditClientDialog({ client }: { client: Client }) {
         deal_terms: dealTerms.trim() || null,
         studio_note: studioNote.trim() || null,
         designer_id: designerId === UNASSIGNED ? null : designerId,
+        ...(noteChanged && {
+          studio_note_updated_at: studioNote.trim()
+            ? new Date().toISOString()
+            : null,
+        }),
       })
       .eq("id", client.id);
 

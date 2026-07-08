@@ -38,10 +38,16 @@ export function StudioNoteDialog({
 
   const save = async (value: string) => {
     setIsSaving(true);
+    const trimmed = value.trim();
     const supabase = createClient();
     const { error } = await supabase
       .from("clients")
-      .update({ studio_note: value.trim() || null })
+      .update({
+        studio_note: trimmed || null,
+        // Stamp on write so the client sidebar can show freshness and hide
+        // stale notes. Cleared alongside the note.
+        studio_note_updated_at: trimmed ? new Date().toISOString() : null,
+      })
       .eq("id", clientId);
 
     setIsSaving(false);

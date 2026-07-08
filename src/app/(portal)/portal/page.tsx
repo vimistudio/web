@@ -63,9 +63,21 @@ export default async function PortalPage() {
   // Fetch client name
   const { data: client } = await supabase
     .from("clients")
-    .select("name, retainer_amount, deal_terms, logo_url")
+    .select(
+      "name, retainer_amount, deal_terms, logo_url, studio_note, studio_note_updated_at, designer_id"
+    )
     .eq("id", clientId)
     .single();
+
+  // Resolve the assigned designer for the mobile studio strip (clients may read
+  // admin profiles — RLS policy from 20260413_allow_clients_to_read_admin_profiles).
+  const { data: designer } = client?.designer_id
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .eq("id", client.designer_id)
+        .maybeSingle()
+    : { data: null };
 
   // Fetch requests for this client
   const { data: requests } = await supabase
@@ -119,6 +131,9 @@ export default async function PortalPage() {
         milestones={(milestones ?? []) as Milestone[]}
         retainerAmount={client?.retainer_amount ?? null}
         dealTerms={client?.deal_terms ?? null}
+        studioNote={client?.studio_note ?? null}
+        studioNoteUpdatedAt={client?.studio_note_updated_at ?? null}
+        designer={designer ?? null}
       />
     </>
   );

@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "./locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
-import { STUDIO_WHATSAPP_URL } from "@/lib/studio";
+import {
+  STUDIO_WHATSAPP_URL,
+  isStudioNoteFresh,
+  studioNoteFreshness,
+} from "@/lib/studio";
 import type { Profile, StudioDesigner } from "./portal-shell";
 
 const navItems: { titleKey: PortalKey; href: string }[] = [
@@ -27,13 +31,18 @@ export function ClientSidebar({
   designer?: StudioDesigner | null;
 }) {
   const pathname = usePathname();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const client = profile.clients;
   const clientName = client?.name ?? "";
   const clientLogo = client?.logo_url;
-  // Admin-authored, per-client. Undefined before the migration lands → hidden.
+  // Admin-authored, per-client. Only shown while fresh (≤14d) — a stale
+  // presence note erodes trust more than showing nothing.
   const studioNote = client?.studio_note?.trim();
+  const noteFresh = isStudioNoteFresh(studioNote, client?.studio_note_updated_at);
+  const noteAge = noteFresh
+    ? studioNoteFreshness(client?.studio_note_updated_at, locale)
+    : null;
 
   const isActive = (href: string) =>
     href === "/portal"
@@ -115,10 +124,17 @@ export function ClientSidebar({
             </span>
           </div>
         </div>
-        {studioNote && (
-          <p className="font-serif italic text-xs leading-relaxed text-[color:var(--vimi-muted)]">
-            &ldquo;{studioNote}&rdquo;
-          </p>
+        {noteFresh && studioNote && (
+          <div className="flex flex-col gap-1">
+            <p className="font-serif italic text-xs leading-relaxed text-[color:var(--vimi-muted)]">
+              &ldquo;{studioNote}&rdquo;
+            </p>
+            {noteAge && (
+              <span className="text-[10.5px] text-[color:var(--vimi-faint)]">
+                {noteAge}
+              </span>
+            )}
+          </div>
         )}
         <a
           href={STUDIO_WHATSAPP_URL}
