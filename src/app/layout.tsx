@@ -1,10 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
 
+// Inter powers the marketing site. The portal opts into Instrument Sans/Serif
+// via the `font-sans`/`font-serif` classes (see tailwind fontFamily → the CSS
+// variables declared below), so the variables are exposed globally while
+// marketing keeps Inter as its body font.
 const inter = Inter({ subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-instrument-sans",
+  display: "swap",
+});
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -113,7 +129,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body
+        className={`${inter.className} ${instrumentSans.variable} ${instrumentSerif.variable}`}
+      >
         {children}
         <SpeedInsights />
         <Analytics />

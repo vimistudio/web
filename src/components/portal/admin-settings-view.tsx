@@ -197,7 +197,7 @@ export function AdminSettingsView({
             <Button
               onClick={handleInvite}
               disabled={!email.trim() || !clientId || isInviting}
-              className="w-full gap-2 bg-[#909af7] hover:bg-[#7b85e8]"
+              className="w-full gap-2 bg-primary hover:bg-primary/90"
             >
               <PlusSignIcon size={16} />
               {isInviting ? "Inviting..." : "Send Invite"}
@@ -270,7 +270,7 @@ export function AdminSettingsView({
                         className="w-8 h-8 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#909af7] text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-semibold shrink-0">
                         {(member.full_name || member.email || "?").charAt(0).toUpperCase()}
                       </div>
                     )}

@@ -31,7 +31,7 @@ import {
 import { CheckmarkCircle01Icon, ArrowRight01Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocale } from "./locale-provider";
 
@@ -191,29 +191,15 @@ export function DirectionsVoting({
     setDrawerOpen(false);
     setSaving(false);
 
-    // Celebration!
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    if (!prefersReducedMotion) {
-      // Fire confetti from button position or center
-      const rect = voteButtonRef.current?.getBoundingClientRect();
-      const origin = rect
-        ? {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight,
-          }
-        : { x: 0.5, y: 0.6 };
-
-      confetti({
-        particleCount: 60,
-        spread: 70,
-        origin,
-        colors: ["#909af7", "#7076CF", "#ffffff", "#111111"],
-        disableForReducedMotion: true,
-      });
-    }
+    // Celebration! (fireConfetti gates on prefers-reduced-motion)
+    const rect = voteButtonRef.current?.getBoundingClientRect();
+    const origin = rect
+      ? {
+          x: (rect.left + rect.width / 2) / window.innerWidth,
+          y: (rect.top + rect.height / 2) / window.innerHeight,
+        }
+      : { x: 0.5, y: 0.6 };
+    fireConfetti({ particleCount: 60, spread: 70, origin });
 
     // Haptic feedback
     if (navigator.vibrate) {
@@ -269,12 +255,12 @@ export function DirectionsVoting({
 
     if (vote && voteEvent) {
       return (
-        <div className="bg-gradient-to-r from-[#909af7]/10 to-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-5 space-y-3">
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <CheckmarkCircle01Icon size={20} className="text-[#909af7]" />
+            <CheckmarkCircle01Icon size={20} className="text-primary" />
             <p className="font-semibold text-sm">
               {clientName} {t("detail.clientPicked")}{" "}
-              <span className="text-[#909af7]">
+              <span className="text-primary">
                 {vote.direction_label || vote.file_name}
               </span>
             </p>
@@ -326,7 +312,7 @@ export function DirectionsVoting({
         </div>
 
         {winner && (
-          <Card className="ring-2 ring-[#909af7] shadow-md overflow-hidden">
+          <Card className="ring-2 ring-primary shadow-md overflow-hidden">
             {isImage && winner.url && (
               <div className="aspect-[4/3] bg-muted">
                 <img
@@ -341,7 +327,7 @@ export function DirectionsVoting({
                 <p className="font-semibold text-base">
                   {winner.direction_label || winner.file_name}
                 </p>
-                <Badge className="bg-[#909af7] text-white text-[10px]">
+                <Badge className="bg-primary text-white text-[10px]">
                   {t("detail.yourPick")}
                 </Badge>
               </div>
@@ -410,7 +396,7 @@ export function DirectionsVoting({
   return (
     <div className="space-y-4">
       {/* Hero */}
-      <div className="bg-gradient-to-r from-[#909af7]/10 to-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-5 text-center space-y-1">
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-5 text-center space-y-1">
         <p className="font-semibold text-base">{t("detail.pickFavorite")}</p>
         <p className="text-sm text-muted-foreground">
           {t("detail.pickSub")}
@@ -455,7 +441,7 @@ export function DirectionsVoting({
                 onClick={() => carouselApi?.scrollTo(i)}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   i === currentSlide
-                    ? "w-6 bg-[#909af7]"
+                    ? "w-6 bg-primary"
                     : "w-2 bg-muted-foreground/30"
                 }`}
                 aria-label={`Go to direction ${i + 1}`}
@@ -526,7 +512,7 @@ export function DirectionsVoting({
             <Button
               onClick={handleConfirmVote}
               disabled={saving}
-              className="h-14 text-base font-semibold bg-[#909af7] hover:bg-[#7076CF] active:scale-95 transition-all"
+              className="h-14 text-base font-semibold bg-primary hover:bg-primary/90 active:scale-95 transition-all"
             >
               {saving ? t("detail.confirming") : t("detail.confirmVote")}
             </Button>
@@ -579,7 +565,7 @@ const DirectionCard = forwardRef<
             loading="lazy"
           />
           {direction.is_recommended && (
-            <Badge className="absolute top-2 right-2 bg-[#909af7]/90 text-white text-[10px] backdrop-blur-sm">
+            <Badge className="absolute top-2 right-2 bg-primary/90 text-white text-[10px] backdrop-blur-sm">
               {labels.designersPick}
             </Badge>
           )}
@@ -590,7 +576,7 @@ const DirectionCard = forwardRef<
             {direction.file_name.split(".").pop()?.toUpperCase()}
           </span>
           {direction.is_recommended && (
-            <Badge className="absolute top-2 right-2 bg-[#909af7]/90 text-white text-[10px] backdrop-blur-sm">
+            <Badge className="absolute top-2 right-2 bg-primary/90 text-white text-[10px] backdrop-blur-sm">
               {labels.designersPick}
             </Badge>
           )}
@@ -626,8 +612,8 @@ const DirectionCard = forwardRef<
             aria-label={`${labels.pickThis}: ${direction.direction_label || direction.file_name}`}
             className={`w-full h-14 text-base font-semibold transition-all active:scale-95 ${
               isPending
-                ? "bg-[#909af7] hover:bg-[#7076CF] text-white"
-                : "hover:border-[#909af7] hover:text-[#909af7]"
+                ? "bg-primary hover:bg-primary/90 text-white"
+                : "hover:border-primary hover:text-primary"
             }`}
           >
             {isPending ? (

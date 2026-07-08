@@ -186,7 +186,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
                 px-3 py-1.5 rounded-full text-sm font-medium transition-colors
                 ${
                   activeTab === tab.key
-                    ? "bg-[#909af7] text-white"
+                    ? "bg-primary text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }
               `}
@@ -211,7 +211,7 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#909af7]/30"
+            className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.key} value={opt.key}>
@@ -273,7 +273,7 @@ function QueueRow({
         {/* Desktop row */}
         <div className="hidden sm:flex items-center gap-3">
           {/* Title */}
-          <span className="font-medium text-sm truncate group-hover:text-[#909af7] transition-colors">
+          <span className="font-medium text-sm truncate group-hover:text-primary transition-colors">
             {request.title}
           </span>
 
@@ -301,7 +301,7 @@ function QueueRow({
             >
               <Link
                 href={`/portal/admin/clients/${request.clients.slug}`}
-                className="text-xs text-muted-foreground hover:text-[#909af7] transition-colors"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 {request.clients.name}
               </Link>
@@ -342,7 +342,7 @@ function QueueRow({
         {/* Mobile card layout */}
         <div className="sm:hidden space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm truncate group-hover:text-[#909af7] transition-colors">
+            <span className="font-medium text-sm truncate group-hover:text-primary transition-colors">
               {request.title}
             </span>
           </div>

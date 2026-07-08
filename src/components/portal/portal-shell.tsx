@@ -18,6 +18,7 @@ interface Client {
   slug: string;
   locale?: string;
   logo_url?: string | null;
+  accent_color?: string | null;
 }
 
 export interface Profile {
@@ -46,12 +47,20 @@ export function PortalShell({ user, profile, children }: PortalShellProps) {
     (profile.clients?.locale as Locale) ||
     "en";
 
+  // Per-client accent: injected as the --accent CSS variable so the whole
+  // portal shell (buttons, dots, progress, avatars) takes on the client's
+  // brand. Falls back to the globals.css default (#5B4BD6) when the client has
+  // no accent_color set, or when the column is absent (reads as undefined).
+  const accentStyle = profile.clients?.accent_color
+    ? ({ "--accent": profile.clients.accent_color } as React.CSSProperties)
+    : undefined;
+
   if (isAdmin) {
     return (
       <LocaleProvider locale={locale}>
         <SidebarProvider>
           <AdminSidebar user={user} profile={profile} />
-          <SidebarInset>
+          <SidebarInset className="font-sans">
             <PortalHeader user={user} profile={profile} />
             <main className="flex-1 p-4 md:p-6">{children}</main>
           </SidebarInset>
@@ -62,7 +71,10 @@ export function PortalShell({ user, profile, children }: PortalShellProps) {
 
   return (
     <LocaleProvider locale={locale}>
-      <div className="min-h-dvh flex flex-col bg-[#FAF9F7]">
+      <div
+        className="min-h-dvh flex flex-col bg-[var(--vimi-page)] font-sans text-[color:var(--vimi-ink)]"
+        style={accentStyle}
+      >
         <ClientHeader user={user} profile={profile} />
         <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>
         {/* Bottom tabs only on mobile */}

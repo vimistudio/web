@@ -23,4 +23,15 @@ export const board = {
   "board.empty.in_progress": { en: "Your designer is heads-down on your work", es: "Tu diseñador está concentrado en tu trabajo" },
   "board.empty.review": { en: "Nothing to review right now", es: "Nada que revisar por ahora" },
   "board.empty.done": { en: "Completed designs will show up here", es: "Los diseños completados aparecerán aquí" },
+
+  // Client home hero (Vimi Client Journey)
+  "home.greeting.morning": { en: "Good morning", es: "Buenos días" },
+  "home.greeting.afternoon": { en: "Good afternoon", es: "Buenas tardes" },
+  "home.greeting.evening": { en: "Good evening", es: "Buenas noches" },
+  "home.summary.review": { en: "{count} for your review", es: "{count} para revisar" },
+  "home.summary.inProgress": { en: "{count} in the works", es: "{count} en proceso" },
+  "home.card.yourTurn": { en: "YOUR TURN", es: "TU TURNO" },
+  "home.needsYou.sub": { en: "Ready for your review", es: "Listo para tu revisión" },
+  "home.needsYou.more": { en: "+{count} more waiting", es: "+{count} más esperando" },
+  "home.needsYou.cta": { en: "Review now", es: "Revisar ahora" },
 } as const;
