@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,8 +26,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
+import { assignAsClient, applyInvite } from "@/lib/portal/invites";
 import { toast } from "sonner";
+import Image from "next/image";
+import { TeamRolesSection, type Profile } from "@/components/portal/team-roles-section";
 
 interface Invite {
   email: string;
@@ -43,58 +45,102 @@ interface Client {
   slug: string;
 }
 
-interface Member {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  client_id: string | null;
-  first_login_at: string | null;
-  created_at: string;
-  clients: { id: string; name: string } | null;
-}
-
 interface AdminSettingsViewProps {
   invites: Invite[];
   clients: Client[];
-  members: Member[];
+  profiles: Profile[];
+  currentUserId: string;
 }
 
 export function AdminSettingsView({
   invites,
   clients,
-  members,
+  profiles,
+  currentUserId,
 }: AdminSettingsViewProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [clientId, setClientId] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [error, setError] = useState("");
-  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [conflict, setConflict] = useState<{
+    kind: "admin" | "member" | "other";
+    profile: Profile;
+  } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+  const [inviteToResolve, setInviteToResolve] = useState<Invite | null>(null);
+  const [isResolvingInvite, setIsResolvingInvite] = useState(false);
 
-  const handleRemoveMember = async () => {
-    if (!memberToRemove) return;
-    setIsRemoving(true);
+  const selectedClientName =
+    clients.find((c) => c.id === clientId)?.name ?? "this project";
+
+  // Which pending-invite emails already have an account (invite will never
+  // apply on sign-in — needs manual resolution).
+  const profileByEmail = useMemo(() => {
+    const map = new Map<string, Profile>();
+    for (const p of profiles) {
+      if (p.email) map.set(p.email.toLowerCase(), p);
+    }
+    return map;
+  }, [profiles]);
+
+  const handleResolveInvite = async () => {
+    if (!inviteToResolve) return;
+    const existing = profileByEmail.get(inviteToResolve.email.toLowerCase());
+    if (!existing) return;
+    setIsResolvingInvite(true);
     const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ client_id: null })
-      .eq("id", memberToRemove.id);
-    setIsRemoving(false);
-    if (updateError) {
-      toast.error("Couldn't remove member");
+    const result = await applyInvite(supabase, {
+      profileId: existing.id,
+      email: inviteToResolve.email,
+      clientId: inviteToResolve.client_id,
+    });
+    setIsResolvingInvite(false);
+    if (result.error) {
+      toast.error(
+        result.partial
+          ? `Role updated but couldn't clear the invite: ${result.error}`
+          : result.error
+      );
+      if (result.partial) {
+        setInviteToResolve(null);
+        router.refresh();
+      }
       return;
     }
     toast.success(
-      `${memberToRemove.full_name || memberToRemove.email} removed from ${memberToRemove.clients?.name ?? "client"}`
+      `${existing.full_name || existing.email} is now a Client of ${inviteToResolve.clients?.name ?? "their project"}`
     );
-    setMemberToRemove(null);
+    setInviteToResolve(null);
     router.refresh();
+  };
+
+  const resetConflict = () => {
+    if (conflict) setConflict(null);
+    if (error) setError("");
   };
 
   const handleInvite = async () => {
     if (!email.trim() || !clientId) return;
+    const normalized = email.trim().toLowerCase();
+
+    // Only ever create an invite row for an email that will genuinely consume
+    // it on first sign-in. If a profile already exists, branch instead.
+    const existing = profiles.find(
+      (p) => p.email?.toLowerCase() === normalized
+    );
+    if (existing) {
+      if (existing.role === "admin") {
+        setConflict({ kind: "admin", profile: existing });
+      } else if (existing.client_id === clientId) {
+        setConflict({ kind: "member", profile: existing });
+      } else {
+        setConflict({ kind: "other", profile: existing });
+      }
+      return;
+    }
+
     setIsInviting(true);
     setError("");
 
@@ -135,6 +181,33 @@ export function AdminSettingsView({
     router.refresh();
   };
 
+  const handleResolveConflict = async () => {
+    if (!conflict) return;
+    setIsResolving(true);
+    const supabase = createClient();
+    const result = await assignAsClient(supabase, {
+      profileId: conflict.profile.id,
+      clientId,
+    });
+    setIsResolving(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    const who =
+      conflict.profile.full_name || conflict.profile.email || "They";
+    toast.success(
+      conflict.kind === "admin"
+        ? `${who} is now a Client of ${selectedClientName}`
+        : `${who} moved to ${selectedClientName}`
+    );
+    setConfirmOpen(false);
+    setConflict(null);
+    setEmail("");
+    setClientId("");
+    router.refresh();
+  };
+
   const handleRevokeInvite = async (inviteEmail: string) => {
     const supabase = createClient();
     await supabase
@@ -168,7 +241,10 @@ export function AdminSettingsView({
                 type="email"
                 placeholder="client@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  resetConflict();
+                }}
               />
             </div>
 
@@ -176,7 +252,13 @@ export function AdminSettingsView({
               <Label className="text-xs font-medium tracking-wider text-muted-foreground">
                 PROJECT
               </Label>
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select
+                value={clientId}
+                onValueChange={(v) => {
+                  setClientId(v);
+                  resetConflict();
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a client project" />
                 </SelectTrigger>
@@ -192,6 +274,57 @@ export function AdminSettingsView({
 
             {error && (
               <p className="text-sm text-red-500">{error}</p>
+            )}
+
+            {conflict && (
+              <div className="rounded-lg border border-[#F3D9A6] bg-[#FFF8ED] px-3 py-3 space-y-2">
+                {conflict.kind === "admin" && (
+                  <>
+                    <p className="text-sm text-[color:var(--status-review-ink)]">
+                      This email is already an{" "}
+                      <span className="font-medium">Admin</span> — an invite
+                      can&apos;t apply to it.
+                    </p>
+                    <Button
+                      onClick={() => setConfirmOpen(true)}
+                      className="w-full bg-[var(--vimi-ink)] hover:bg-[var(--vimi-ink)]/90"
+                    >
+                      Convert to client of {selectedClientName}
+                    </Button>
+                  </>
+                )}
+                {conflict.kind === "member" && (
+                  <p className="text-sm text-[color:var(--status-review-ink)]">
+                    Already a member of{" "}
+                    <span className="font-medium">{selectedClientName}</span>.
+                    Nothing to do.
+                  </p>
+                )}
+                {conflict.kind === "other" && (
+                  <>
+                    <p className="text-sm text-[color:var(--status-review-ink)]">
+                      <span className="font-medium">
+                        {conflict.profile.email}
+                      </span>{" "}
+                      currently belongs to{" "}
+                      <span className="font-medium">
+                        {clients.find(
+                          (c) => c.id === conflict.profile.client_id
+                        )?.name ??
+                          conflict.profile.clients?.name ??
+                          "another client"}
+                      </span>
+                      .
+                    </p>
+                    <Button
+                      onClick={() => setConfirmOpen(true)}
+                      className="w-full bg-[var(--vimi-ink)] hover:bg-[var(--vimi-ink)]/90"
+                    >
+                      Move to {selectedClientName}
+                    </Button>
+                  </>
+                )}
+              </div>
             )}
 
             <Button
@@ -212,33 +345,61 @@ export function AdminSettingsView({
 
         {invites.length > 0 ? (
           <div className="space-y-2">
-            {invites.map((invite) => (
-              <Card key={invite.email}>
-                <CardContent className="py-3 px-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{invite.email}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0"
-                      >
-                        {invite.clients?.name ?? "Unknown"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        Invited{" "}
-                        {new Date(invite.created_at).toLocaleDateString()}
-                      </span>
+            {invites.map((invite) => {
+              const conflictProfile = profileByEmail.get(
+                invite.email.toLowerCase()
+              );
+              return (
+                <Card key={invite.email}>
+                  <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {invite.email}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0"
+                        >
+                          {invite.clients?.name ?? "Unknown"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Invited{" "}
+                          {new Date(invite.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {conflictProfile ? (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] text-[color:var(--status-review-ink)]">
+                            {invite.email} already has{" "}
+                            {conflictProfile.role === "admin"
+                              ? "an Admin"
+                              : "a Client"}{" "}
+                            account — this invite will never apply
+                          </span>
+                          <button
+                            onClick={() => setInviteToResolve(invite)}
+                            className="inline-flex items-center rounded-full bg-[#FFF3DE] text-[color:var(--status-review-ink)] text-[11px] px-2.5 py-1 hover:bg-[#FFE9C7] transition-colors"
+                          >
+                            Resolve
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          Awaiting first sign-in
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleRevokeInvite(invite.email)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                  >
-                    <Cancel01Icon size={16} />
-                  </button>
-                </CardContent>
-              </Card>
-            ))}
+                    <button
+                      onClick={() => handleRevokeInvite(invite.email)}
+                      className="text-muted-foreground hover:text-red-500 transition-colors p-1 shrink-0"
+                    >
+                      <Cancel01Icon size={16} />
+                    </button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -247,98 +408,47 @@ export function AdminSettingsView({
         )}
       </div>
 
-      {/* Active Members */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-medium">Members</h2>
-          <p className="text-sm text-muted-foreground">
-            People who have already signed in and have access to a client project.
-          </p>
-        </div>
+      {/* Team & Roles */}
+      <TeamRolesSection
+        profiles={profiles}
+        clients={clients}
+        invites={invites}
+        currentUserId={currentUserId}
+      />
 
-        {members.length > 0 ? (
-          <div className="space-y-2">
-            {members.map((member) => (
-              <Card key={member.id}>
-                <CardContent className="py-3 px-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {member.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={member.avatar_url}
-                        alt={member.full_name || member.email || ""}
-                        className="w-8 h-8 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-semibold shrink-0">
-                        {(member.full_name || member.email || "?").charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {member.full_name || member.email}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          {member.clients?.name ?? "Unknown"}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {member.email}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setMemberToRemove(member)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors p-1 shrink-0"
-                    title="Remove access"
-                  >
-                    <Cancel01Icon size={16} />
-                  </button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No members have signed in yet.
-          </p>
-        )}
-      </div>
-
-      {/* Remove member confirmation */}
+      {/* Resolve stale invite confirmation */}
       <AlertDialog
-        open={!!memberToRemove}
-        onOpenChange={(open) => !open && setMemberToRemove(null)}
+        open={!!inviteToResolve}
+        onOpenChange={(open) => !open && setInviteToResolve(null)}
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Remove {memberToRemove?.full_name || memberToRemove?.email}?
+              Apply invite to {inviteToResolve?.email}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              They&apos;ll lose access to{" "}
+              This makes them a{" "}
+              <span className="font-medium">client</span> of{" "}
               <span className="font-medium">
-                {memberToRemove?.clients?.name ?? "this client"}
+                {inviteToResolve?.clients?.name ?? "their project"}
               </span>{" "}
-              immediately. Their requests, comments, and uploads stay intact.
-              You can re-invite them later if needed.
+              and clears this pending invite. If they were an Admin, they&apos;ll
+              lose studio-wide access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isResolvingInvite}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                handleRemoveMember();
+                handleResolveInvite();
               }}
-              disabled={isRemoving}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={isResolvingInvite}
+              className="bg-[var(--vimi-ink)] hover:bg-[var(--vimi-ink)]/90 text-white"
             >
-              {isRemoving ? "Removing..." : "Remove access"}
+              {isResolvingInvite ? "Applying..." : "Apply invite"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -364,6 +474,55 @@ export function AdminSettingsView({
           </CardContent>
         </Card>
       </div>
+
+      {/* Convert / move confirmation */}
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => !open && setConfirmOpen(false)}
+      >
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {conflict?.kind === "admin"
+                ? `Convert ${conflict.profile.full_name || conflict.profile.email} to a client?`
+                : `Move ${conflict?.profile.full_name || conflict?.profile.email} to ${selectedClientName}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {conflict?.kind === "admin" ? (
+                <>
+                  They&apos;ll <span className="font-medium">lose Admin access</span>{" "}
+                  — no more visibility into all clients, revenue, or settings —
+                  and become a client of{" "}
+                  <span className="font-medium">{selectedClientName}</span>.
+                </>
+              ) : (
+                <>
+                  They&apos;ll lose access to their current client and only see{" "}
+                  <span className="font-medium">{selectedClientName}</span> going
+                  forward. Their requests and comments stay intact.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResolving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleResolveConflict();
+              }}
+              disabled={isResolving}
+              className="bg-[var(--vimi-ink)] hover:bg-[var(--vimi-ink)]/90 text-white"
+            >
+              {isResolving
+                ? "Working..."
+                : conflict?.kind === "admin"
+                  ? "Convert to client"
+                  : "Move client"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

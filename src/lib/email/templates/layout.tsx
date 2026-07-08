@@ -13,6 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import type { Locale } from "@/lib/portal-strings";
 
 const BRAND = {
   primary: "#909AF7",
@@ -30,14 +31,30 @@ interface EmailLayoutProps {
   children: React.ReactNode;
   ctaUrl?: string;
   ctaLabel?: string;
+  locale?: Locale;
 }
+
+const FOOTER_STRINGS = {
+  en: {
+    tagline: "Design partnership for brands that move fast",
+    disclaimer:
+      "You received this because you're part of a Vimi Studio project. Visit your portal at vimistudio.com to manage your notification preferences.",
+  },
+  es: {
+    tagline: "Diseño para marcas que se mueven rápido",
+    disclaimer:
+      "Recibiste este correo porque formas parte de un proyecto de Vimi Studio. Visita tu portal en vimistudio.com para gestionar tus preferencias de notificación.",
+  },
+} as const;
 
 export function EmailLayout({
   previewText,
   children,
   ctaUrl,
   ctaLabel,
+  locale = "en",
 }: EmailLayoutProps) {
+  const footerStrings = FOOTER_STRINGS[locale];
   return (
     <Html>
       <Head>
@@ -82,13 +99,9 @@ export function EmailLayout({
               <Link href="https://vimistudio.com" style={footerLink}>
                 Vimi Studio
               </Link>{" "}
-              · Design partnership for brands that move fast
+              · {footerStrings.tagline}
             </Text>
-            <Text style={footerMuted}>
-              You received this because you&apos;re part of a Vimi Studio
-              project. Visit your portal at vimistudio.com to manage your
-              notification preferences.
-            </Text>
+            <Text style={footerMuted}>{footerStrings.disclaimer}</Text>
           </Section>
         </Container>
       </Body>

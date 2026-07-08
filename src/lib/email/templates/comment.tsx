@@ -1,5 +1,6 @@
 import * as React from "react";
 import { EmailLayout, BRAND, Heading, Text, Section } from "./layout";
+import type { Locale } from "@/lib/portal-strings";
 
 interface CommentAddedEmailProps {
   requestTitle: string;
@@ -7,7 +8,21 @@ interface CommentAddedEmailProps {
   commenterName: string;
   commentBody: string;
   requestType: string;
+  locale?: Locale;
 }
+
+const STRINGS = {
+  en: {
+    preview: (name: string, title: string) => `${name} commented on "${title}"`,
+    cta: "View Conversation",
+    heading: "New Comment",
+  },
+  es: {
+    preview: (name: string, title: string) => `${name} comentó en «${title}»`,
+    cta: "Ver la conversación",
+    heading: "Nuevo comentario",
+  },
+} as const;
 
 export function CommentAddedEmail({
   requestTitle,
@@ -15,7 +30,9 @@ export function CommentAddedEmail({
   commenterName,
   commentBody,
   requestType,
+  locale = "en",
 }: CommentAddedEmailProps) {
+  const s = STRINGS[locale];
   const truncated =
     commentBody.length > 200
       ? commentBody.slice(0, 200) + "..."
@@ -23,11 +40,12 @@ export function CommentAddedEmail({
 
   return (
     <EmailLayout
-      previewText={`${commenterName} commented on "${requestTitle}"`}
+      previewText={s.preview(commenterName, requestTitle)}
       ctaUrl={requestUrl}
-      ctaLabel="View Conversation"
+      ctaLabel={s.cta}
+      locale={locale}
     >
-      <Heading style={heading}>New Comment</Heading>
+      <Heading style={heading}>{s.heading}</Heading>
       <Text style={meta}>
         {requestType} &middot; {requestTitle}
       </Text>
