@@ -7,6 +7,7 @@ import { LinkingAccount } from "@/components/portal/linking-account";
 import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
 import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
+import { type Locale } from "@/lib/portal-i18n";
 
 export default async function PortalLayout({
   children,
@@ -68,18 +69,26 @@ export default async function PortalLayout({
   //   - Pending invite still exists for this email → LinkingAccount
   //   - Otherwise → NoAccess (correct for uninvited users)
   if (profile.role === "client" && !profile.client_id) {
+    const selfLocale = (profile.locale as Locale) || "en";
     if (justClaimed) {
-      return <LinkingAccount />;
+      const claimedLocale =
+        (profile.locale as Locale) ||
+        ((profile.clients as { locale?: string } | null)?.locale as Locale) ||
+        "en";
+      return <LinkingAccount locale={claimedLocale} />;
     }
     const { data: pendingInvite } = await supabase
       .from("invited_emails")
-      .select("email")
+      .select("email, clients(locale)")
       .eq("email", (user.email ?? "").toLowerCase())
       .maybeSingle();
     if (pendingInvite) {
-      return <LinkingAccount />;
+      const inviteLocale =
+        ((pendingInvite.clients as { locale?: string } | null)?.locale as Locale) ||
+        selfLocale;
+      return <LinkingAccount locale={inviteLocale} />;
     }
-    return <NoAccess />;
+    return <NoAccess locale={selfLocale} />;
   }
 
   // Admin impersonation: check cookie

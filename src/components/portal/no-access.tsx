@@ -4,8 +4,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { t, type Locale } from "@/lib/portal-i18n";
 
-export function NoAccess() {
+export function NoAccess({ locale = "en" }: { locale?: Locale }) {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -46,11 +47,10 @@ export function NoAccess() {
           <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-8 space-y-6 shadow-2xl shadow-black/20 text-center">
             <div className="space-y-2">
               <h1 className="text-xl font-semibold text-white">
-                You don&apos;t have access yet
+                {t("gate.noAccess.title", locale)}
               </h1>
               <p className="text-sm text-[#6B6F99] leading-relaxed">
-                This portal is invite-only. If you&apos;re a Vimi Studio client,
-                reach out to get set up:
+                {t("gate.noAccess.body", locale)}
               </p>
               <a
                 href="mailto:hello@vimistudio.com"
@@ -64,7 +64,7 @@ export function NoAccess() {
               onClick={handleSignOut}
               className="w-full h-11 bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white rounded-xl font-medium text-sm"
             >
-              Sign out
+              {t("profile.signOut", locale)}
             </Button>
           </div>
         </div>

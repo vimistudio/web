@@ -30,6 +30,20 @@ export const chrome = {
   "profile.role": { en: "Account type", es: "Tipo de cuenta" },
   "profile.signInMethod": { en: "You sign in with", es: "Inicias sesión con" },
   "profile.about": { en: "Questions? We're here for you — reach out at", es: "¿Preguntas? Estamos para ti — escríbenos a" },
+  "profile.admin": { en: "Admin", es: "Administrador" },
+  "profile.client": { en: "Client", es: "Cliente" },
+  "profile.unknown": { en: "Unknown", es: "Desconocido" },
+  "profile.localeError": { en: "Could not update language", es: "No pudimos actualizar el idioma" },
+
+  // Access gate surfaces (shown outside the locale provider — see gate.* callers)
+  "gate.noAccess.title": { en: "You don't have access yet", es: "Aún no tienes acceso" },
+  "gate.noAccess.body": { en: "This portal is invite-only. If you're a Vimi Studio client, reach out to get set up:", es: "Este portal es solo por invitación. Si eres cliente de Vimi Studio, escríbenos para configurarte:" },
+  "gate.linking.title": { en: "Welcome — getting your project ready…", es: "Bienvenido — preparando tu proyecto…" },
+  "gate.linking.body": { en: "Linking your account to your design portal. This usually takes a second.", es: "Estamos conectando tu cuenta con tu portal de diseño. Esto suele tomar un segundo." },
+  "gate.linking.stillHere": { en: "Still here after a few seconds? Refresh the page.", es: "¿Sigues aquí después de unos segundos? Actualiza la página." },
+  "gate.almost.title": { en: "Almost there!", es: "¡Ya casi!" },
+  "gate.almost.body": { en: "Your account hasn't been linked to a project yet. We're getting it set up for you — check back soon.", es: "Tu cuenta aún no está vinculada a un proyecto. Lo estamos configurando para ti — vuelve pronto." },
+  "gate.almost.contact": { en: "Questions? Reach out at hello@vimistudio.com", es: "¿Preguntas? Escríbenos a hello@vimistudio.com" },
 
   // Login
   "login.welcome": { en: "Welcome to your studio", es: "Tu estudio te espera" },

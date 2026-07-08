@@ -58,7 +58,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
     setIsSavingLocale(false);
     if (error) {
       setCurrentLocale(locale);
-      toast.error("Could not update language");
+      toast.error(t("profile.localeError"));
       return;
     }
     router.refresh();
@@ -86,7 +86,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold">
-                {profile.full_name ?? "Unknown"}
+                {profile.full_name ?? t("profile.unknown")}
               </h2>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <div className="flex items-center gap-2 mt-1">
@@ -98,7 +98,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
                       : "bg-emerald-50 text-emerald-700 border-emerald-200"
                   }
                 >
-                  {isAdmin ? "Admin" : "Client"}
+                  {isAdmin ? t("profile.admin") : t("profile.client")}
                 </Badge>
               </div>
             </div>
@@ -150,8 +150,8 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t("profile.role")}</span>
-            <span className="text-sm font-medium capitalize">
-              {profile.role}
+            <span className="text-sm font-medium">
+              {isAdmin ? t("profile.admin") : t("profile.client")}
             </span>
           </div>
 

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { t, type Locale } from "@/lib/portal-i18n";
 
 /**
  * Transitional state shown when a user has just been invited and we're
@@ -8,7 +9,7 @@ import Image from "next/image";
  * middle of being claimed (e.g. invite was just sent, race between trigger
  * + claim_invite + profile read).
  */
-export function LinkingAccount() {
+export function LinkingAccount({ locale = "en" }: { locale?: Locale }) {
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0a0b14]">
       {/* Auto-refresh after 1.5s — gives the DB a beat to commit then reloads
@@ -52,15 +53,15 @@ export function LinkingAccount() {
 
             <div className="space-y-2">
               <h1 className="text-xl font-semibold text-white">
-                Welcome — getting your project ready…
+                {t("gate.linking.title", locale)}
               </h1>
               <p className="text-sm text-[#6B6F99] leading-relaxed">
-                Linking your account to your design portal. This usually takes a second.
+                {t("gate.linking.body", locale)}
               </p>
             </div>
 
             <p className="text-[11px] text-[#6B6F99]/60">
-              Still here after a few seconds? Refresh the page.
+              {t("gate.linking.stillHere", locale)}
             </p>
           </div>
         </div>

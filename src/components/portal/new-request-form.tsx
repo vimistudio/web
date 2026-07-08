@@ -133,7 +133,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
       .single();
 
     if (error || !request) {
-      toast.error("Couldn't submit your request. Please try again.");
+      toast.error(t("form.error.body"));
       setIsSubmitting(false);
       return;
     }
@@ -162,7 +162,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
       );
       if (failedUploads > 0) {
         toast.warning(
-          `${failedUploads} file${failedUploads > 1 ? "s" : ""} failed to upload. Your request was still submitted.`
+          t("form.uploadFailed", { count: failedUploads, s: failedUploads > 1 ? "s" : "" })
         );
       }
     }

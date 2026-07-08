@@ -6,6 +6,9 @@ export const board = {
 
   "board.active": { en: "Active", es: "Activo" },
   "board.workingOn": { en: "Your studio is working on {count} design{s}", es: "Tu estudio está trabajando en {count} diseño{s}" },
+  "board.updated": { en: "Updated {date}", es: "Actualizado {date}" },
+  "board.inTheWorks": { en: "In the works", es: "En proceso" },
+  "board.dropHere": { en: "Drop here", es: "Suelta aquí" },
   "board.newRequest": { en: "New Request", es: "Nueva solicitud" },
   "board.emptyTitle": { en: "Your studio is ready", es: "Tu estudio está listo" },
   "board.emptyBody": { en: "What would you like us to design first?", es: "¿Qué diseñamos primero?" },
