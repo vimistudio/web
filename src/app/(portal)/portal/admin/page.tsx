@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AdminDashboard } from "@/components/portal/admin-dashboard";
+import { AdminInviteBanner } from "@/components/portal/admin-invite-banner";
 
 export default async function AdminDashboardPage() {
   const supabase = createClient();
@@ -17,6 +18,14 @@ export default async function AdminDashboardPage() {
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+
+  // Surface a stale invite addressed to the signed-in admin (they clicked a
+  // client invite email but have an admin account).
+  const { data: selfInvite } = await supabase
+    .from("invited_emails")
+    .select("email, client_id, clients(name)")
+    .eq("email", user.email?.toLowerCase() ?? "")
+    .maybeSingle();
 
   // Fetch all clients with request counts
   const { data: clients } = await supabase
@@ -101,17 +110,26 @@ export default async function AdminDashboardPage() {
   });
 
   return (
-    <AdminDashboard
-      stats={{
-        totalClients,
-        openRequests,
-        needsReview,
-        monthlyRevenue,
-        activeClientCount: totalClients,
-      }}
-      clients={clientSummaries}
-      recentActivity={recentComments ?? []}
-      adminName={profile.full_name ?? undefined}
-    />
+    <>
+      {selfInvite && (
+        <AdminInviteBanner
+          email={selfInvite.email}
+          clientId={selfInvite.client_id}
+          clientName={selfInvite.clients?.name ?? "your project"}
+        />
+      )}
+      <AdminDashboard
+        stats={{
+          totalClients,
+          openRequests,
+          needsReview,
+          monthlyRevenue,
+          activeClientCount: totalClients,
+        }}
+        clients={clientSummaries}
+        recentActivity={recentComments ?? []}
+        adminName={profile.full_name ?? undefined}
+      />
+    </>
   );
 }
