@@ -26,6 +26,8 @@ export function ClientSidebar({ profile }: { profile: Profile }) {
   const client = profile.clients;
   const clientName = client?.name ?? "";
   const clientLogo = client?.logo_url;
+  // Admin-authored, per-client. Undefined before the migration lands → hidden.
+  const studioNote = client?.studio_note?.trim();
 
   const isActive = (href: string) =>
     href === "/portal"
@@ -97,6 +99,11 @@ export function ClientSidebar({ profile }: { profile: Profile }) {
             </span>
           </div>
         </div>
+        {studioNote && (
+          <p className="font-serif italic text-xs leading-relaxed text-[color:var(--vimi-muted)]">
+            &ldquo;{studioNote}&rdquo;
+          </p>
+        )}
         <a
           href={STUDIO_WHATSAPP_URL}
           target="_blank"

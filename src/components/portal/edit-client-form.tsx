@@ -35,6 +35,7 @@ interface Client {
   logo_url?: string | null;
   accent_color?: string | null;
   deal_terms?: string | null;
+  studio_note?: string | null;
 }
 
 export function EditClientDialog({ client }: { client: Client }) {
@@ -48,6 +49,7 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [logoUrl, setLogoUrl] = useState(client.logo_url ?? "");
   const [accentColor, setAccentColor] = useState(client.accent_color ?? "#5B4BD6");
   const [dealTerms, setDealTerms] = useState(client.deal_terms ?? "");
+  const [studioNote, setStudioNote] = useState(client.studio_note ?? "");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -69,6 +71,7 @@ export function EditClientDialog({ client }: { client: Client }) {
         logo_url: logoUrl.trim() || null,
         accent_color: accentColor.trim() || null,
         deal_terms: dealTerms.trim() || null,
+        studio_note: studioNote.trim() || null,
       })
       .eq("id", client.id);
 
@@ -170,6 +173,15 @@ export function EditClientDialog({ client }: { client: Client }) {
               placeholder="e.g. Sin permanencia · cancelan con 30 días"
               value={dealTerms}
               onChange={(e) => setDealTerms(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client-studio-note">Studio note (sidebar)</Label>
+            <Input
+              id="client-studio-note"
+              placeholder="e.g. La auditoría va en marcha — sneak peek el jueves"
+              value={studioNote}
+              onChange={(e) => setStudioNote(e.target.value)}
             />
           </div>
           <div className="flex items-center justify-between">

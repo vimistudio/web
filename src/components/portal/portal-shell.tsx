@@ -20,6 +20,9 @@ interface Client {
   locale?: string;
   logo_url?: string | null;
   accent_color?: string | null;
+  /** Optional per-client note shown in the sidebar studio card. Undefined
+   *  before the migration lands (column absent) → treated as hidden. */
+  studio_note?: string | null;
 }
 
 export interface Profile {

@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
 import { EditClientDialog } from "./edit-client-form";
 import { PlanEditorDialog } from "./plan-editor";
+import { StudioNoteDialog } from "./studio-note-dialog";
 import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 
 interface Request {
@@ -50,6 +51,7 @@ interface Client {
   slug: string;
   retainer_amount: number | null;
   is_active: boolean;
+  studio_note?: string | null;
 }
 
 interface PlanMilestone {
@@ -492,6 +494,10 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [] 
             clientName={client.name}
             requests={requests.map((r) => ({ id: r.id, title: r.title }))}
             milestones={milestones}
+          />
+          <StudioNoteDialog
+            clientId={client.id}
+            studioNote={client.studio_note ?? null}
           />
           <Link href={`/portal/requests/new?client=${client.id}`}>
             <Button variant="outline" className="gap-2">

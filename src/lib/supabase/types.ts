@@ -134,6 +134,7 @@ export type Database = {
           name: string
           retainer_amount: number | null
           slug: string
+          studio_note: string | null
           updated_at: string
         }
         Insert: {
@@ -147,6 +148,7 @@ export type Database = {
           name: string
           retainer_amount?: number | null
           slug: string
+          studio_note?: string | null
           updated_at?: string
         }
         Update: {
@@ -160,6 +162,7 @@ export type Database = {
           name?: string
           retainer_amount?: number | null
           slug?: string
+          studio_note?: string | null
           updated_at?: string
         }
         Relationships: []
