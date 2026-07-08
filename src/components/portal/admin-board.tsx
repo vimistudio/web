@@ -26,6 +26,7 @@ import { EditClientDialog } from "./edit-client-form";
 import { PlanEditorDialog } from "./plan-editor";
 import { ClientDocsDialog } from "./client-docs-manager";
 import { StudioNoteDialog } from "./studio-note-dialog";
+import { AssigneeMenu, type Admin } from "./assignee-control";
 import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 
 interface Request {
@@ -36,6 +37,7 @@ interface Request {
   status: "queued" | "in_progress" | "review" | "done";
   priority: number;
   is_archived?: boolean;
+  assignee_id: string | null;
   created_at: string;
   updated_at: string;
   due_date: string | null;
@@ -72,6 +74,7 @@ interface AdminBoardProps {
   client: Client;
   requests: Request[];
   milestones?: PlanMilestone[];
+  admins?: Admin[];
 }
 
 const columns = [
@@ -100,11 +103,13 @@ const statusLabels: Record<string, string> = {
 function BoardCardContent({
   request,
   clientSlug,
+  admins = [],
   onArchive,
   onUnarchive,
 }: {
   request: Request;
   clientSlug: string;
+  admins?: Admin[];
   onArchive?: (id: string) => void;
   onUnarchive?: (id: string) => void;
 }) {
@@ -201,6 +206,11 @@ function BoardCardContent({
                 <span>{request.comments.length}</span>
               </div>
             )}
+            <AssigneeMenu
+              requestId={request.id}
+              assigneeId={request.assignee_id}
+              admins={admins}
+            />
           </div>
         </div>
 
@@ -223,7 +233,7 @@ function BoardCardContent({
   );
 }
 
-function DraggableBoardCard({ request, clientSlug, onArchive, onUnarchive }: { request: Request; clientSlug: string; onArchive: (id: string) => void; onUnarchive: (id: string) => void }) {
+function DraggableBoardCard({ request, clientSlug, admins, onArchive, onUnarchive }: { request: Request; clientSlug: string; admins: Admin[]; onArchive: (id: string) => void; onUnarchive: (id: string) => void }) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: request.id });
@@ -243,7 +253,7 @@ function DraggableBoardCard({ request, clientSlug, onArchive, onUnarchive }: { r
         }}
         className="cursor-grab active:cursor-grabbing"
       >
-        <BoardCardContent request={request} clientSlug={clientSlug} onArchive={onArchive} onUnarchive={onUnarchive} />
+        <BoardCardContent request={request} clientSlug={clientSlug} admins={admins} onArchive={onArchive} onUnarchive={onUnarchive} />
       </div>
     </div>
   );
@@ -255,6 +265,7 @@ function DroppableColumn({
   color,
   requests,
   clientSlug,
+  admins,
   onArchive,
   onUnarchive,
 }: {
@@ -263,6 +274,7 @@ function DroppableColumn({
   color: string;
   requests: Request[];
   clientSlug: string;
+  admins: Admin[];
   onArchive: (id: string) => void;
   onUnarchive: (id: string) => void;
 }) {
@@ -286,7 +298,7 @@ function DroppableColumn({
       </div>
       <div className="space-y-3 min-h-[60px]">
         {requests.map((request) => (
-          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} onArchive={onArchive} onUnarchive={onUnarchive} />
+          <DraggableBoardCard key={request.id} request={request} clientSlug={clientSlug} admins={admins} onArchive={onArchive} onUnarchive={onUnarchive} />
         ))}
       </div>
       {requests.length === 0 && !isOver && (
@@ -303,7 +315,7 @@ function DroppableColumn({
   );
 }
 
-export function AdminBoard({ client, requests: initialRequests, milestones = [] }: AdminBoardProps) {
+export function AdminBoard({ client, requests: initialRequests, milestones = [], admins = [] }: AdminBoardProps) {
   const router = useRouter();
   const { hidden: pricesHidden } = usePricePrivacy();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
@@ -528,6 +540,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [] 
                 color={col.color}
                 requests={colRequests}
                 clientSlug={client.slug}
+                admins={admins}
                 onArchive={handleArchive}
                 onUnarchive={handleUnarchive}
               />
@@ -538,7 +551,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [] 
         <DragOverlay dropAnimation={null}>
           {activeRequest ? (
             <div className="opacity-90 rotate-2 scale-105 shadow-xl">
-              <BoardCardContent request={activeRequest} clientSlug={client.slug} />
+              <BoardCardContent request={activeRequest} clientSlug={client.slug} admins={admins} />
             </div>
           ) : null}
         </DragOverlay>

@@ -586,6 +586,7 @@ export type Database = {
       }
       requests: {
         Row: {
+          assignee_id: string | null
           client_id: string
           created_at: string
           created_by: string
@@ -601,6 +602,7 @@ export type Database = {
           voting_mode: string | null
         }
         Insert: {
+          assignee_id?: string | null
           client_id: string
           created_at?: string
           created_by: string
@@ -616,6 +618,7 @@ export type Database = {
           voting_mode?: string | null
         }
         Update: {
+          assignee_id?: string | null
           client_id?: string
           created_at?: string
           created_by?: string
@@ -631,6 +634,13 @@ export type Database = {
           voting_mode?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "requests_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "requests_client_id_fkey"
             columns: ["client_id"]

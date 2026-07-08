@@ -73,6 +73,30 @@ async function resolveClientNotifyAdmins(
   return admins ?? [];
 }
 
+// Resolve who receives a request-scoped client notification. Precedence:
+//   1. the request's assignee (re-verified as an admin AT SEND TIME, so a
+//      demoted or deleted assignee cleanly falls through), then
+//   2. the client's designer, then
+//   3. every admin.
+// Steps 2–3 reuse resolveClientNotifyAdmins so the null-assignee path behaves
+// exactly as before. No PostgREST embed for the assignee — plain id lookup.
+async function resolveRequestNotifyAdmins(
+  supabase: ReturnType<typeof createClient>,
+  assigneeId: string | null | undefined,
+  clientId: string | null | undefined
+): Promise<{ id: string; email: string | null }[]> {
+  if (assigneeId) {
+    const { data: assignee } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .eq("id", assigneeId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (assignee?.email) return [assignee];
+  }
+  return resolveClientNotifyAdmins(supabase, clientId);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -262,7 +286,7 @@ export async function POST(request: Request) {
 
       const { data: milestone } = await supabase
         .from("client_milestones")
-        .select("title, clients(name)")
+        .select("title, request_id, clients(name)")
         .eq("id", milestone_id)
         .single();
 
@@ -276,8 +300,21 @@ export async function POST(request: Request) {
         "a client";
       const callerName = callerProfile.full_name || "A client";
 
-      const admins = await resolveClientNotifyAdmins(
+      // Route to the linked request's assignee when the milestone points at a
+      // request; otherwise fall back to client designer → all admins.
+      let milestoneAssigneeId: string | null = null;
+      if (milestone.request_id) {
+        const { data: linkedReq } = await supabase
+          .from("requests")
+          .select("assignee_id")
+          .eq("id", milestone.request_id)
+          .maybeSingle();
+        milestoneAssigneeId = linkedReq?.assignee_id ?? null;
+      }
+
+      const admins = await resolveRequestNotifyAdmins(
         supabase,
+        milestoneAssigneeId,
         callerProfile.client_id
       );
       const eligible = admins.filter((a) => a.email && a.id !== user.id);
@@ -342,8 +379,14 @@ export async function POST(request: Request) {
         .eq("client_id", req.client_id);
       recipients = data ?? [];
     } else {
-      // Client action → notify the client's designer (or all admins if unassigned)
-      recipients = await resolveClientNotifyAdmins(supabase, req.client_id);
+      // Client action → notify the request's assignee (or client designer, or
+      // all admins). Covers comment/status/deliverable/request_created/
+      // direction_voted — every client-originated request-scoped notification.
+      recipients = await resolveRequestNotifyAdmins(
+        supabase,
+        (req as { assignee_id?: string | null }).assignee_id,
+        req.client_id
+      );
     }
 
     // Client-facing sends (admin → clients) localize per recipient; admin-facing
