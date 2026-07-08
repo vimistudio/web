@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { type Locale, type PortalKey, t as translate } from "@/lib/portal-i18n";
 
 interface LocaleContextValue {
@@ -20,6 +20,13 @@ export function LocaleProvider({
   locale: Locale;
   children: React.ReactNode;
 }) {
+  // Keep <html lang> in sync with the resolved portal locale. The root layout
+  // renders lang="en" statically; the effective language is only known per-user
+  // once this provider mounts (e.g. Spanish for SCARTS), so update it here.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const value: LocaleContextValue = {
     locale,
     t: (key, vars) => translate(key, locale, vars),
