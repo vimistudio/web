@@ -46,7 +46,7 @@ export default async function AdminClientBoardPage({
   const { data: milestones } = await supabase
     .from("client_milestones")
     .select(
-      "id, track, week, title, description, status, needs_client, request_id, sort"
+      "id, track, week, title, description, status, needs_client, request_id, sort, delay_note"
     )
     .eq("client_id", client.id)
     .order("week", { ascending: true })

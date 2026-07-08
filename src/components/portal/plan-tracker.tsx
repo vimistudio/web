@@ -15,11 +15,12 @@ export interface Milestone {
   week: number;
   title: string;
   description: string | null;
-  status: "upcoming" | "current" | "done";
+  status: "upcoming" | "current" | "done" | "delayed";
   needs_client: boolean;
   client_done: boolean;
   request_id: string | null;
   sort: number;
+  delay_note: string | null;
 }
 
 function StatusDot({ status }: { status: Milestone["status"] }) {
@@ -37,6 +38,13 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
           className="w-2.5 h-2.5 rounded-full animate-pulse"
           style={{ background: "var(--accent)" }}
         />
+      </span>
+    );
+  }
+  if (status === "delayed") {
+    return (
+      <span className="shrink-0 flex items-center justify-center w-[18px] h-[18px]">
+        <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#B03A5B" }} />
       </span>
     );
   }
@@ -226,6 +234,14 @@ export function PlanTracker({ milestones: initial }: { milestones: Milestone[] }
                         {m.status === "current" && m.description && (
                           <p className="text-[13px] text-[color:var(--vimi-muted)] leading-relaxed">
                             {m.description}
+                          </p>
+                        )}
+                        {m.status === "delayed" && m.delay_note && (
+                          <p
+                            className="text-[13px] leading-relaxed font-medium"
+                            style={{ color: "#B03A5B" }}
+                          >
+                            {t("plan.delayed", { note: m.delay_note })}
                           </p>
                         )}
                         {m.request_id && (

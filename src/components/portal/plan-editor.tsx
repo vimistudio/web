@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Status = "upcoming" | "current" | "done";
+type Status = "upcoming" | "current" | "done" | "delayed";
 
 interface EditorMilestone {
   key: string; // stable local key (row id, or temp for drafts)
@@ -38,6 +38,7 @@ interface EditorMilestone {
   needs_client: boolean;
   request_id: string | null;
   sort: number;
+  delay_note: string;
 }
 
 interface RequestOption {
@@ -59,6 +60,7 @@ interface PlanEditorProps {
     needs_client: boolean;
     request_id: string | null;
     sort: number;
+    delay_note: string | null;
   }[];
 }
 
@@ -77,6 +79,7 @@ function toEditor(m: PlanEditorProps["milestones"][number]): EditorMilestone {
     needs_client: m.needs_client,
     request_id: m.request_id,
     sort: m.sort,
+    delay_note: m.delay_note ?? "",
   };
 }
 
@@ -93,6 +96,7 @@ function blankDraft(): EditorMilestone {
     needs_client: false,
     request_id: null,
     sort: 0,
+    delay_note: "",
   };
 }
 
@@ -114,6 +118,10 @@ export function PlanEditorDialog({ clientId, clientName, requests, milestones }:
       toast.error("Track and title are required");
       return;
     }
+    if (row.status === "delayed" && !row.delay_note.trim()) {
+      toast.error("A delay note is required when status is delayed");
+      return;
+    }
     setSavingKey(row.key);
     const supabase = createClient();
     const payload = {
@@ -126,6 +134,7 @@ export function PlanEditorDialog({ clientId, clientName, requests, milestones }:
       needs_client: row.needs_client,
       request_id: row.request_id,
       sort: row.sort,
+      delay_note: row.status === "delayed" ? row.delay_note.trim() : null,
     };
 
     if (row.id) {
@@ -277,6 +286,7 @@ export function PlanEditorDialog({ clientId, clientName, requests, milestones }:
                             <SelectItem value="upcoming">Upcoming</SelectItem>
                             <SelectItem value="current">Current</SelectItem>
                             <SelectItem value="done">Done</SelectItem>
+                            <SelectItem value="delayed">Delayed</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -289,6 +299,20 @@ export function PlanEditorDialog({ clientId, clientName, requests, milestones }:
                         />
                       </div>
                     </div>
+
+                    {row.status === "delayed" && (
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs">
+                          Delay note <span className="text-red-600">*</span>
+                        </Label>
+                        <Textarea
+                          rows={2}
+                          value={row.delay_note}
+                          onChange={(e) => patch(row.key, { delay_note: e.target.value })}
+                          placeholder="Shown to the client, e.g. Waiting on brand assets — pushed to Thursday"
+                        />
+                      </div>
+                    )}
 
                     <div className="flex flex-col gap-1">
                       <Label className="text-xs">Linked request</Label>

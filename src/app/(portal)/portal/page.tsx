@@ -80,7 +80,7 @@ export default async function PortalPage() {
   const { data: milestones } = await supabase
     .from("client_milestones")
     .select(
-      "id, track, week, title, description, status, needs_client, client_done, request_id, sort"
+      "id, track, week, title, description, status, needs_client, client_done, request_id, sort, delay_note"
     )
     .eq("client_id", clientId)
     .order("week", { ascending: true })

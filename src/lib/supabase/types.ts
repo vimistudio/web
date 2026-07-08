@@ -64,6 +64,7 @@ export type Database = {
           client_done: boolean
           client_id: string
           created_at: string | null
+          delay_note: string | null
           description: string | null
           id: string
           needs_client: boolean
@@ -78,6 +79,7 @@ export type Database = {
           client_done?: boolean
           client_id: string
           created_at?: string | null
+          delay_note?: string | null
           description?: string | null
           id?: string
           needs_client?: boolean
@@ -92,6 +94,7 @@ export type Database = {
           client_done?: boolean
           client_id?: string
           created_at?: string | null
+          delay_note?: string | null
           description?: string | null
           id?: string
           needs_client?: boolean

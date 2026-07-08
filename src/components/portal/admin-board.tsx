@@ -61,6 +61,7 @@ interface PlanMilestone {
   needs_client: boolean;
   request_id: string | null;
   sort: number;
+  delay_note: string | null;
 }
 
 interface AdminBoardProps {
