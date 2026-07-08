@@ -13,6 +13,9 @@ export default function PortalLoading() {
         <Skeleton className="hidden md:block h-12 w-40 rounded-full" />
       </div>
 
+      {/* Plan tracker: generic collapsed bar (conditional content) */}
+      <Skeleton className="h-[72px] w-full rounded-2xl" />
+
       {/* Segmented toggle */}
       <Skeleton className="hidden md:block h-10 w-44 rounded-full" />
 

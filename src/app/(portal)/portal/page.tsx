@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClientBoard } from "@/components/portal/client-board";
+import { type Milestone } from "@/components/portal/plan-tracker";
 import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { t, type Locale } from "@/lib/portal-i18n";
 
@@ -62,7 +63,7 @@ export default async function PortalPage() {
   // Fetch client name
   const { data: client } = await supabase
     .from("clients")
-    .select("name")
+    .select("name, retainer_amount")
     .eq("id", clientId)
     .single();
 
@@ -74,6 +75,16 @@ export default async function PortalPage() {
     .eq("is_archived", false)
     .order("priority", { ascending: false })
     .order("created_at", { ascending: false });
+
+  // Fetch this client's plan milestones (feature is invisible when empty)
+  const { data: milestones } = await supabase
+    .from("client_milestones")
+    .select(
+      "id, track, week, title, description, status, needs_client, client_done, request_id, sort, delay_note"
+    )
+    .eq("client_id", clientId)
+    .order("week", { ascending: true })
+    .order("sort", { ascending: true });
 
   const clientName = client?.name ?? "Your Project";
 
@@ -103,6 +114,8 @@ export default async function PortalPage() {
         requestCount={requestsWithPreviews.filter((r) => r.status !== "done").length}
         isAdmin={isImpersonating}
         lastVisitedAt={lastVisitedAt}
+        milestones={(milestones ?? []) as Milestone[]}
+        retainerAmount={client?.retainer_amount ?? null}
       />
     </>
   );

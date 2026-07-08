@@ -42,5 +42,21 @@ export default async function AdminClientBoardPage({
     .order("priority", { ascending: false })
     .order("created_at", { ascending: false });
 
-  return <AdminBoard client={client} requests={requests ?? []} />;
+  // Fetch plan milestones for the plan editor
+  const { data: milestones } = await supabase
+    .from("client_milestones")
+    .select(
+      "id, track, week, title, description, status, needs_client, request_id, sort, delay_note"
+    )
+    .eq("client_id", client.id)
+    .order("week", { ascending: true })
+    .order("sort", { ascending: true });
+
+  return (
+    <AdminBoard
+      client={client}
+      requests={requests ?? []}
+      milestones={milestones ?? []}
+    />
+  );
 }

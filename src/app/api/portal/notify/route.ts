@@ -8,9 +8,10 @@ import { TeamInviteEmail } from "@/lib/email/templates/team-invite";
 import { RequestCreatedEmail } from "@/lib/email/templates/request-created";
 import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 import { DirectionVotedEmail } from "@/lib/email/templates/direction-voted";
+import { MilestoneDoneEmail } from "@/lib/email/templates/milestone-done";
 import { NextResponse } from "next/server";
 
-const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "team_invite", "request_created", "client_signed_in", "direction_voted"];
+const VALID_TYPES = ["comment_added", "status_changed", "deliverable_uploaded", "invite", "team_invite", "request_created", "client_signed_in", "direction_voted", "milestone_done"];
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "Queued",
@@ -31,7 +32,7 @@ const TYPE_LABELS: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription, direction_label, vote_comment } = body;
+    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription, direction_label, vote_comment, milestone_id } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json(
@@ -166,6 +167,58 @@ export async function POST(request: Request) {
               clientUserName: callerName,
               clientUserEmail: user.email || "",
               clientName,
+              portalUrl: "https://vimistudio.com/portal/admin",
+            }),
+          })
+        )
+      );
+      const sent = results.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
+      return NextResponse.json({ success: true, sent });
+    }
+
+    // Handle milestone_done — a client ticked a "what we need from you" item.
+    // Emails the studio admins so they know the plan can keep moving.
+    if (type === "milestone_done") {
+      if (callerProfile.role === "admin") {
+        return NextResponse.json({ success: true, sent: 0 });
+      }
+      if (!milestone_id) {
+        return NextResponse.json({ error: "milestone_id required" }, { status: 400 });
+      }
+
+      const { data: milestone } = await supabase
+        .from("client_milestones")
+        .select("title, clients(name)")
+        .eq("id", milestone_id)
+        .single();
+
+      if (!milestone) {
+        return NextResponse.json({ error: "Milestone not found" }, { status: 404 });
+      }
+
+      const clientLabel =
+        (milestone as { clients?: { name?: string } | null }).clients?.name ||
+        client_name ||
+        "a client";
+      const callerName = callerProfile.full_name || "A client";
+
+      const { data: admins } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .eq("role", "admin");
+      const eligible = (admins ?? []).filter((a) => a.email && a.id !== user.id);
+      const results = await Promise.allSettled(
+        eligible.map((admin) =>
+          sendEmail({
+            to: admin.email!,
+            subject: `${callerName} completed a plan item for ${clientLabel}`,
+            react: MilestoneDoneEmail({
+              clientUserName: callerName,
+              clientUserEmail: user.email || "",
+              clientName: clientLabel,
+              milestoneTitle: milestone.title,
               portalUrl: "https://vimistudio.com/portal/admin",
             }),
           })

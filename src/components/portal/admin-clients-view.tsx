@@ -25,6 +25,7 @@ import { PlusSignIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 import { AccentColorPicker } from "./accent-color-picker";
 
 interface ClientSummary {
@@ -45,6 +46,7 @@ interface AdminClientsViewProps {
 
 export function AdminClientsView({ clients }: AdminClientsViewProps) {
   const router = useRouter();
+  const { hidden: pricesHidden } = usePricePrivacy();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [retainer, setRetainer] = useState("");
@@ -195,7 +197,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      ${client.retainer_amount ?? 0}/mo &middot;{" "}
+                      {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot;{" "}
                       {client.openCount} open &middot; {client.doneCount} done
                     </p>
                   </div>

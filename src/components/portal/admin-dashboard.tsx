@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/icons";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { usePricePrivacy, maskPrice, PRICE_MASK } from "@/hooks/use-price-privacy";
 
 interface ClientSummary {
   id: string;
@@ -72,6 +73,7 @@ const statusPills = [
 ];
 
 function ClientCard({ client }: { client: ClientSummary }) {
+  const { hidden: pricesHidden } = usePricePrivacy();
   const totalRequests = client.counts.queued + client.counts.in_progress + client.counts.review + client.counts.done;
   const completedPercent = totalRequests > 0 ? Math.round((client.counts.done / totalRequests) * 100) : 0;
   const openCount = client.counts.queued + client.counts.in_progress + client.counts.review;
@@ -94,7 +96,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
               <div>
                 <h3 className="font-semibold">{client.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  ${client.retainer_amount ?? 0}/mo · {openCount} open
+                  {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo · {openCount} open
                 </p>
               </div>
             </div>
@@ -215,6 +217,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
 }
 
 export function AdminDashboard({ stats, clients, recentActivity, adminName }: AdminDashboardProps) {
+  const { hidden: pricesHidden } = usePricePrivacy();
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
   const dateStr = now.toLocaleDateString(undefined, {
@@ -246,7 +249,10 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const value = stats[card.key];
-          const display = card.key === "monthlyRevenue" ? `$${value.toLocaleString()}` : value;
+          const display =
+            card.key === "monthlyRevenue"
+              ? maskPrice(`$${value.toLocaleString()}`, pricesHidden)
+              : value;
           return (
             <Card key={card.key}>
               <CardContent className="pt-6">
@@ -261,7 +267,9 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
                 </p>
                 {card.key === "monthlyRevenue" && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {stats.activeClientCount} active {stats.activeClientCount === 1 ? "client" : "clients"}
+                    {pricesHidden
+                      ? `${PRICE_MASK} active clients`
+                      : `${stats.activeClientCount} active ${stats.activeClientCount === 1 ? "client" : "clients"}`}
                   </p>
                 )}
               </CardContent>
