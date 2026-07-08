@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DOC_KINDS, formatFileSize } from "@/lib/agreement";
+import { sanitizeFileName } from "@/lib/files";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50MB — docs, not video
 
@@ -171,12 +172,15 @@ export function ClientDocsDialog({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const newPath = `${clientId}/${crypto.randomUUID()}/${file.name}`;
+    // Storage key must be sanitized (rejects "×", spaces, accents, …); the
+    // pretty original name is preserved in the file_name column below.
+    const newPath = `${clientId}/${crypto.randomUUID()}/${sanitizeFileName(file.name)}`;
     const { error: upErr } = await supabase.storage
       .from("client-docs")
       .upload(newPath, file);
     if (upErr) {
-      toast.error("Upload failed");
+      console.error("client-docs upload failed", upErr);
+      toast.error(`Upload failed: ${upErr.message}`);
       setUploadingKey(null);
       return;
     }
@@ -196,8 +200,9 @@ export function ClientDocsDialog({
         .update(meta)
         .eq("id", row.id);
       if (error) {
+        console.error("client-docs metadata update failed", error);
         await supabase.storage.from("client-docs").remove([newPath]);
-        toast.error("Couldn't attach file");
+        toast.error(`Couldn't attach file: ${error.message}`);
         setUploadingKey(null);
         return;
       }
@@ -210,8 +215,9 @@ export function ClientDocsDialog({
         .select("id")
         .single();
       if (error || !data) {
+        console.error("client-docs metadata insert failed", error);
         await supabase.storage.from("client-docs").remove([newPath]);
-        toast.error("Couldn't save document");
+        toast.error(`Couldn't save document${error ? `: ${error.message}` : ""}`);
         setUploadingKey(null);
         return;
       }

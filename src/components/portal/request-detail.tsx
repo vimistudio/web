@@ -34,6 +34,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { fireConfetti } from "@/lib/fire-confetti";
+import { sanitizeFileName } from "@/lib/files";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -921,7 +922,7 @@ export function RequestDetail({
     let attachmentName: string | null = null;
     let attachmentType: string | null = null;
     if (file) {
-      const filePath = `${request.client_id}/${request.id}/comments/${Date.now()}-${file.name}`;
+      const filePath = `${request.client_id}/${request.id}/comments/${Date.now()}-${sanitizeFileName(file.name)}`;
       const { error: uploadError } = await supabase.storage
         .from("references")
         .upload(filePath, file);
@@ -1132,7 +1133,7 @@ export function RequestDetail({
       let successCount = 0;
 
       for (const file of Array.from(files)) {
-        const filePath = `${request.client_id}/${request.id}/${Date.now()}-${file.name}`;
+        const filePath = `${request.client_id}/${request.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
 
         const { error: uploadError } = await supabase.storage
           .from("deliverables")

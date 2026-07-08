@@ -24,6 +24,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { fireConfetti } from "@/lib/fire-confetti";
+import { sanitizeFileName } from "@/lib/files";
 import { useLocale } from "@/components/portal/locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 
@@ -182,7 +183,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
       let failedUploads = 0;
       await Promise.all(
         files.map(async (file) => {
-          const filePath = `${clientId}/${request.id}/${Date.now()}-${file.name}`;
+          const filePath = `${clientId}/${request.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
           const { error: uploadError } = await supabase.storage
             .from("references")
             .upload(filePath, file);
