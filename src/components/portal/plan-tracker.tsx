@@ -212,7 +212,7 @@ export function PlanTracker({
     const { error } = await persistClientDone(id, false);
     if (error) {
       setClientDone(id, true);
-      toast.error(t("plan.saveError"));
+      toast.error(t("plan.saveError"), { id: `milestone-${id}` });
       return;
     }
     router.refresh();
@@ -237,7 +237,7 @@ export function PlanTracker({
 
     if (error) {
       setClientDone(id, !next);
-      toast.error(t("plan.saveError"));
+      toast.error(t("plan.saveError"), { id: `milestone-${id}` });
       return;
     }
 
@@ -253,14 +253,17 @@ export function PlanTracker({
       }, 8000);
       notifyTimers.current.set(id, timer);
 
+      // Stable per-milestone id so check / undo / uncheck REPLACE each other
+      // instead of stacking (a fast check→uncheck used to show two toasts).
       toast.success(t("plan.checkedToast"), {
+        id: `milestone-${id}`,
         duration: 7000,
         action: { label: t("plan.undo"), onClick: () => undoCheck(id) },
       });
     } else {
       // Unchecking: kill any pending notify, never send one.
       cancelNotify(id);
-      toast(t("plan.uncheckedToast"));
+      toast(t("plan.uncheckedToast"), { id: `milestone-${id}` });
     }
     router.refresh();
   }

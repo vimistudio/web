@@ -114,7 +114,12 @@ export default async function PortalLayout({
 
       return (
         <>
-          <Toaster position="top-center" richColors />
+          <Toaster
+            position="bottom-center"
+            offset="24px"
+            mobileOffset="96px"
+            richColors
+          />
           <div className="min-h-screen flex flex-col">
             <ImpersonateBanner clientName={impersonatedClient.name} />
             <PortalShell user={user} profile={clientProfile} impersonating>
@@ -128,7 +133,12 @@ export default async function PortalLayout({
 
   return (
     <>
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="bottom-center"
+        offset="24px"
+        mobileOffset="96px"
+        richColors
+      />
       <PortalShell user={user} profile={profile}>
         {children}
       </PortalShell>
