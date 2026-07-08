@@ -221,7 +221,8 @@ export function AdminQueueView({ requests, adminId }: AdminQueueViewProps) {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Queue</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          All open requests across clients, sorted by what needs attention first.
+          Open requests across {showPaused ? "all" : "active"} clients, sorted by
+          what needs attention first.
         </p>
       </div>
 
