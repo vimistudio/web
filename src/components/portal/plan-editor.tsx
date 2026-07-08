@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CopyPlanDialog } from "./copy-plan-dialog";
 
 type Status = "upcoming" | "current" | "done" | "delayed";
 
@@ -206,6 +207,21 @@ export function PlanEditorDialog({ clientId, clientName, requests, milestones }:
         </DialogHeader>
 
         <div className="flex flex-col gap-5 py-2">
+          <div className="flex items-center justify-between gap-3 border-b pb-3">
+            <span className="text-xs text-muted-foreground">
+              Start from an existing plan or template.
+            </span>
+            <CopyPlanDialog
+              clientId={clientId}
+              clientName={clientName}
+              currentCount={rows.length}
+              onCopied={() => {
+                setOpen(false);
+                router.refresh();
+              }}
+            />
+          </div>
+
           {rows.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No milestones yet. Add the first one below.
