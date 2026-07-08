@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   UserGroupIcon,
   Task01Icon,
@@ -22,6 +22,7 @@ interface ClientSummary {
   slug: string;
   retainer_amount: number | null;
   is_active: boolean;
+  logo_url?: string | null;
   counts: {
     queued: number;
     in_progress: number;
@@ -83,6 +84,9 @@ function ClientCard({ client }: { client: ClientSummary }) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
+                {client.logo_url && (
+                  <AvatarImage src={client.logo_url} alt={client.name} className="object-contain" />
+                )}
                 <AvatarFallback className="bg-[#909af7] text-white font-semibold text-sm">
                   {client.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                 </AvatarFallback>

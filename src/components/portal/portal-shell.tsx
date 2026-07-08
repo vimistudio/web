@@ -17,6 +17,7 @@ interface Client {
   name: string;
   slug: string;
   locale?: string;
+  logo_url?: string | null;
 }
 
 export interface Profile {

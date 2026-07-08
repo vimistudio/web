@@ -33,6 +33,7 @@ interface ClientSummary {
   retainer_amount: number | null;
   is_active: boolean;
   created_at: string;
+  logo_url?: string | null;
   openCount: number;
   doneCount: number;
 }
@@ -156,14 +157,23 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#909af7]/10 flex items-center justify-center">
-                    <Image
-                      src="/vimi-logo-dark.svg"
-                      alt={client.name}
-                      width={80}
-                      height={26}
-                      className="h-4 w-auto opacity-60"
-                    />
+                  <div className="w-10 h-10 rounded-lg bg-[#909af7]/10 flex items-center justify-center overflow-hidden">
+                    {client.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={client.logo_url}
+                        alt={client.name}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    ) : (
+                      <Image
+                        src="/vimi-logo-dark.svg"
+                        alt={client.name}
+                        width={80}
+                        height={26}
+                        className="h-4 w-auto opacity-60"
+                      />
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
