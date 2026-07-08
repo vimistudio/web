@@ -37,6 +37,7 @@ interface Client {
   deal_terms?: string | null;
   studio_note?: string | null;
   designer_id?: string | null;
+  engagement_started_at?: string | null;
 }
 
 interface AdminOption {
@@ -60,6 +61,9 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [dealTerms, setDealTerms] = useState(client.deal_terms ?? "");
   const [studioNote, setStudioNote] = useState(client.studio_note ?? "");
   const [designerId, setDesignerId] = useState(client.designer_id ?? UNASSIGNED);
+  const [engagementStartedAt, setEngagementStartedAt] = useState(
+    client.engagement_started_at ?? ""
+  );
   const [admins, setAdmins] = useState<AdminOption[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -100,6 +104,7 @@ export function EditClientDialog({ client }: { client: Client }) {
         deal_terms: dealTerms.trim() || null,
         studio_note: studioNote.trim() || null,
         designer_id: designerId === UNASSIGNED ? null : designerId,
+        engagement_started_at: engagementStartedAt || null,
         ...(noteChanged && {
           studio_note_updated_at: studioNote.trim()
             ? new Date().toISOString()
@@ -223,6 +228,18 @@ export function EditClientDialog({ client }: { client: Client }) {
               value={dealTerms}
               onChange={(e) => setDealTerms(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="client-engagement-start">Engagement start date</Label>
+            <Input
+              id="client-engagement-start"
+              type="date"
+              value={engagementStartedAt}
+              onChange={(e) => setEngagementStartedAt(e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Day 1 of the retainer — powers the hub month chip. Leave empty to hide.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="client-studio-note">Studio note (sidebar)</Label>

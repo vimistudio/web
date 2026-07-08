@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
 import { EditClientDialog } from "./edit-client-form";
 import { PlanEditorDialog } from "./plan-editor";
+import { ClientDocsDialog } from "./client-docs-manager";
 import { StudioNoteDialog } from "./studio-note-dialog";
 import { usePricePrivacy, maskPrice } from "@/hooks/use-price-privacy";
 
@@ -495,6 +496,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [] 
             requests={requests.map((r) => ({ id: r.id, title: r.title }))}
             milestones={milestones}
           />
+          <ClientDocsDialog clientId={client.id} clientName={client.name} />
           <StudioNoteDialog
             clientId={client.id}
             studioNote={client.studio_note ?? null}
