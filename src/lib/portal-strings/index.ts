@@ -16,6 +16,7 @@ import { gallery } from "./strings/gallery";
 import { chrome } from "./strings/chrome";
 import { plan } from "./strings/plan";
 import { welcome } from "./strings/welcome";
+import { agreement } from "./strings/agreement";
 
 // Merge all feature dictionaries into one flat map
 const portal = {
@@ -27,6 +28,7 @@ const portal = {
   ...chrome,
   ...plan,
   ...welcome,
+  ...agreement,
 } as const;
 
 export type Locale = "en" | "es";
