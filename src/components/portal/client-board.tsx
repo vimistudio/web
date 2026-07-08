@@ -88,7 +88,7 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
       request.status === "review" ? "ring-2 ring-amber-300 ring-offset-1" : ""
     }`}>
       {isNew && (
-        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-[#909af7] ring-2 ring-white animate-pulse" />
+        <div className="absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-white animate-pulse" />
       )}
       {/* Type accent stripe */}
       <div className={`h-[3px] w-full ${accent}`} />
@@ -397,12 +397,12 @@ export function ClientBoard({
             {/* Mobile: FAB */}
             <Button
               size="icon"
-              className="md:hidden rounded-full h-12 w-12 bg-[#909af7] hover:bg-[#7b85e8] shadow-lg fixed bottom-24 right-4 z-50"
+              className="md:hidden rounded-full h-12 w-12 bg-primary hover:bg-primary/90 shadow-lg fixed bottom-24 right-4 z-50"
             >
               <PlusSignIcon size={20} color="white" />
             </Button>
             {/* Desktop: button */}
-            <Button className="hidden md:flex gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
+            <Button className="hidden md:flex gap-2 bg-primary hover:bg-primary/90">
               <PlusSignIcon size={16} color="white" />
               {t("board.newRequest")}
             </Button>
@@ -455,7 +455,7 @@ export function ClientBoard({
           : null;
         return (
           <div
-            className={`bg-[#909af7]/5 border border-[#909af7]/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 ${firstReviewRequest ? "cursor-pointer hover:bg-[#909af7]/10 transition-colors" : ""}`}
+            className={`bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 ${firstReviewRequest ? "cursor-pointer hover:bg-primary/10 transition-colors" : ""}`}
             onClick={() => firstReviewRequest && router.push(`/portal/requests/${firstReviewRequest.id}`)}
           >
             <div>
@@ -536,15 +536,15 @@ export function ClientBoard({
 
         {requests.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
-              <PlusSignIcon size={24} className="text-[#909af7]" />
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <PlusSignIcon size={24} className="text-primary" />
             </div>
             <h2 className="text-xl font-semibold mb-2">{t("board.emptyTitle")}</h2>
             <p className="text-muted-foreground max-w-sm mb-6">
               {t("board.emptyBody")} {t("board.emptyCta")}
             </p>
             <Link href="/portal/requests/new">
-              <Button className="gap-2 bg-[#909af7] hover:bg-[#7b85e8]">
+              <Button className="gap-2 bg-primary hover:bg-primary/90">
                 <PlusSignIcon size={16} color="white" />
                 {t("board.newRequest")}
               </Button>

@@ -44,7 +44,7 @@ const requestTypes = [
 
 const priorities = [
   { value: 1, labelKey: "form.priority.whenever" as PortalKey, descKey: "form.priority.whenever.desc" as PortalKey, Icon: LeafIcon, activeColor: "border-gray-400 bg-gray-50" },
-  { value: 2, labelKey: "form.priority.thisWeek" as PortalKey, descKey: "form.priority.thisWeek.desc" as PortalKey, Icon: CalendarIcon, activeColor: "border-[#909af7] bg-[#909af7]/5" },
+  { value: 2, labelKey: "form.priority.thisWeek" as PortalKey, descKey: "form.priority.thisWeek.desc" as PortalKey, Icon: CalendarIcon, activeColor: "border-primary bg-primary/5" },
   { value: 3, labelKey: "form.priority.urgent" as PortalKey, descKey: "form.priority.urgent.desc" as PortalKey, Icon: FireIcon, activeColor: "border-red-400 bg-red-50" },
 ];
 
@@ -227,9 +227,9 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                 key={i}
                 className={`rounded-full transition-all duration-500 ease-out ${
                   i === step
-                    ? "w-6 h-1.5 bg-[#909af7]"
+                    ? "w-6 h-1.5 bg-primary"
                     : i < step
-                      ? "w-1.5 h-1.5 bg-[#909af7]"
+                      ? "w-1.5 h-1.5 bg-primary"
                       : "w-1.5 h-1.5 bg-gray-200"
                 }`}
               />
@@ -239,7 +239,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           {/* Step content */}
           <div className={`flex-1 ${direction === "forward" ? "animate-in fade-in slide-in-from-right-4" : "animate-in fade-in slide-in-from-left-4"} duration-300`} key={step}>
             {/* Step label */}
-            <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider mb-2">
               {t(STEP_LABEL_KEYS[step])}
             </p>
 
@@ -279,25 +279,25 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                         onClick={() => setType(rt.value)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
-                            ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
+                            ? "border-primary bg-primary/5 shadow-sm"
                             : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                       >
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                            selected ? "bg-[#909af7]/10 text-[#909af7]" : "bg-gray-100 text-muted-foreground"
+                            selected ? "bg-primary/10 text-primary" : "bg-gray-100 text-muted-foreground"
                           }`}
                         >
                           <rt.Icon size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium ${selected ? "text-[#909af7]" : "text-foreground"}`}>
+                          <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                             {t(rt.labelKey)}
                           </div>
                           <div className="text-xs text-muted-foreground">{t(rt.descKey)}</div>
                         </div>
                         {selected && (
-                          <div className="w-5 h-5 rounded-full bg-[#909af7] flex items-center justify-center shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                               <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
@@ -371,7 +371,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   </div>
                 )}
 
-                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#909af7] cursor-pointer transition-colors w-fit">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary cursor-pointer transition-colors w-fit">
                   <PlusSignIcon size={14} />
                   <span>{t("form.inspiration.addFile")}</span>
                   <input
@@ -458,7 +458,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             <Button
               onClick={isLastStep ? handleSubmit : goNext}
               disabled={!canAdvance || isSubmitting}
-              className="flex-1 h-14 md:h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
+              className="flex-1 h-14 md:h-12 bg-primary hover:bg-primary/90 text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
             >
               {isSubmitting ? (
                 <>

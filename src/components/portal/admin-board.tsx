@@ -125,7 +125,7 @@ function BoardCardContent({
         </button>
       ) : null}
       <CardContent className="p-4 space-y-3">
-        <h3 className="font-medium text-sm leading-tight group-hover:text-[#909af7] transition-colors">
+        <h3 className="font-medium text-sm leading-tight group-hover:text-primary transition-colors">
           {request.title}
         </h3>
 

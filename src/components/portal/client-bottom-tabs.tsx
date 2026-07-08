@@ -35,7 +35,7 @@ export function ClientBottomTabs() {
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full gap-1 text-xs transition-colors",
                 isActive
-                  ? "text-[#909af7]"
+                  ? "text-primary"
                   : "text-gray-400 hover:text-gray-600"
               )}
             >

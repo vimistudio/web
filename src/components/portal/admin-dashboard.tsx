@@ -87,7 +87,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
                 {client.logo_url && (
                   <AvatarImage src={client.logo_url} alt={client.name} className="object-contain" />
                 )}
-                <AvatarFallback className="bg-[#909af7] text-white font-semibold text-sm">
+                <AvatarFallback className="bg-primary text-white font-semibold text-sm">
                   {client.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
@@ -131,7 +131,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
           {client.hotRequests && client.hotRequests.length > 0 && (
             <div className="mt-2 mb-4 space-y-1">
               {client.hotRequests.slice(0, 2).map((r) => (
-                <Link key={r.id} href={`/portal/requests/${r.id}`} className="block text-xs text-[#909af7] hover:underline truncate">
+                <Link key={r.id} href={`/portal/requests/${r.id}`} className="block text-xs text-primary hover:underline truncate">
                   {r.title}
                 </Link>
               ))}
@@ -314,7 +314,7 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
                   className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 hover:bg-accent/50 -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                    <AvatarFallback className="bg-[#909af7]/20 text-[#909af7] text-[10px] font-medium">
+                    <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-medium">
                       {(activity.profiles?.full_name ?? "?")
                         .split(" ")
                         .map((w) => w[0])

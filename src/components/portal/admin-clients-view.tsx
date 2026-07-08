@@ -139,7 +139,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
               <Button
                 onClick={handleCreateClient}
                 disabled={!name.trim() || isCreating}
-                className="w-full bg-[#909af7] hover:bg-[#7b85e8]"
+                className="w-full bg-primary hover:bg-primary/90"
               >
                 {isCreating ? "Creating..." : "Create Client"}
               </Button>
@@ -157,7 +157,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#909af7]/10 flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
                     {client.logo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

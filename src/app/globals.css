@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background-color: #FAF9F7;
+  background-color: #F6F4EF;
 }
 
 @layer utilities {
@@ -20,33 +20,55 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 95%;
-    --foreground: 0 0% 3.9%;
-    --primary-accent: 235 42% 63%;
-    --bg-color: #FAF9F7;
+    /* ── Vimi Client Journey palette (single source of truth) ── */
+    --vimi-page: #F6F4EF; /* warm cream page */
+    --vimi-card: #FFFFFF;
+    --vimi-border: rgba(28, 27, 31, 0.08);
+    --vimi-ink: #1C1B1F;
+    --vimi-muted: #6E6B75;
+    --vimi-faint: #9A96A3;
+
+    /* Per-client accent — defaults to Vimi violet, overridden per client
+       via an inline style on the portal shell (see PortalShell). */
+    --accent: #5B4BD6;
+    --accent-foreground: #FFFFFF;
+
+    /* Status hues */
+    --status-queued: #C6C3CC;
+    --status-progress: #4064C9;
+    --status-review: #C9821B;
+    --status-review-bg: #FFF8ED;
+    --status-review-chip: #FFF3DE;
+    --status-review-ink: #B26F0E;
+    --status-done: #2E8B57;
+
+    /* ── shadcn neutral tokens, retuned to the palette above ── */
+    --background: 43 24% 95%;
+    --foreground: 260 6% 12%;
+    --primary-accent: 249 63% 56%;
+    --bg-color: #F6F4EF;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 260 6% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 234 90% 77%;
+    --popover-foreground: 260 6% 12%;
+    --primary: 249 63% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --muted: 40 14% 93%;
+    --muted-foreground: 266 5% 44%;
+    --accent-hover: 40 14% 93%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 43 10% 89%;
+    --input: 43 10% 89%;
+    --ring: 260 6% 12%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.875rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -69,8 +91,7 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent-hover: 0 0% 14.9%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;

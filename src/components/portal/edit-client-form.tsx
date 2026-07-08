@@ -167,7 +167,7 @@ export function EditClientDialog({ client }: { client: Client }) {
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 bg-[#909af7] hover:bg-[#7b85e8]"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>

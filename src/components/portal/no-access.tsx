@@ -19,8 +19,8 @@ export function NoAccess({ locale = "en" }: { locale?: Locale }) {
     <div className="min-h-screen relative overflow-hidden bg-[#0a0b14]">
       {/* Background gradient effects */}
       <div className="absolute inset-0">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#909af7]/15 rounded-full blur-[128px]" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#909af7]/10 rounded-full blur-[128px]" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/15 rounded-full blur-[128px]" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
       </div>
 
       <div
@@ -54,7 +54,7 @@ export function NoAccess({ locale = "en" }: { locale?: Locale }) {
               </p>
               <a
                 href="mailto:hello@vimistudio.com"
-                className="inline-block text-sm text-[#909af7] hover:text-[#a5aef9] transition-colors"
+                className="inline-block text-sm text-primary hover:text-primary/80 transition-colors"
               >
                 hello@vimistudio.com
               </a>

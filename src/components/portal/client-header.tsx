@@ -95,7 +95,7 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
             <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={profile.avatar_url ?? undefined} />
-                <AvatarFallback className="bg-[#909af7] text-white text-xs">
+                <AvatarFallback className="bg-primary text-white text-xs">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -164,10 +164,10 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-[#909af7]/50">
+              <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={profile.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-[#909af7] text-white text-sm">
+                  <AvatarFallback className="bg-primary text-white text-sm">
                     {initials}
                   </AvatarFallback>
                 </Avatar>

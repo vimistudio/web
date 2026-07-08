@@ -18,8 +18,8 @@ export function LinkingAccount({ locale = "en" }: { locale?: Locale }) {
       <meta httpEquiv="refresh" content="1.5" />
 
       <div className="absolute inset-0">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#909af7]/15 rounded-full blur-[128px]" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#909af7]/10 rounded-full blur-[128px]" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/15 rounded-full blur-[128px]" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-[128px]" />
       </div>
 
       <div
@@ -46,9 +46,9 @@ export function LinkingAccount({ locale = "en" }: { locale?: Locale }) {
           <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-8 space-y-6 shadow-2xl shadow-black/20 text-center">
             {/* Pulsing dot animation — minimal, brand-coloured */}
             <div className="flex items-center justify-center gap-1.5 h-6">
-              <span className="w-2 h-2 rounded-full bg-[#909af7] animate-pulse" style={{ animationDelay: "0ms" }} />
-              <span className="w-2 h-2 rounded-full bg-[#909af7] animate-pulse" style={{ animationDelay: "150ms" }} />
-              <span className="w-2 h-2 rounded-full bg-[#909af7] animate-pulse" style={{ animationDelay: "300ms" }} />
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: "300ms" }} />
             </div>
 
             <div className="space-y-2">

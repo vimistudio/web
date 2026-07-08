@@ -156,14 +156,14 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
                 key={n.id}
                 onClick={() => handleClick(n)}
                 className={`w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors flex gap-3 border-b last:border-b-0 ${
-                  !n.is_read ? "bg-[#909af7]/5" : ""
+                  !n.is_read ? "bg-primary/5" : ""
                 }`}
               >
-                <div className="h-7 w-7 shrink-0 mt-0.5 rounded-full bg-[#909af7]/10 flex items-center justify-center">
-                  {n.type === "comment_added" && <Comment01Icon size={14} className="text-[#909af7]" />}
-                  {n.type === "status_changed" && <ArrowRight01Icon size={14} className="text-[#909af7]" />}
-                  {n.type === "deliverable_uploaded" && <Upload01Icon size={14} className="text-[#909af7]" />}
-                  {n.type === "direction_voted" && <CheckmarkCircle01Icon size={14} className="text-[#909af7]" />}
+                <div className="h-7 w-7 shrink-0 mt-0.5 rounded-full bg-primary/10 flex items-center justify-center">
+                  {n.type === "comment_added" && <Comment01Icon size={14} className="text-primary" />}
+                  {n.type === "status_changed" && <ArrowRight01Icon size={14} className="text-primary" />}
+                  {n.type === "deliverable_uploaded" && <Upload01Icon size={14} className="text-primary" />}
+                  {n.type === "direction_voted" && <CheckmarkCircle01Icon size={14} className="text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm leading-tight ${!n.is_read ? "font-medium" : ""}`}>

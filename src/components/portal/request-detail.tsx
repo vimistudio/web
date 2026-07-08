@@ -296,9 +296,9 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-all duration-300 ${
                 i < currentIndex
-                  ? "bg-[#909af7] border-[#909af7] text-white"
+                  ? "bg-primary border-primary text-white"
                   : i === currentIndex
-                    ? "border-[#909af7] text-[#909af7] scale-110 shadow-sm shadow-[#909af7]/30"
+                    ? "border-primary text-primary scale-110 shadow-sm shadow-primary/30"
                     : "border-muted-foreground/30 text-muted-foreground/40"
               }`}
             >
@@ -321,7 +321,7 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
           {i < statusSteps.length - 1 && (
             <div
               className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < currentIndex ? "bg-[#909af7]" : "bg-muted-foreground/20"
+                i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"
               }`}
             />
           )}
@@ -465,7 +465,7 @@ function DeliverableCard({
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#909af7]/10 text-[#909af7] px-1.5 py-0.5 rounded"
+          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded"
         >
           {tag}
           {onUpdateTags && (
@@ -523,7 +523,7 @@ function DeliverableCard({
             setTagInput("");
             setShowTagInput(false);
           }}
-          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-[#909af7]"
+          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-primary"
         />
       )}
     </div>
@@ -673,7 +673,7 @@ const activityConfig: Record<string, { label: (oldVal: string | null, newVal: st
   },
   comment_added: {
     label: (_o, _n, actor) => `${actor} commented`,
-    dot: "bg-[#909af7]",
+    dot: "bg-primary",
   },
   deliverable_uploaded: {
     label: (_o, newVal, actor) => `${actor} uploaded ${newVal ?? "a file"}`,
@@ -1000,8 +1000,8 @@ export function RequestDetail({
       commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => {
         commentInputRef.current?.focus();
-        commentInputRef.current?.classList.add("ring-2", "ring-[#909af7]");
-        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-[#909af7]"), 2000);
+        commentInputRef.current?.classList.add("ring-2", "ring-primary");
+        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-primary"), 2000);
       }, 300);
       return;
     }
@@ -1422,7 +1422,7 @@ export function RequestDetail({
               <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs">
                 {t("edit.cancel")}
               </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-[#909af7] hover:bg-[#7b85e8]">
+              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-primary hover:bg-primary/90">
                 {isSavingEdit ? t("edit.saving") : t("edit.save")}
               </Button>
             </div>
@@ -1448,7 +1448,7 @@ export function RequestDetail({
                   onClick={() => setEditType(typeKey)}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                     editType === typeKey
-                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-gray-200 text-muted-foreground hover:border-gray-300"
                   }`}
                 >
@@ -1470,7 +1470,7 @@ export function RequestDetail({
                   onClick={() => setEditPriority(p.value)}
                   className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
                     editPriority === p.value
-                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-gray-200 text-muted-foreground hover:border-gray-300"
                   }`}
                 >
@@ -1572,7 +1572,7 @@ export function RequestDetail({
             {multi && inDirections && !isAdmin && !hasVoted && designersPick && (
               <button
                 onClick={() => handleVoteCarousel(designersPick.id, null)}
-                className="w-full rounded-xl bg-gradient-to-r from-[#909af7] to-[#b4baff] p-4 text-left text-white hover:from-[#7d87e8] hover:to-[#a3a9ff] transition-all active:scale-[0.99]"
+                className="w-full rounded-xl bg-gradient-to-r from-primary to-primary/70 p-4 text-left text-white hover:opacity-90 transition-all active:scale-[0.99]"
               >
                 <div className="text-[11px] uppercase tracking-wider opacity-90 mb-0.5">
                   {t("detail.designersPick")}
@@ -1641,7 +1641,7 @@ export function RequestDetail({
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold">{label}</span>
                           {post.is_recommended && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#909af7] text-white">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-white">
                               {t("detail.designersPick")}
                             </span>
                           )}
@@ -1685,7 +1685,7 @@ export function RequestDetail({
                     {inDirections && !isAdmin && !hasVoted && (
                       <button
                         onClick={() => handleVoteCarousel(post.id, null)}
-                        className="w-full max-w-[320px] h-12 rounded-full bg-[#909af7] text-white text-sm font-medium hover:bg-[#7d87e8] active:scale-95 transition-all"
+                        className="w-full max-w-[320px] h-12 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all"
                       >
                         {t("directions.pickStory")}
                       </button>
@@ -1931,11 +1931,11 @@ export function RequestDetail({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="w-full border-2 border-dashed border-[#909af7]/30 hover:border-[#909af7]/60 rounded-xl p-4 flex items-center justify-center gap-2 text-sm text-[#909af7] hover:bg-[#909af7]/5 transition-colors disabled:opacity-50"
+            className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 rounded-xl p-4 flex items-center justify-center gap-2 text-sm text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
           >
             {isUploading ? (
               <>
-                <div className="h-4 w-4 border-2 border-[#909af7]/30 border-t-[#909af7] rounded-full animate-spin" />
+                <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 Uploading...
               </>
             ) : (
@@ -1987,7 +1987,7 @@ export function RequestDetail({
               size="sm"
               onClick={() => handleStatusChange("review")}
               disabled={isUpdatingStatus}
-              className="bg-[#909af7] hover:bg-[#7b85e8]"
+              className="bg-primary hover:bg-primary/90"
             >
               {isUpdatingStatus ? "Updating..." : "Submit for Review"}
             </Button>
@@ -2044,7 +2044,7 @@ export function RequestDetail({
                   <img
                     src={ref.url}
                     alt={ref.file_name}
-                    className="w-16 h-16 rounded-lg object-cover hover:ring-2 ring-[#909af7] transition-shadow"
+                    className="w-16 h-16 rounded-lg object-cover hover:ring-2 ring-primary transition-shadow"
                     loading="lazy"
                   />
                 ) : (
@@ -2085,9 +2085,9 @@ export function RequestDetail({
                 <AvatarFallback
                   className={`text-xs ${
                     isAdminComment
-                      ? "bg-[#909af7] text-white"
+                      ? "bg-primary text-white"
                       : isOwnComment
-                        ? "bg-[#909af7] text-white"
+                        ? "bg-primary text-white"
                         : "bg-gray-200 text-gray-600"
                   }`}
                 >
@@ -2100,7 +2100,7 @@ export function RequestDetail({
                     {c.profiles?.full_name ?? "Unknown"}
                   </span>
                   {isAdminComment && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-[#909af7] bg-[#909af7]/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                       Vimi Studio
                     </span>
                   )}
@@ -2134,7 +2134,7 @@ export function RequestDetail({
                     href={c.attachment_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#909af7] hover:underline"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                   >
                     <Download01Icon size={12} />
                     {c.attachment_name ?? "Attachment"}
@@ -2180,7 +2180,7 @@ export function RequestDetail({
                     setComment(chip);
                     commentInputRef.current?.focus();
                   }}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-[#909af7] hover:text-[#909af7] transition-colors whitespace-nowrap"
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {chip}
                 </button>
@@ -2218,7 +2218,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-primary/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -2287,7 +2287,7 @@ export function RequestDetail({
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
               className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
                 comment.trim() || commentAttachment
-                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white"
+                  ? "bg-primary hover:bg-primary/90 text-white"
                   : "bg-transparent text-gray-300"
               }`}
             >
