@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, clients(name, slug)")
+    .select("*, clients!profiles_client_id_fkey(name, slug)")
     .eq("id", user.id)
     .single();
 
