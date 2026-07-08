@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useLocale } from "./locale-provider";
+import { PlanTracker, type Milestone } from "./plan-tracker";
 import { type PortalKey } from "@/lib/portal-i18n";
 
 interface Request {
@@ -45,6 +46,7 @@ interface ClientBoardProps {
   requestCount: number;
   isAdmin?: boolean;
   lastVisitedAt?: string | null;
+  milestones?: Milestone[];
 }
 
 const statusColumns = [
@@ -264,6 +266,7 @@ export function ClientBoard({
   requestCount,
   isAdmin = false,
   lastVisitedAt,
+  milestones = [],
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -444,6 +447,9 @@ export function ClientBoard({
           <PlusSignIcon size={22} color="currentColor" />
         </Button>
       </Link>
+
+      {/* ── Plan tracker (renders nothing when the client has no plan) ── */}
+      {milestones.length > 0 && <PlanTracker milestones={milestones} />}
 
       {/* ── Needs-you banner (amber) — highest priority ── */}
       {showNeedsYou && firstReview && (
