@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -106,65 +105,91 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
               New Client
             </button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
+            <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-[color:rgba(28,27,31,0.08)] text-left">
               <DialogTitle>Add New Client</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Client Name</Label>
-                <Input
-                  placeholder="e.g. Save My Dish"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Monthly Retainer ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 400"
-                  value={retainer}
-                  onChange={(e) => setRetainer(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select value={locale} onValueChange={setLocale}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="bg-white border shadow-lg z-50">
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Logo URL</Label>
-                <Input
-                  type="url"
-                  placeholder="https://…/logo.svg"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                />
-              </div>
-              <AccentColorPicker value={accentColor} onChange={setAccentColor} />
-              <div className="space-y-2">
-                <Label>Deal terms (client-facing)</Label>
-                <Input
-                  placeholder="e.g. Sin permanencia · cancelan con 30 días"
-                  value={dealTerms}
-                  onChange={(e) => setDealTerms(e.target.value)}
-                />
-              </div>
-              <Button
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+              {/* IDENTITY */}
+              <section className="space-y-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6E6B75]">
+                  Identity
+                </h3>
+                <div className="space-y-2">
+                  <Label>Client Name</Label>
+                  <Input
+                    placeholder="e.g. Save My Dish"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Monthly Retainer ($)</Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 400"
+                      value={retainer}
+                      onChange={(e) => setRetainer(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Language</Label>
+                    <Select value={locale} onValueChange={setLocale}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent position="popper" className="bg-white border shadow-lg z-50">
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Español</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </section>
+
+              {/* APPEARANCE */}
+              <section className="space-y-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6E6B75]">
+                  Appearance
+                </h3>
+                <div className="space-y-2">
+                  <Label>Logo URL</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://…/logo.svg"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                  />
+                </div>
+                <AccentColorPicker value={accentColor} onChange={setAccentColor} />
+              </section>
+
+              {/* DEAL */}
+              <section className="space-y-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6E6B75]">
+                  Deal
+                </h3>
+                <div className="space-y-2">
+                  <Label>Deal terms (client-facing)</Label>
+                  <Input
+                    placeholder="e.g. Sin permanencia · cancelan con 30 días"
+                    value={dealTerms}
+                    onChange={(e) => setDealTerms(e.target.value)}
+                  />
+                </div>
+              </section>
+            </div>
+
+            <div className="shrink-0 px-6 py-4 border-t border-[color:rgba(28,27,31,0.08)] bg-background">
+              <button
                 onClick={handleCreateClient}
                 disabled={!name.trim() || isCreating}
-                className="w-full bg-primary hover:bg-primary/90"
+                className="w-full inline-flex items-center justify-center rounded-full bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] px-5 py-2.5 text-sm font-semibold min-h-[44px] transition-colors hover:bg-[color:var(--vimi-ink)]/90 disabled:bg-[rgba(28,27,31,0.06)] disabled:text-[color:var(--vimi-muted)] disabled:cursor-not-allowed"
               >
                 {isCreating ? "Creating..." : "Create Client"}
-              </Button>
+              </button>
             </div>
           </DialogContent>
         </Dialog>

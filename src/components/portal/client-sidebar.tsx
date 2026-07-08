@@ -10,6 +10,7 @@ import {
   studioNoteFreshness,
 } from "@/lib/studio";
 import type { Profile, StudioDesigner } from "./portal-shell";
+import { TeamAvatarCluster, type ClusterMember } from "./team-cluster";
 
 const navItems: { titleKey: PortalKey; href: string }[] = [
   { titleKey: "tab.board", href: "/portal" },
@@ -27,9 +28,11 @@ const navItems: { titleKey: PortalKey; href: string }[] = [
 export function ClientSidebar({
   profile,
   designer,
+  team = [],
 }: {
   profile: Profile;
   designer?: StudioDesigner | null;
+  team?: ClusterMember[];
 }) {
   const pathname = usePathname();
   const { t, locale } = useLocale();
@@ -137,6 +140,16 @@ export function ClientSidebar({
                 {noteAge}
               </span>
             )}
+          </div>
+        )}
+        {/* Crew cluster + count — only when the client has more than one studio
+            person on the project; single-member clients look exactly as before. */}
+        {team.length > 1 && (
+          <div className="flex items-center gap-2">
+            <TeamAvatarCluster members={team} accent="var(--accent)" size={22} />
+            <span className="text-[10.5px] text-[color:var(--vimi-muted)]">
+              {t("team.count", { n: team.length })}
+            </span>
           </div>
         )}
         <a

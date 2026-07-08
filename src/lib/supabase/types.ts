@@ -122,6 +122,48 @@ export type Database = {
           },
         ]
       }
+      client_team: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_lead: boolean
+          profile_id: string
+          role_label: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          profile_id: string
+          role_label?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_lead?: boolean
+          profile_id?: string
+          role_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_team_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_team_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           client_id: string
@@ -507,6 +549,7 @@ export type Database = {
           id: string
           locale: string
           role: Database["public"]["Enums"]["user_role"]
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -519,6 +562,7 @@ export type Database = {
           id: string
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -531,6 +575,7 @@ export type Database = {
           id?: string
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
+          title?: string | null
           updated_at?: string
         }
         Relationships: [

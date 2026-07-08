@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { LocaleProvider } from "./locale-provider";
 import { type Locale } from "@/lib/portal-i18n";
+import { type ClusterMember } from "./team-cluster";
 
 interface Client {
   id: string;
@@ -56,6 +57,9 @@ interface PortalShellProps {
   impersonating?: boolean;
   /** Resolved designer for this client, shown in the sidebar studio card. */
   designer?: StudioDesigner | null;
+  /** Full studio crew for this client — drives the sidebar cluster + count when
+   *  there's more than one member. Empty/absent → legacy single-designer card. */
+  team?: ClusterMember[];
 }
 
 export function PortalShell({
@@ -64,6 +68,7 @@ export function PortalShell({
   children,
   impersonating = false,
   designer = null,
+  team = [],
 }: PortalShellProps) {
   const isAdmin = profile.role === "admin";
   // Fall back to the client's configured locale when the user hasn't made an
@@ -104,7 +109,7 @@ export function PortalShell({
       >
         <div className="flex min-h-dvh">
           {/* Desktop-only sidebar (identity, nav, studio contact) */}
-          <ClientSidebar profile={profile} designer={designer} />
+          <ClientSidebar profile={profile} designer={designer} team={team} />
           <div className="flex flex-1 min-w-0 flex-col">
             <ClientHeader user={user} profile={profile} impersonating={impersonating} />
             <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>
