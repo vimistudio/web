@@ -126,6 +126,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           created_at: string
+          deal_terms: string | null
           id: string
           is_active: boolean
           locale: string
@@ -138,6 +139,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           created_at?: string
+          deal_terms?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -150,6 +152,7 @@ export type Database = {
         Update: {
           accent_color?: string | null
           created_at?: string
+          deal_terms?: string | null
           id?: string
           is_active?: boolean
           locale?: string

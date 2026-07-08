@@ -59,10 +59,12 @@ function StatusDot({ status }: { status: Milestone["status"] }) {
 export function PlanTracker({
   milestones: initial,
   retainerAmount = null,
+  dealTerms = null,
   isImpersonatingAdmin = false,
 }: {
   milestones: Milestone[];
   retainerAmount?: number | null;
+  dealTerms?: string | null;
   isImpersonatingAdmin?: boolean;
 }) {
   const { t } = useLocale();
@@ -104,9 +106,19 @@ export function PlanTracker({
   const allDone = total > 0 && doneCount === total;
 
   const showDeal = retainerAmount != null && retainerAmount > 0;
-  const dealAmount = showDeal
-    ? maskPrice(retainerAmount.toLocaleString(), isImpersonatingAdmin && pricesHidden)
+  // Base line is the amount; per-client deal_terms (authored in the client's
+  // language) is appended verbatim — never a hardcoded studio-wide policy.
+  const dealLine = showDeal
+    ? `${t("plan.dealLine", { amount: retainerAmount.toLocaleString() })}${
+        dealTerms ? ` · ${dealTerms}` : ""
+      }`
     : "";
+  // During impersonation the screen-share eye masks the whole line, not just
+  // the number.
+  const dealLineDisplay = maskPrice(
+    dealLine,
+    isImpersonatingAdmin && pricesHidden
+  );
 
   // Group milestones by week, weeks ascending, rows by sort then title.
   const weekGroups = useMemo(() => {
@@ -190,7 +202,7 @@ export function PlanTracker({
           </div>
           {showDeal && (
             <div className="text-[13px] text-[color:var(--vimi-muted)]">
-              {t("plan.dealLine", { amount: dealAmount })}
+              {dealLineDisplay}
             </div>
           )}
           {/* Goal-gradient progress */}

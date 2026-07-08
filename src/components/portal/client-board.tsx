@@ -48,6 +48,7 @@ interface ClientBoardProps {
   lastVisitedAt?: string | null;
   milestones?: Milestone[];
   retainerAmount?: number | null;
+  dealTerms?: string | null;
 }
 
 const statusColumns = [
@@ -269,6 +270,7 @@ export function ClientBoard({
   lastVisitedAt,
   milestones = [],
   retainerAmount = null,
+  dealTerms = null,
 }: ClientBoardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -455,6 +457,7 @@ export function ClientBoard({
         <PlanTracker
           milestones={milestones}
           retainerAmount={retainerAmount}
+          dealTerms={dealTerms}
           isImpersonatingAdmin={isAdmin}
         />
       )}

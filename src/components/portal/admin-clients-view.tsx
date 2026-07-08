@@ -52,6 +52,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
   const [locale, setLocale] = useState("en");
   const [logoUrl, setLogoUrl] = useState("");
   const [accentColor, setAccentColor] = useState("#5B4BD6");
+  const [dealTerms, setDealTerms] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const activeClients = clients.filter((c) => c.is_active);
@@ -75,6 +76,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       locale,
       logo_url: logoUrl.trim() || null,
       accent_color: accentColor.trim() || null,
+      deal_terms: dealTerms.trim() || null,
     });
 
     if (!error) {
@@ -83,6 +85,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       setLocale("en");
       setLogoUrl("");
       setAccentColor("#5B4BD6");
+      setDealTerms("");
       setIsOpen(false);
       router.refresh();
     }
@@ -147,6 +150,14 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                 />
               </div>
               <AccentColorPicker value={accentColor} onChange={setAccentColor} />
+              <div className="space-y-2">
+                <Label>Deal terms (client-facing)</Label>
+                <Input
+                  placeholder="e.g. Sin permanencia · cancelan con 30 días"
+                  value={dealTerms}
+                  onChange={(e) => setDealTerms(e.target.value)}
+                />
+              </div>
               <Button
                 onClick={handleCreateClient}
                 disabled={!name.trim() || isCreating}
