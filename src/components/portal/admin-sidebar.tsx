@@ -102,7 +102,7 @@ export function AdminSidebar({ user, profile }: AdminSidebarProps) {
         <div className="flex items-center gap-3 px-2 py-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile.avatar_url ?? undefined} />
-            <AvatarFallback className="bg-[#909af7] text-white text-xs">
+            <AvatarFallback className="bg-primary text-white text-xs">
               {initials}
             </AvatarFallback>
           </Avatar>

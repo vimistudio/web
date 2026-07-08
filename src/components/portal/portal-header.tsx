@@ -87,7 +87,7 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
           <button className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-ring">
             <Avatar className="h-8 w-8">
               <AvatarImage src={profile.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-[#909af7] text-white text-xs">
+              <AvatarFallback className="bg-primary text-white text-xs">
                 {initials}
               </AvatarFallback>
             </Avatar>

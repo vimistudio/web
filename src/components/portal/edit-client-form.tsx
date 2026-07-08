@@ -23,6 +23,7 @@ import {
 import { Settings02Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { AccentColorPicker } from "./accent-color-picker";
 
 interface Client {
   id: string;
@@ -32,6 +33,7 @@ interface Client {
   is_active: boolean;
   locale?: string | null;
   logo_url?: string | null;
+  accent_color?: string | null;
 }
 
 export function EditClientDialog({ client }: { client: Client }) {
@@ -43,6 +45,7 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [isActive, setIsActive] = useState(client.is_active);
   const [locale, setLocale] = useState(client.locale ?? "en");
   const [logoUrl, setLogoUrl] = useState(client.logo_url ?? "");
+  const [accentColor, setAccentColor] = useState(client.accent_color ?? "#5B4BD6");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -62,6 +65,7 @@ export function EditClientDialog({ client }: { client: Client }) {
         is_active: isActive,
         locale,
         logo_url: logoUrl.trim() || null,
+        accent_color: accentColor.trim() || null,
       })
       .eq("id", client.id);
 
@@ -155,6 +159,7 @@ export function EditClientDialog({ client }: { client: Client }) {
               onChange={(e) => setLogoUrl(e.target.value)}
             />
           </div>
+          <AccentColorPicker value={accentColor} onChange={setAccentColor} />
           <div className="flex items-center justify-between">
             <Label htmlFor="client-active">Active</Label>
             <Switch
@@ -167,7 +172,7 @@ export function EditClientDialog({ client }: { client: Client }) {
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 bg-[#909af7] hover:bg-[#7b85e8]"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>

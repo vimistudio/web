@@ -33,7 +33,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -296,9 +296,9 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-all duration-300 ${
                 i < currentIndex
-                  ? "bg-[#909af7] border-[#909af7] text-white"
+                  ? "bg-primary border-primary text-white"
                   : i === currentIndex
-                    ? "border-[#909af7] text-[#909af7] scale-110 shadow-sm shadow-[#909af7]/30"
+                    ? "border-primary text-primary scale-110 shadow-sm shadow-primary/30"
                     : "border-muted-foreground/30 text-muted-foreground/40"
               }`}
             >
@@ -321,7 +321,7 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
           {i < statusSteps.length - 1 && (
             <div
               className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < currentIndex ? "bg-[#909af7]" : "bg-muted-foreground/20"
+                i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"
               }`}
             />
           )}
@@ -465,7 +465,7 @@ function DeliverableCard({
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#909af7]/10 text-[#909af7] px-1.5 py-0.5 rounded"
+          className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded"
         >
           {tag}
           {onUpdateTags && (
@@ -523,7 +523,7 @@ function DeliverableCard({
             setTagInput("");
             setShowTagInput(false);
           }}
-          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-[#909af7]"
+          className="text-[10px] w-16 px-1 py-0.5 border border-gray-200 rounded outline-none focus:border-primary"
         />
       )}
     </div>
@@ -673,7 +673,7 @@ const activityConfig: Record<string, { label: (oldVal: string | null, newVal: st
   },
   comment_added: {
     label: (_o, _n, actor) => `${actor} commented`,
-    dot: "bg-[#909af7]",
+    dot: "bg-primary",
   },
   deliverable_uploaded: {
     label: (_o, newVal, actor) => `${actor} uploaded ${newVal ?? "a file"}`,
@@ -786,6 +786,11 @@ export function RequestDetail({
   const [editType, setEditType] = useState<string>(request.type);
   const [editPriority, setEditPriority] = useState(request.priority);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Peak-End celebration (client approves a delivery)
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [doneCount, setDoneCount] = useState<number | null>(null);
+  const [rating, setRating] = useState(0);
   const { t, locale } = useLocale();
 
   const canEdit = currentStatus === "queued" && !isAdmin;
@@ -861,6 +866,20 @@ export function RequestDetail({
   const updatedDate = formatDistanceToNow(new Date(request.updated_at), {
     addSuffix: true,
   });
+
+  // Review header meta line — real delivered date + visible file count.
+  const reviewMeta = (() => {
+    if (visibleDeliverables.length === 0) return null;
+    const latest = visibleDeliverables.reduce((acc, d) =>
+      new Date(d.created_at) > new Date(acc.created_at) ? d : acc
+    );
+    const when = new Date(latest.created_at).toLocaleDateString(
+      locale === "es" ? "es-ES" : "en-US",
+      { month: "short", day: "numeric" }
+    );
+    const n = visibleDeliverables.length;
+    return `${t("detail.deliveredOn")} ${when} · ${n} ${n === 1 ? t("gallery.deliverable") : t("gallery.deliverables")}`;
+  })();
 
   // Clear optimistic comments when server data updates
   useEffect(() => {
@@ -959,12 +978,7 @@ export function RequestDetail({
       }
 
       if (newStatus === "done") {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.7 },
-          colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
-        });
+        fireConfetti();
         toast.success(t("detail.approved"), {
           duration: 5000,
         });
@@ -990,6 +1004,82 @@ export function RequestDetail({
     [currentStatus, request.id, router]
   );
 
+  // Client approves a delivery → persist "done", surface the Peak-End
+  // celebration modal with the real count of completed requests together.
+  const handleClientApprove = useCallback(async () => {
+    setIsUpdatingStatus(true);
+    const previousStatus = currentStatus;
+    setCurrentStatus("done");
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("requests")
+      .update({ status: "done" })
+      .eq("id", request.id);
+
+    if (error) {
+      setCurrentStatus(previousStatus);
+      toast.error(t("detail.couldntUpdate"));
+      setIsUpdatingStatus(false);
+      return;
+    }
+    setIsUpdatingStatus(false);
+
+    // Real count of completed requests for this client (includes the one we
+    // just approved). head:true keeps it a count-only query.
+    const { count } = await supabase
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", request.client_id)
+      .eq("status", "done");
+    setDoneCount(typeof count === "number" ? count : null);
+
+    setShowCelebration(true);
+    fireConfetti();
+    router.refresh();
+
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "status_changed",
+        request_id: request.id,
+        new_status: "done",
+        old_status: previousStatus,
+      }),
+    }).catch(() => {});
+  }, [currentStatus, request.id, request.client_id, router, t]);
+
+  // Rating persists with zero schema change: it lands as a comment in the
+  // thread (stars + a localized line) so admins see it, and reuses the
+  // existing comment notification.
+  const handleRate = useCallback(
+    async (n: number) => {
+      if (rating) return; // one rating per celebration
+      setRating(n);
+      const stars = "★".repeat(n) + "☆".repeat(5 - n);
+      const supabase = createClient();
+      const { error } = await supabase.from("comments").insert({
+        request_id: request.id,
+        author_id: currentUserId,
+        body: `${stars} — ${t("celebrate.rated")}`,
+      });
+      if (error) {
+        toast.error(t("detail.couldntPost"));
+        setRating(0);
+        return;
+      }
+      toast.success(t("celebrate.thanks"));
+      router.refresh();
+      fetch("/api/portal/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "comment_added", request_id: request.id }),
+      }).catch(() => {});
+    },
+    [rating, request.id, currentUserId, router, t]
+  );
+
   const handleRequestChanges = useCallback(() => {
     if (!comment.trim()) {
       toast(
@@ -1000,8 +1090,8 @@ export function RequestDetail({
       commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => {
         commentInputRef.current?.focus();
-        commentInputRef.current?.classList.add("ring-2", "ring-[#909af7]");
-        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-[#909af7]"), 2000);
+        commentInputRef.current?.classList.add("ring-2", "ring-primary");
+        setTimeout(() => commentInputRef.current?.classList.remove("ring-2", "ring-primary"), 2000);
       }, 300);
       return;
     }
@@ -1159,19 +1249,8 @@ export function RequestDetail({
         toast.error("Couldn't save your pick");
         return;
       }
-      // Confetti — Peak-End rule
-      try {
-        const c = (await import("canvas-confetti")).default;
-        c({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#909af7", "#b4baff", "#ffffff"],
-        });
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-          (navigator as Navigator & { vibrate: (ms: number) => void }).vibrate?.(50);
-        }
-      } catch {}
+      // Confetti — Peak-End rule (respects prefers-reduced-motion)
+      fireConfetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       toast.success("The story is set ✨");
       router.refresh();
     },
@@ -1390,9 +1469,25 @@ export function RequestDetail({
         />
       )}
       {currentStatus === "review" && !hasDirections && !isAdmin && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-center space-y-1">
-          <p className="font-semibold text-amber-900">{t("detail.reviewHero")}</p>
-          <p className="text-sm text-amber-700">{t("detail.reviewHeroSub")}</p>
+        <div
+          className="rounded-2xl border p-5 space-y-2"
+          style={{ background: "var(--status-review-bg)", borderColor: "rgba(201,130,27,0.35)" }}
+        >
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span
+              className="text-[10.5px] font-bold tracking-[0.08em] rounded-md px-2 py-1"
+              style={{ background: "var(--status-review-chip)", color: "var(--status-review-ink)" }}
+            >
+              {t("detail.readyChip")}
+            </span>
+            {reviewMeta && (
+              <span className="text-[12.5px] text-[color:var(--vimi-muted)]">{reviewMeta}</span>
+            )}
+          </div>
+          <p className="font-serif italic text-[22px] leading-tight text-[color:var(--vimi-ink)]">
+            {t("detail.reviewHero")}
+          </p>
+          <p className="text-sm text-[color:var(--vimi-muted)]">{t("detail.reviewHeroSub")}</p>
         </div>
       )}
 
@@ -1422,7 +1517,7 @@ export function RequestDetail({
               <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs">
                 {t("edit.cancel")}
               </Button>
-              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-[#909af7] hover:bg-[#7b85e8]">
+              <Button size="sm" onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit} className="h-7 text-xs bg-primary hover:bg-primary/90">
                 {isSavingEdit ? t("edit.saving") : t("edit.save")}
               </Button>
             </div>
@@ -1448,7 +1543,7 @@ export function RequestDetail({
                   onClick={() => setEditType(typeKey)}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                     editType === typeKey
-                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-gray-200 text-muted-foreground hover:border-gray-300"
                   }`}
                 >
@@ -1470,7 +1565,7 @@ export function RequestDetail({
                   onClick={() => setEditPriority(p.value)}
                   className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
                     editPriority === p.value
-                      ? "border-[#909af7] bg-[#909af7]/10 text-[#909af7]"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-gray-200 text-muted-foreground hover:border-gray-300"
                   }`}
                 >
@@ -1572,7 +1667,7 @@ export function RequestDetail({
             {multi && inDirections && !isAdmin && !hasVoted && designersPick && (
               <button
                 onClick={() => handleVoteCarousel(designersPick.id, null)}
-                className="w-full rounded-xl bg-gradient-to-r from-[#909af7] to-[#b4baff] p-4 text-left text-white hover:from-[#7d87e8] hover:to-[#a3a9ff] transition-all active:scale-[0.99]"
+                className="w-full rounded-xl bg-gradient-to-r from-primary to-primary/70 p-4 text-left text-white hover:opacity-90 transition-all active:scale-[0.99]"
               >
                 <div className="text-[11px] uppercase tracking-wider opacity-90 mb-0.5">
                   {t("detail.designersPick")}
@@ -1641,7 +1736,7 @@ export function RequestDetail({
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold">{label}</span>
                           {post.is_recommended && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#909af7] text-white">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-white">
                               {t("detail.designersPick")}
                             </span>
                           )}
@@ -1685,7 +1780,7 @@ export function RequestDetail({
                     {inDirections && !isAdmin && !hasVoted && (
                       <button
                         onClick={() => handleVoteCarousel(post.id, null)}
-                        className="w-full max-w-[320px] h-12 rounded-full bg-[#909af7] text-white text-sm font-medium hover:bg-[#7d87e8] active:scale-95 transition-all"
+                        className="w-full max-w-[320px] h-12 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all"
                       >
                         {t("directions.pickStory")}
                       </button>
@@ -1931,11 +2026,11 @@ export function RequestDetail({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="w-full border-2 border-dashed border-[#909af7]/30 hover:border-[#909af7]/60 rounded-xl p-4 flex items-center justify-center gap-2 text-sm text-[#909af7] hover:bg-[#909af7]/5 transition-colors disabled:opacity-50"
+            className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 rounded-xl p-4 flex items-center justify-center gap-2 text-sm text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
           >
             {isUploading ? (
               <>
-                <div className="h-4 w-4 border-2 border-[#909af7]/30 border-t-[#909af7] rounded-full animate-spin" />
+                <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 Uploading...
               </>
             ) : (
@@ -1948,21 +2043,22 @@ export function RequestDetail({
         </div>
       )}
 
-      {/* Action Buttons — above comments when in review (the decision point) */}
+      {/* Action Buttons — above comments when in review (the decision point).
+          Approve = ink pill, Request changes = outlined pill (prototype). */}
       {currentStatus === "review" && !isAdmin && (
-        <div className="space-y-2">
-          <Button
-            onClick={() => handleStatusChange("done")}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleClientApprove}
             disabled={isUpdatingStatus}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 gap-2 h-14 text-base font-semibold rounded-xl transition-all duration-150 shadow-md shadow-emerald-600/20 touch-manipulation"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-14 rounded-full bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] text-base font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 touch-manipulation"
           >
-            <CheckmarkCircle01Icon size={20} color="white" />
+            <CheckmarkCircle01Icon size={20} color="currentColor" />
             {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
-          </Button>
+          </button>
           <button
             onClick={handleRequestChanges}
             disabled={isUpdatingStatus || isSubmitting}
-            className="w-full py-2 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center h-14 px-6 rounded-full border border-[color:var(--vimi-border)] bg-white text-[color:var(--vimi-ink)] text-sm font-semibold transition-colors hover:bg-[color:rgba(28,27,31,0.03)] disabled:opacity-50 touch-manipulation"
           >
             {t("detail.askForChanges")}
           </button>
@@ -1987,7 +2083,7 @@ export function RequestDetail({
               size="sm"
               onClick={() => handleStatusChange("review")}
               disabled={isUpdatingStatus}
-              className="bg-[#909af7] hover:bg-[#7b85e8]"
+              className="bg-primary hover:bg-primary/90"
             >
               {isUpdatingStatus ? "Updating..." : "Submit for Review"}
             </Button>
@@ -2044,7 +2140,7 @@ export function RequestDetail({
                   <img
                     src={ref.url}
                     alt={ref.file_name}
-                    className="w-16 h-16 rounded-lg object-cover hover:ring-2 ring-[#909af7] transition-shadow"
+                    className="w-16 h-16 rounded-lg object-cover hover:ring-2 ring-primary transition-shadow"
                     loading="lazy"
                   />
                 ) : (
@@ -2085,9 +2181,9 @@ export function RequestDetail({
                 <AvatarFallback
                   className={`text-xs ${
                     isAdminComment
-                      ? "bg-[#909af7] text-white"
+                      ? "bg-primary text-white"
                       : isOwnComment
-                        ? "bg-[#909af7] text-white"
+                        ? "bg-primary text-white"
                         : "bg-gray-200 text-gray-600"
                   }`}
                 >
@@ -2100,7 +2196,7 @@ export function RequestDetail({
                     {c.profiles?.full_name ?? "Unknown"}
                   </span>
                   {isAdminComment && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-[#909af7] bg-[#909af7]/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                       Vimi Studio
                     </span>
                   )}
@@ -2134,7 +2230,7 @@ export function RequestDetail({
                     href={c.attachment_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#909af7] hover:underline"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                   >
                     <Download01Icon size={12} />
                     {c.attachment_name ?? "Attachment"}
@@ -2180,7 +2276,7 @@ export function RequestDetail({
                     setComment(chip);
                     commentInputRef.current?.focus();
                   }}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-[#909af7] hover:text-[#909af7] transition-colors whitespace-nowrap"
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {chip}
                 </button>
@@ -2218,7 +2314,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-[#909af7]/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-primary/50 transition-colors">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -2287,7 +2383,7 @@ export function RequestDetail({
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
               className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
                 comment.trim() || commentAttachment
-                  ? "bg-[#909af7] hover:bg-[#7b85e8] text-white"
+                  ? "bg-primary hover:bg-primary/90 text-white"
                   : "bg-transparent text-gray-300"
               }`}
             >
@@ -2319,6 +2415,68 @@ export function RequestDetail({
           open={lightboxOpen}
           onOpenChange={setLightboxOpen}
         />
+      )}
+
+      {/* ── Peak-End celebration modal ── */}
+      {showCelebration && (
+        <div
+          className="vm-fade fixed inset-0 z-[80] flex items-center justify-center p-5"
+          style={{ background: "rgba(28,27,31,0.55)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="vm-pop w-full max-w-[480px] rounded-[28px] bg-white p-10 md:p-11 text-center shadow-[0_40px_90px_rgba(28,27,31,0.35)]">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full text-white text-[28px] bg-primary">
+              ✓
+            </div>
+            <div className="font-serif italic text-[32px] leading-tight mb-2.5 text-[color:var(--vimi-ink)]">
+              {t("celebrate.title")}
+            </div>
+            <p className="mb-7 text-[color:var(--vimi-muted)] leading-relaxed">
+              {doneCount
+                ? t("celebrate.count", { n: doneCount })
+                : t("celebrate.countFallback")}
+            </p>
+            <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+              {t("celebrate.ratedPrompt")}
+            </div>
+            <div className="mb-7 flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((n) => {
+                const on = rating >= n;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => handleRate(n)}
+                    disabled={!!rating}
+                    aria-label={`${n}`}
+                    className="h-9 w-9 rounded-full border text-[13px] font-bold transition-colors disabled:cursor-default"
+                    style={{
+                      borderColor: on ? "var(--accent)" : "var(--vimi-border)",
+                      background: on ? "var(--accent)" : "#fff",
+                      color: on ? "#fff" : "var(--vimi-faint)",
+                    }}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => router.push("/portal")}
+                className="flex-1 rounded-full border border-[color:var(--vimi-border)] py-3.5 text-sm font-semibold text-[color:var(--vimi-muted)] transition-colors hover:bg-[color:rgba(28,27,31,0.03)]"
+              >
+                {t("celebrate.backToStudio")}
+              </button>
+              <button
+                onClick={() => router.push("/portal/requests/new")}
+                className="flex-1 rounded-full bg-[color:var(--vimi-ink)] py-3.5 text-sm font-semibold text-[var(--vimi-page)]"
+              >
+                {t("celebrate.newRequest")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

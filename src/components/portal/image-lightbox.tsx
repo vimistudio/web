@@ -305,7 +305,7 @@ export function ImageLightbox({
                       // User cancelled share — not an error
                     }
                   }}
-                  className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors sm:hidden"
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors sm:hidden"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
@@ -365,7 +365,7 @@ export function ImageLightbox({
                     toast.error("Couldn't download file");
                   }
                 }}
-                className="flex items-center gap-2 bg-[#909af7] hover:bg-[#7b85e8] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 <Download01Icon size={16} />
                 <span className="hidden sm:inline">Download</span>

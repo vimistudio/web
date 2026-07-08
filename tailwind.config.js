@@ -21,16 +21,37 @@ module.exports = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "#fbfafa",
-        foreground: "#111111",
+        background: "var(--vimi-page)",
+        foreground: "var(--vimi-ink)",
         primary: {
-          DEFAULT: "#909af7",
-          foreground: "#ffffff",
+          // Per-client accent (see globals.css --accent), Vimi violet by default.
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
         },
         secondary: {
           DEFAULT: "#111111",
           foreground: "#ffffff",
         },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-instrument-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-instrument-serif)", "Georgia", "serif"],
       },
       fontSize: {
         "8xl": "160px",

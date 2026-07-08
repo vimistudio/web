@@ -15,7 +15,7 @@ export default async function PortalPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, client_id, locale, clients(id, name, slug, locale)")
+    .select("role, client_id, locale, full_name, clients(id, name, slug, locale)")
     .eq("id", user.id)
     .single();
 
@@ -40,8 +40,8 @@ export default async function PortalPage() {
       "en";
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#909af7]/10 flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#909af7]">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-primary">
             <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
@@ -51,7 +51,7 @@ export default async function PortalPage() {
         </p>
         <a
           href="mailto:hello@vimistudio.com"
-          className="text-sm text-[#909af7] hover:text-[#7b85e8] font-medium transition-colors"
+          className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
         >
           {t("gate.almost.contact", gateLocale)}
         </a>
@@ -98,6 +98,7 @@ export default async function PortalPage() {
       <SetLastVisited />
       <ClientBoard
         clientName={clientName}
+        firstName={(profile?.full_name ?? "").trim().split(/\s+/)[0] || null}
         requests={requestsWithPreviews}
         requestCount={requestsWithPreviews.filter((r) => r.status !== "done").length}
         isAdmin={isImpersonating}

@@ -232,7 +232,7 @@ export function DirectionOrganizer({
                 key={d.id}
                 className={`transition-all ${
                   d.is_recommended
-                    ? "ring-2 ring-[#909af7] shadow-sm"
+                    ? "ring-2 ring-primary shadow-sm"
                     : ""
                 }`}
               >
@@ -311,7 +311,7 @@ export function DirectionOrganizer({
                         size="icon"
                         className={`h-7 w-7 ${
                           d.is_recommended
-                            ? "text-[#909af7]"
+                            ? "text-primary"
                             : "text-muted-foreground"
                         }`}
                         onClick={() => handleToggleRecommended(d.id)}
@@ -328,7 +328,7 @@ export function DirectionOrganizer({
                       {i + 1} of {directions.length}
                     </Badge>
                     {d.is_recommended && (
-                      <Badge className="text-[10px] px-1.5 py-0 bg-[#909af7]">
+                      <Badge className="text-[10px] px-1.5 py-0 bg-primary">
                         Designer&apos;s Pick
                       </Badge>
                     )}

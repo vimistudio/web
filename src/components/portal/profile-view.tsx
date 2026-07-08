@@ -160,7 +160,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage src={profile.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-[#909af7] text-white text-xl">
+              <AvatarFallback className="bg-primary text-white text-xl">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -174,7 +174,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
                   variant="outline"
                   className={
                     isAdmin
-                      ? "bg-[#909af7]/10 text-[#909af7] border-[#909af7]/30"
+                      ? "bg-primary/10 text-primary border-primary/30"
                       : "bg-emerald-50 text-emerald-700 border-emerald-200"
                   }
                 >
@@ -204,7 +204,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
                 onClick={() => handleLocaleChange(opt.value)}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
                   currentLocale === opt.value
-                    ? "border-[#909af7] bg-[#909af7]/5 text-[#909af7]"
+                    ? "border-primary bg-primary/5 text-primary"
                     : "border-gray-200 text-muted-foreground hover:border-gray-300"
                 }`}
               >
@@ -242,7 +242,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
               <Button
                 onClick={handleInvite}
                 disabled={!inviteEmail.trim() || isInviting}
-                className="gap-2 bg-[#909af7] hover:bg-[#7b85e8] shrink-0"
+                className="gap-2 bg-primary hover:bg-primary/90 shrink-0"
               >
                 <PlusSignIcon size={16} color="white" />
                 {isInviting ? t("team.inviting") : t("team.invite")}
@@ -335,7 +335,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
             {t("profile.about")}{" "}
             <a
               href="mailto:hello@vimistudio.com"
-              className="text-[#909af7] hover:underline"
+              className="text-primary hover:underline"
             >
               hello@vimistudio.com
             </a>

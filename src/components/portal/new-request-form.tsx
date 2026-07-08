@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import { useLocale } from "@/components/portal/locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 
@@ -44,7 +44,7 @@ const requestTypes = [
 
 const priorities = [
   { value: 1, labelKey: "form.priority.whenever" as PortalKey, descKey: "form.priority.whenever.desc" as PortalKey, Icon: LeafIcon, activeColor: "border-gray-400 bg-gray-50" },
-  { value: 2, labelKey: "form.priority.thisWeek" as PortalKey, descKey: "form.priority.thisWeek.desc" as PortalKey, Icon: CalendarIcon, activeColor: "border-[#909af7] bg-[#909af7]/5" },
+  { value: 2, labelKey: "form.priority.thisWeek" as PortalKey, descKey: "form.priority.thisWeek.desc" as PortalKey, Icon: CalendarIcon, activeColor: "border-primary bg-primary/5" },
   { value: 3, labelKey: "form.priority.urgent" as PortalKey, descKey: "form.priority.urgent.desc" as PortalKey, Icon: FireIcon, activeColor: "border-red-400 bg-red-50" },
 ];
 
@@ -70,8 +70,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
   useEffect(() => {
     if (!submitted) return;
-    // Celebration confetti
-    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ["#909af7", "#10b981", "#f9a8d4"] });
+    // Celebration confetti (gated on prefers-reduced-motion)
+    fireConfetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
     const timer = setTimeout(() => {
       if (isAdmin) router.back();
       else router.push("/portal");
@@ -200,8 +200,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
               <path d="M12 20L18 26L28 14" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-2">{t("form.success.title")}</h2>
-          <p className="text-muted-foreground max-w-xs">
+          <h2 className="font-serif italic text-3xl mb-2 text-[color:var(--vimi-ink)]">{t("form.success.title")}</h2>
+          <p className="text-[color:var(--vimi-muted)] max-w-xs">
             {t("form.success.body")}
           </p>
         </div>
@@ -220,32 +220,31 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             )}
           </div>
 
-          {/* Progress dots — left aligned */}
+          {/* Progress — thin 4px segment bars (prototype) */}
           <div className="flex items-center gap-1.5 mb-8">
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-              <div
+              <span
                 key={i}
-                className={`rounded-full transition-all duration-500 ease-out ${
-                  i === step
-                    ? "w-6 h-1.5 bg-[#909af7]"
-                    : i < step
-                      ? "w-1.5 h-1.5 bg-[#909af7]"
-                      : "w-1.5 h-1.5 bg-gray-200"
+                className={`h-1 flex-1 rounded-full transition-colors duration-500 ease-out ${
+                  i <= step ? "bg-primary" : "bg-[color:rgba(28,27,31,0.1)]"
                 }`}
               />
             ))}
+            <span className="ml-2 shrink-0 text-xs font-semibold text-[color:var(--vimi-faint)]">
+              {step + 1} / {TOTAL_STEPS}
+            </span>
           </div>
 
           {/* Step content */}
           <div className={`flex-1 ${direction === "forward" ? "animate-in fade-in slide-in-from-right-4" : "animate-in fade-in slide-in-from-left-4"} duration-300`} key={step}>
             {/* Step label */}
-            <p className="text-xs font-medium text-[#909af7] uppercase tracking-wider mb-2">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider mb-2">
               {t(STEP_LABEL_KEYS[step])}
             </p>
 
             {step === 0 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.name.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -264,7 +263,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
             {step === 1 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.type.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -279,25 +278,25 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                         onClick={() => setType(rt.value)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] touch-manipulation text-left ${
                           selected
-                            ? "border-[#909af7] bg-[#909af7]/5 shadow-sm"
+                            ? "border-primary bg-primary/5 shadow-sm"
                             : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                       >
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                            selected ? "bg-[#909af7]/10 text-[#909af7]" : "bg-gray-100 text-muted-foreground"
+                            selected ? "bg-primary/10 text-primary" : "bg-gray-100 text-muted-foreground"
                           }`}
                         >
                           <rt.Icon size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium ${selected ? "text-[#909af7]" : "text-foreground"}`}>
+                          <div className={`text-sm font-medium ${selected ? "text-primary" : "text-foreground"}`}>
                             {t(rt.labelKey)}
                           </div>
                           <div className="text-xs text-muted-foreground">{t(rt.descKey)}</div>
                         </div>
                         {selected && (
-                          <div className="w-5 h-5 rounded-full bg-[#909af7] flex items-center justify-center shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                               <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
@@ -312,7 +311,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
             {step === 2 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                   {t("form.details.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -371,7 +370,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                   </div>
                 )}
 
-                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-[#909af7] cursor-pointer transition-colors w-fit">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary cursor-pointer transition-colors w-fit">
                   <PlusSignIcon size={14} />
                   <span>{t("form.inspiration.addFile")}</span>
                   <input
@@ -388,7 +387,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             {step === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight leading-tight">
+                  <h2 className="font-serif italic text-3xl leading-tight text-[color:var(--vimi-ink)]">
                     {t("form.timeline.title")}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -433,6 +432,35 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
                     className="h-12"
                   />
                 </div>
+
+                {/* Review summary — label/value rows in a soft card */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)] mb-2">
+                    {t("form.summary.heading")}
+                  </p>
+                  <div className="rounded-2xl border border-[color:var(--vimi-border)] bg-[color:rgba(28,27,31,0.02)] p-4 flex flex-col gap-3">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.request")}</span>
+                      <span className="text-[13px] font-bold text-right text-[color:var(--vimi-ink)]">{title.trim() || t("form.summary.untitled")}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.type")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">
+                        {type ? t(requestTypes.find((rt) => rt.value === type)!.labelKey) : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.summary.timeline")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">
+                        {t(priorities.find((p) => p.value === priority)!.labelKey)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-[13px] text-[color:var(--vimi-faint)]">{t("form.timeline.dueDate")}</span>
+                      <span className="text-[13px] font-semibold text-[color:var(--vimi-ink)]">{dueDate || "—"}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -440,7 +468,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
           </div>
 
           {/* Bottom bar: Back + Continue — sticky on mobile above bottom tabs */}
-          <div className="fixed bottom-14 left-0 right-0 bg-[#FAF9F7]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
+          <div className="fixed bottom-14 left-0 right-0 bg-[var(--vimi-page)]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
             <div className="flex items-center gap-3 max-w-lg mx-auto md:max-w-none">
             {step > 0 ? (
               <Button
@@ -458,7 +486,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
             <Button
               onClick={isLastStep ? handleSubmit : goNext}
               disabled={!canAdvance || isSubmitting}
-              className="flex-1 h-14 md:h-12 bg-[#909af7] hover:bg-[#7b85e8] text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
+              className="flex-1 h-14 md:h-12 bg-primary hover:bg-primary/90 text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
             >
               {isSubmitting ? (
                 <>
