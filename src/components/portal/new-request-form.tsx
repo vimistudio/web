@@ -575,7 +575,11 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
                   <Button
                     onClick={isLastStep ? handleSubmit : goNext}
                     disabled={!canAdvance || isSubmitting}
-                    className="flex-1 h-14 md:h-12 bg-primary hover:bg-primary/90 text-white font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2"
+                    className={`flex-1 h-14 md:h-12 font-semibold md:font-medium text-base md:text-sm rounded-xl gap-2 disabled:opacity-100 disabled:bg-[color:rgba(28,27,31,0.06)] disabled:text-[#9A96A3] disabled:shadow-none ${
+                      isLastStep
+                        ? "bg-primary hover:bg-primary/90 text-white shadow-[0_10px_24px_rgba(28,27,31,0.14)]"
+                        : "bg-[color:var(--vimi-ink)] hover:bg-[color:var(--vimi-ink)]/90 text-[color:var(--vimi-page)]"
+                    }`}
                   >
                     {isSubmitting ? (
                       <>
