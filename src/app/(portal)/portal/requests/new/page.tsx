@@ -47,12 +47,35 @@ export default async function NewRequestPage({
     clientName = client?.name ?? undefined;
   }
 
+  // Jakob's Law: surface this client's recent briefs so a follow-up request
+  // starts from something familiar. Most recent first, archived excluded,
+  // de-duplicated by title, capped at 3.
+  const { data: recent } = await supabase
+    .from("requests")
+    .select("title, type, created_at")
+    .eq("client_id", clientId)
+    .eq("is_archived", false)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const seen = new Set<string>();
+  const pastRequests = (recent ?? [])
+    .filter((r) => {
+      const key = r.title.trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3)
+    .map((r) => ({ title: r.title, type: r.type }));
+
   return (
     <NewRequestForm
       clientId={clientId}
       userId={user.id}
       clientName={clientName}
       isAdmin={profile.role === "admin"}
+      pastRequests={pastRequests}
     />
   );
 }
