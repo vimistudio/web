@@ -25,6 +25,7 @@ import { PlusSignIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { AccentColorPicker } from "./accent-color-picker";
 
 interface ClientSummary {
   id: string;
@@ -49,6 +50,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
   const [retainer, setRetainer] = useState("");
   const [locale, setLocale] = useState("en");
   const [logoUrl, setLogoUrl] = useState("");
+  const [accentColor, setAccentColor] = useState("#5B4BD6");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateClient = async () => {
@@ -68,6 +70,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       retainer_amount: retainer ? parseInt(retainer) : 0,
       locale,
       logo_url: logoUrl.trim() || null,
+      accent_color: accentColor.trim() || null,
     });
 
     if (!error) {
@@ -75,6 +78,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
       setRetainer("");
       setLocale("en");
       setLogoUrl("");
+      setAccentColor("#5B4BD6");
       setIsOpen(false);
       router.refresh();
     }
@@ -136,6 +140,7 @@ export function AdminClientsView({ clients }: AdminClientsViewProps) {
                   onChange={(e) => setLogoUrl(e.target.value)}
                 />
               </div>
+              <AccentColorPicker value={accentColor} onChange={setAccentColor} />
               <Button
                 onClick={handleCreateClient}
                 disabled={!name.trim() || isCreating}
