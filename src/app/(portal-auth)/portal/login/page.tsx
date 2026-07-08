@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "@/components/portal/login-form";
@@ -77,13 +78,19 @@ export default async function LoginPage({
               Invite-only access. Your studio will set up your account.
               <br />
               By signing in, you agree to our{" "}
-              <span className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer">
+              <Link
+                href="/terms"
+                className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer"
+              >
                 Terms
-              </span>{" "}
+              </Link>{" "}
               and{" "}
-              <span className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer">
+              <Link
+                href="/privacy"
+                className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer"
+              >
                 Privacy Policy
-              </span>
+              </Link>
               .
             </p>
           </div>
