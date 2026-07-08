@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusSignIcon, Comment01Icon, Cancel01Icon, Download01Icon } from "@/components/ui/icons";
+import { PlusSignIcon, Comment01Icon, Cancel01Icon, Download01Icon, PenToolIcon } from "@/components/ui/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -583,8 +583,12 @@ export function ClientBoard({
       {/* Desktop: welcome hero when no requests, else 4-column kanban */}
       {!hasRequests ? (
         <div className="hidden md:flex flex-col items-center justify-center text-center rounded-3xl border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] px-8 py-20 shadow-[0_24px_60px_rgba(28,27,31,0.06)]">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
-            <PlusSignIcon size={26} className="text-primary" />
+          <div
+            aria-hidden="true"
+            className="w-14 h-14 rounded-full flex items-center justify-center mb-5"
+            style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}
+          >
+            <PenToolIcon size={24} color="currentColor" />
           </div>
           <h2 className="font-serif italic text-[32px] leading-tight mb-2 text-[color:var(--vimi-ink)]">
             {t("board.emptyTitle")}
@@ -658,8 +662,12 @@ export function ClientBoard({
 
         {requests.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <PlusSignIcon size={24} className="text-primary" />
+            <div
+              aria-hidden="true"
+              className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
+              style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}
+            >
+              <PenToolIcon size={24} color="currentColor" />
             </div>
             <h2 className="font-serif italic text-2xl mb-2 text-[color:var(--vimi-ink)]">{t("board.emptyTitle")}</h2>
             <p className="text-[color:var(--vimi-muted)] max-w-sm mb-6">
