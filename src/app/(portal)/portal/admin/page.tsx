@@ -27,11 +27,11 @@ export default async function AdminDashboardPage() {
     .eq("email", user.email?.toLowerCase() ?? "")
     .maybeSingle();
 
-  // Fetch all clients with request counts
+  // Fetch all clients (active + paused). Paused clients are rendered behind a
+  // quiet toggle in the dashboard; stats and the attention strip stay active-only.
   const { data: clients } = await supabase
     .from("clients")
     .select("*")
-    .eq("is_active", true)
     .order("created_at", { ascending: false });
 
   // Get request counts per status
@@ -53,7 +53,7 @@ export default async function AdminDashboardPage() {
     .select("*, profiles!comments_author_id_profiles_fkey(full_name, avatar_url), requests(id, title, client_id, clients(name))")
     .neq("author_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(40);
 
   // Get recent comments for last-active calculation (last 90 days, capped at 500)
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -65,18 +65,18 @@ export default async function AdminDashboardPage() {
     .limit(500);
 
   // Aggregate stats — active clients only (paused clients pollute the numbers).
-  // `clients` is already scoped to is_active above, so its ids define "active".
-  const activeClientIds = new Set((clients ?? []).map((c) => c.id));
+  const activeClients = (clients ?? []).filter((c) => c.is_active);
+  const activeClientIds = new Set(activeClients.map((c) => c.id));
   const activeRequests = (requests ?? []).filter((r) =>
     activeClientIds.has(r.client_id)
   );
-  const totalClients = clients?.length ?? 0;
+  const totalClients = activeClients.length;
   const openRequests = activeRequests.filter((r) => r.status !== "done").length;
   const needsReview = activeRequests.filter((r) => r.status === "review").length;
-  const monthlyRevenue = clients?.reduce(
+  const monthlyRevenue = activeClients.reduce(
     (sum, c) => sum + (c.retainer_amount ?? 0),
     0
-  ) ?? 0;
+  );
 
   // Needs-attention strip (Pareto): the few things that actually need action
   // today, active clients only, ordered review > overdue > owed, capped at 5.
@@ -141,6 +141,15 @@ export default async function AdminDashboardPage() {
 
   const attention = [...reviewItems, ...overdueItems, ...owedItems].slice(0, 5);
 
+  // Recent activity defaults to active clients only (a paused client's stale
+  // comments are pure noise on the overview).
+  const activeActivity = (recentComments ?? [])
+    .filter((c) => {
+      const req = c.requests as { client_id: string } | null;
+      return req ? activeClientIds.has(req.client_id) : false;
+    })
+    .slice(0, 10);
+
   // Build per-client request summaries with hot requests and last-active
   const clientSummaries = (clients ?? []).map((client) => {
     const clientRequests = (requests ?? []).filter(
@@ -198,7 +207,7 @@ export default async function AdminDashboardPage() {
           activeClientCount: totalClients,
         }}
         clients={clientSummaries}
-        recentActivity={recentComments ?? []}
+        recentActivity={activeActivity}
         attention={attention}
         adminName={profile.full_name ?? undefined}
       />

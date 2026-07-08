@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -289,6 +290,12 @@ function ClientCard({ client }: { client: ClientSummary }) {
 
 export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName }: AdminDashboardProps) {
   const { hidden: pricesHidden } = usePricePrivacy();
+  const [showPaused, setShowPaused] = useState(false);
+  const activeClients = clients.filter((c) => c.is_active);
+  const pausedClients = clients.filter((c) => !c.is_active);
+  const visibleClients = showPaused
+    ? [...activeClients, ...pausedClients]
+    : activeClients;
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
   const firstName = adminName ? adminName.split(" ")[0] : "";
@@ -383,16 +390,26 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Your Clients</h2>
-          <Link
-            href="/portal/admin/clients"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            View all
-          </Link>
+          <div className="flex items-center gap-4">
+            {pausedClients.length > 0 && (
+              <button
+                onClick={() => setShowPaused((v) => !v)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              >
+                {showPaused ? "Hide paused" : `Show paused (${pausedClients.length})`}
+              </button>
+            )}
+            <Link
+              href="/portal/admin/clients"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {clients.map((client) => (
+          {visibleClients.map((client) => (
             <ClientCard key={client.id} client={client} />
           ))}
 
@@ -470,8 +487,7 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No recent activity yet. Activity will appear here when clients
-                submit requests and leave comments.
+                No recent activity from active clients.
               </p>
             )}
           </CardContent>
