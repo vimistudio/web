@@ -1,8 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,6 +129,41 @@ function statusDot(status: Status) {
     default:
       return { bg: "transparent", border: "var(--vimi-faint)", mark: "" };
   }
+}
+
+// Thin sortable wrapper (render-prop) so each row keeps its inline handlers
+// while gaining dnd-kit drag behavior. Stable at module scope → no remounts.
+function SortableItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: (h: {
+    setNodeRef: (el: HTMLElement | null) => void;
+    style: React.CSSProperties;
+    attributes: Record<string, unknown>;
+    listeners: Record<string, unknown> | undefined;
+  }) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: "relative",
+  };
+  return (
+    <>
+      {children({
+        setNodeRef,
+        style,
+        attributes: attributes as unknown as Record<string, unknown>,
+        listeners,
+      })}
+    </>
+  );
 }
 
 export function PlanEditorDialog({
@@ -377,6 +427,89 @@ export function PlanEditorDialog({
     apply(row.key, { status: on ? "delayed" : "current" });
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  async function persistSorts(reordered: EditorMilestone[]) {
+    beginSave();
+    const supabase = createClient();
+    const results = await Promise.all(
+      reordered
+        .filter((r) => r.id)
+        .map((r) =>
+          supabase
+            .from("client_milestones")
+            .update({ sort: r.sort })
+            .eq("id", r.id as string)
+        )
+    );
+    endSave();
+    if (results.some((x) => x.error)) {
+      toast.error("No se pudo reordenar");
+      reloadRows();
+      return;
+    }
+    router.refresh();
+  }
+
+  function handleDragEnd(week: number, e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const list = rowsByWeek(week);
+    const oldI = list.findIndex((r) => r.key === active.id);
+    const newI = list.findIndex((r) => r.key === over.id);
+    if (oldI < 0 || newI < 0) return;
+    const reordered = arrayMove(list, oldI, newI).map((r, i) => ({
+      ...r,
+      sort: i + 1,
+    }));
+    setRows((prev) =>
+      prev.map((r) => {
+        const u = reordered.find((x) => x.key === r.key);
+        return u ? { ...r, sort: u.sort } : r;
+      })
+    );
+    void persistSorts(reordered);
+  }
+
+  async function duplicateWeek(week: number) {
+    if (week >= 5) return;
+    const src = rowsByWeek(week);
+    if (src.length === 0) return;
+    const target = week + 1;
+    const base = maxSortInWeek(target);
+    const payload = src.map((r, i) => ({
+      client_id: clientId,
+      track: r.track,
+      week: target,
+      title: r.title,
+      description: r.description.trim() || null,
+      status: "upcoming",
+      needs_client: r.needs_client,
+      request_id: null,
+      sort: base + i + 1,
+      client_done: false,
+      delay_note: null,
+    }));
+    beginSave();
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("client_milestones")
+      .insert(payload)
+      .select("*");
+    endSave();
+    if (error || !data) {
+      toast.error("No se pudo duplicar la semana");
+      return;
+    }
+    setRows((prev) => [...prev, ...data.map(toEditor)]);
+    toast.success(
+      `Se copiaron ${data.length} hito${data.length === 1 ? "" : "s"} a ${weekLabel(target)}`
+    );
+    router.refresh();
+  }
+
   const toggleExpand = (key: string) =>
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -586,16 +719,45 @@ export function PlanEditorDialog({
                     <span
                       style={{ flex: 1, height: 1, background: "rgba(28,27,31,.07)" }}
                     />
+                    {w < 5 && weekRows.length > 0 && (
+                      <button
+                        onClick={() => duplicateWeek(w)}
+                        title="Duplicar semana"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--vimi-faint)",
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          padding: "4px 8px",
+                          borderRadius: 7,
+                        }}
+                      >
+                        ⧉ duplicar
+                      </button>
+                    )}
                   </div>
 
                   {/* rows */}
-                  {weekRows.map((row) => {
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleDragEnd(w, e)}
+                  >
+                    <SortableContext
+                      items={weekRows.map((r) => r.key)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {weekRows.map((row) => {
                     const dot = statusDot(row.status);
                     const isOpen = expanded.has(row.key);
                     const tc = trackColor(row.track);
                     return (
+                      <SortableItem key={row.key} id={row.key}>
+                        {({ setNodeRef, style, attributes, listeners }) => (
                       <div
-                        key={row.key}
+                        ref={setNodeRef}
                         style={{
                           display: "flex",
                           flexDirection: "column",
@@ -603,6 +765,7 @@ export function PlanEditorDialog({
                           border: "1.5px solid rgba(28,27,31,.08)",
                           borderRadius: 13,
                           marginBottom: 5,
+                          ...style,
                         }}
                       >
                         <div
@@ -617,12 +780,15 @@ export function PlanEditorDialog({
                         >
                           <span
                             title="Arrastra para reordenar"
+                            {...attributes}
+                            {...listeners}
                             style={{
                               color: "#C9C6CE",
                               fontSize: 13,
                               cursor: "grab",
                               flex: "none",
                               padding: 2,
+                              touchAction: "none",
                             }}
                           >
                             ⠿
@@ -943,8 +1109,12 @@ export function PlanEditorDialog({
                           </div>
                         )}
                       </div>
+                        )}
+                      </SortableItem>
                     );
                   })}
+                    </SortableContext>
+                  </DndContext>
 
                   {/* quick add */}
                   <div
