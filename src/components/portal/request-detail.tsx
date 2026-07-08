@@ -33,7 +33,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRealtime } from "@/hooks/use-realtime";
@@ -786,6 +786,11 @@ export function RequestDetail({
   const [editType, setEditType] = useState<string>(request.type);
   const [editPriority, setEditPriority] = useState(request.priority);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Peak-End celebration (client approves a delivery)
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [doneCount, setDoneCount] = useState<number | null>(null);
+  const [rating, setRating] = useState(0);
   const { t, locale } = useLocale();
 
   const canEdit = currentStatus === "queued" && !isAdmin;
@@ -959,12 +964,7 @@ export function RequestDetail({
       }
 
       if (newStatus === "done") {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.7 },
-          colors: ["#909af7", "#7b85e8", "#10b981", "#f59e0b"],
-        });
+        fireConfetti();
         toast.success(t("detail.approved"), {
           duration: 5000,
         });
@@ -988,6 +988,82 @@ export function RequestDetail({
       }).catch(() => {});
     },
     [currentStatus, request.id, router]
+  );
+
+  // Client approves a delivery → persist "done", surface the Peak-End
+  // celebration modal with the real count of completed requests together.
+  const handleClientApprove = useCallback(async () => {
+    setIsUpdatingStatus(true);
+    const previousStatus = currentStatus;
+    setCurrentStatus("done");
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("requests")
+      .update({ status: "done" })
+      .eq("id", request.id);
+
+    if (error) {
+      setCurrentStatus(previousStatus);
+      toast.error(t("detail.couldntUpdate"));
+      setIsUpdatingStatus(false);
+      return;
+    }
+    setIsUpdatingStatus(false);
+
+    // Real count of completed requests for this client (includes the one we
+    // just approved). head:true keeps it a count-only query.
+    const { count } = await supabase
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", request.client_id)
+      .eq("status", "done");
+    setDoneCount(typeof count === "number" ? count : null);
+
+    setShowCelebration(true);
+    fireConfetti();
+    router.refresh();
+
+    fetch("/api/portal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "status_changed",
+        request_id: request.id,
+        new_status: "done",
+        old_status: previousStatus,
+      }),
+    }).catch(() => {});
+  }, [currentStatus, request.id, request.client_id, router, t]);
+
+  // Rating persists with zero schema change: it lands as a comment in the
+  // thread (stars + a localized line) so admins see it, and reuses the
+  // existing comment notification.
+  const handleRate = useCallback(
+    async (n: number) => {
+      if (rating) return; // one rating per celebration
+      setRating(n);
+      const stars = "★".repeat(n) + "☆".repeat(5 - n);
+      const supabase = createClient();
+      const { error } = await supabase.from("comments").insert({
+        request_id: request.id,
+        author_id: currentUserId,
+        body: `${stars} — ${t("celebrate.rated")}`,
+      });
+      if (error) {
+        toast.error(t("detail.couldntPost"));
+        setRating(0);
+        return;
+      }
+      toast.success(t("celebrate.thanks"));
+      router.refresh();
+      fetch("/api/portal/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "comment_added", request_id: request.id }),
+      }).catch(() => {});
+    },
+    [rating, request.id, currentUserId, router, t]
   );
 
   const handleRequestChanges = useCallback(() => {
@@ -1159,19 +1235,8 @@ export function RequestDetail({
         toast.error("Couldn't save your pick");
         return;
       }
-      // Confetti — Peak-End rule
-      try {
-        const c = (await import("canvas-confetti")).default;
-        c({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#909af7", "#b4baff", "#ffffff"],
-        });
-        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-          (navigator as Navigator & { vibrate: (ms: number) => void }).vibrate?.(50);
-        }
-      } catch {}
+      // Confetti — Peak-End rule (respects prefers-reduced-motion)
+      fireConfetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       toast.success("The story is set ✨");
       router.refresh();
     },
@@ -1948,21 +2013,22 @@ export function RequestDetail({
         </div>
       )}
 
-      {/* Action Buttons — above comments when in review (the decision point) */}
+      {/* Action Buttons — above comments when in review (the decision point).
+          Approve = ink pill, Request changes = outlined pill (prototype). */}
       {currentStatus === "review" && !isAdmin && (
-        <div className="space-y-2">
-          <Button
-            onClick={() => handleStatusChange("done")}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleClientApprove}
             disabled={isUpdatingStatus}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 gap-2 h-14 text-base font-semibold rounded-xl transition-all duration-150 shadow-md shadow-emerald-600/20 touch-manipulation"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-14 rounded-full bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] text-base font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 touch-manipulation"
           >
-            <CheckmarkCircle01Icon size={20} color="white" />
+            <CheckmarkCircle01Icon size={20} color="currentColor" />
             {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
-          </Button>
+          </button>
           <button
             onClick={handleRequestChanges}
             disabled={isUpdatingStatus || isSubmitting}
-            className="w-full py-2 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center h-14 px-6 rounded-full border border-[color:var(--vimi-border)] bg-white text-[color:var(--vimi-ink)] text-sm font-semibold transition-colors hover:bg-[color:rgba(28,27,31,0.03)] disabled:opacity-50 touch-manipulation"
           >
             {t("detail.askForChanges")}
           </button>
@@ -2319,6 +2385,68 @@ export function RequestDetail({
           open={lightboxOpen}
           onOpenChange={setLightboxOpen}
         />
+      )}
+
+      {/* ── Peak-End celebration modal ── */}
+      {showCelebration && (
+        <div
+          className="vm-fade fixed inset-0 z-[80] flex items-center justify-center p-5"
+          style={{ background: "rgba(28,27,31,0.55)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="vm-pop w-full max-w-[480px] rounded-[28px] bg-white p-10 md:p-11 text-center shadow-[0_40px_90px_rgba(28,27,31,0.35)]">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full text-white text-[28px] bg-primary">
+              ✓
+            </div>
+            <div className="font-serif italic text-[32px] leading-tight mb-2.5 text-[color:var(--vimi-ink)]">
+              {t("celebrate.title")}
+            </div>
+            <p className="mb-7 text-[color:var(--vimi-muted)] leading-relaxed">
+              {doneCount
+                ? t("celebrate.count", { n: doneCount })
+                : t("celebrate.countFallback")}
+            </p>
+            <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+              {t("celebrate.ratedPrompt")}
+            </div>
+            <div className="mb-7 flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((n) => {
+                const on = rating >= n;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => handleRate(n)}
+                    disabled={!!rating}
+                    aria-label={`${n}`}
+                    className="h-9 w-9 rounded-full border text-[13px] font-bold transition-colors disabled:cursor-default"
+                    style={{
+                      borderColor: on ? "var(--accent)" : "var(--vimi-border)",
+                      background: on ? "var(--accent)" : "#fff",
+                      color: on ? "#fff" : "var(--vimi-faint)",
+                    }}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => router.push("/portal")}
+                className="flex-1 rounded-full border border-[color:var(--vimi-border)] py-3.5 text-sm font-semibold text-[color:var(--vimi-muted)] transition-colors hover:bg-[color:rgba(28,27,31,0.03)]"
+              >
+                {t("celebrate.backToStudio")}
+              </button>
+              <button
+                onClick={() => router.push("/portal/requests/new")}
+                className="flex-1 rounded-full bg-[color:var(--vimi-ink)] py-3.5 text-sm font-semibold text-[var(--vimi-page)]"
+              >
+                {t("celebrate.newRequest")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

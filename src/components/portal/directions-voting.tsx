@@ -31,7 +31,7 @@ import {
 import { CheckmarkCircle01Icon, ArrowRight01Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocale } from "./locale-provider";
 
@@ -191,29 +191,15 @@ export function DirectionsVoting({
     setDrawerOpen(false);
     setSaving(false);
 
-    // Celebration!
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    if (!prefersReducedMotion) {
-      // Fire confetti from button position or center
-      const rect = voteButtonRef.current?.getBoundingClientRect();
-      const origin = rect
-        ? {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight,
-          }
-        : { x: 0.5, y: 0.6 };
-
-      confetti({
-        particleCount: 60,
-        spread: 70,
-        origin,
-        colors: ["#909af7", "#7076CF", "#ffffff", "#111111"],
-        disableForReducedMotion: true,
-      });
-    }
+    // Celebration! (fireConfetti gates on prefers-reduced-motion)
+    const rect = voteButtonRef.current?.getBoundingClientRect();
+    const origin = rect
+      ? {
+          x: (rect.left + rect.width / 2) / window.innerWidth,
+          y: (rect.top + rect.height / 2) / window.innerHeight,
+        }
+      : { x: 0.5, y: 0.6 };
+    fireConfetti({ particleCount: 60, spread: 70, origin });
 
     // Haptic feedback
     if (navigator.vibrate) {

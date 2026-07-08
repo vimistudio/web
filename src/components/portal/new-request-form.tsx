@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+import { fireConfetti } from "@/lib/fire-confetti";
 import { useLocale } from "@/components/portal/locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 
@@ -70,8 +70,8 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin }: NewReq
 
   useEffect(() => {
     if (!submitted) return;
-    // Celebration confetti
-    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ["#909af7", "#10b981", "#f9a8d4"] });
+    // Celebration confetti (gated on prefers-reduced-motion)
+    fireConfetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
     const timer = setTimeout(() => {
       if (isAdmin) router.back();
       else router.push("/portal");

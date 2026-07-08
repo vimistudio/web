@@ -62,6 +62,16 @@ export const detail = {
   "detail.uploadSuccess": { en: "Files uploaded!", es: "¡Archivos subidos!" },
   "detail.reviewHero": { en: "Your designs are ready to review", es: "Tus diseños están listos para revisar" },
   "detail.reviewHeroSub": { en: "Take a look and let us know what you think", es: "Échalos un vistazo y dinos qué te parecen" },
+
+  // Peak-End celebration modal
+  "celebrate.title": { en: "Delivered & approved.", es: "Entregado y aprobado." },
+  "celebrate.count": { en: "That's request #{n} together.", es: "Esa es la solicitud n.º {n} juntos." },
+  "celebrate.countFallback": { en: "Another one delivered together.", es: "Otra entrega más, juntos." },
+  "celebrate.ratedPrompt": { en: "How did this one feel?", es: "¿Qué tal estuvo esta?" },
+  "celebrate.rated": { en: "rated this delivery", es: "calificó esta entrega" },
+  "celebrate.thanks": { en: "Thanks for the feedback", es: "Gracias por tu opinión" },
+  "celebrate.backToStudio": { en: "Back to studio", es: "Volver al estudio" },
+  "celebrate.newRequest": { en: "Start a new request", es: "Nueva solicitud" },
   // Directions voting
   "detail.pickFavorite": { en: "Pick your favorite direction", es: "Elige tu dirección favorita" },
   "detail.pickSub": { en: "Swipe through options and tap the one you love", es: "Desliza entre opciones y elige la que más te guste" },
