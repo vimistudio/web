@@ -74,7 +74,8 @@ const typeAccentBg: Record<string, string> = {
 };
 
 function RequestCardContent({ request, lastVisitedAt }: { request: Request; lastVisitedAt?: string | null }) {
-  const timeSince = new Date(request.updated_at).toLocaleDateString(undefined, {
+  const { t, locale } = useLocale();
+  const timeSince = new Date(request.updated_at).toLocaleDateString(locale === "es" ? "es" : "en-US", {
     month: "short",
     day: "numeric",
   });
@@ -137,12 +138,12 @@ function RequestCardContent({ request, lastVisitedAt }: { request: Request; last
             {request.type.toUpperCase()}
           </Badge>
           <span className="text-xs text-muted-foreground">
-            Updated {timeSince}
+            {t("board.updated", { date: timeSince })}
           </span>
           {request.status === "in_progress" && (
             <span className="flex items-center gap-1 ml-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[10px] text-blue-600 font-medium">In the works</span>
+              <span className="text-[10px] text-blue-600 font-medium">{t("board.inTheWorks")}</span>
             </span>
           )}
         </div>
@@ -244,7 +245,7 @@ function DroppableColumn({
       )}
       {requests.length === 0 && isOver && canDrag && (
         <div className="border-2 border-dashed border-primary/40 rounded-lg p-6 text-center bg-primary/5">
-          <p className="text-xs text-primary">Drop here</p>
+          <p className="text-xs text-primary">{t("board.dropHere")}</p>
         </div>
       )}
     </div>
@@ -358,11 +359,11 @@ export function ClientBoard({
               {clientName}
             </h1>
             <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hidden md:inline-flex">
-              Active
+              {t("board.active")}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            We&apos;re working on {requestCount} design{requestCount === 1 ? "" : "s"} for you
+            {t("board.workingOn", { count: requestCount, s: requestCount === 1 ? "" : "s" })}
           </p>
         </div>
 

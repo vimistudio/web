@@ -1346,7 +1346,7 @@ export function RequestDetail({
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
         >
           <ArrowLeft01Icon size={16} />
-          {isAdmin ? "Back to Client" : "My Requests"}
+          {isAdmin ? t("detail.backToClient") : t("detail.myRequests")}
         </Link>
         <div className="flex items-center gap-2">
           {priority && (

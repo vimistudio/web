@@ -1,5 +1,7 @@
 /** Request detail page — comments, deliverables, actions */
 export const detail = {
+  "detail.myRequests": { en: "My Requests", es: "Mis Solicitudes" },
+  "detail.backToClient": { en: "Back to Client", es: "Volver al Cliente" },
   "detail.yourDesigns": { en: "Your Designs", es: "Tus Diseños" },
   "detail.references": { en: "References", es: "Referencias" },
   "detail.comments": { en: "Comments", es: "Comentarios" },

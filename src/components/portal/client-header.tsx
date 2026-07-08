@@ -34,6 +34,8 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
   const { t } = useLocale();
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
   const [searchOpen, setSearchOpen] = useState(false);
+  const clientLogo = profile.clients?.logo_url;
+  const clientName = profile.clients?.name;
 
   // Cmd+K shortcut
   useEffect(() => {
@@ -58,13 +60,22 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
       {/* Mobile: light compact header */}
       <header className="md:hidden sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-white/80 backdrop-blur-sm px-4">
         <Link href="/portal" className="flex items-center">
-          <Image
-            src="/vimi-logo-dark.svg"
-            alt="Vimi Studio"
-            width={100}
-            height={32}
-            className="h-6 w-auto"
-          />
+          {clientLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={clientLogo}
+              alt={clientName ?? "Studio"}
+              className="h-7 w-auto max-w-[150px] object-contain"
+            />
+          ) : (
+            <Image
+              src="/vimi-logo-dark.svg"
+              alt="Vimi Studio"
+              width={100}
+              height={32}
+              className="h-6 w-auto"
+            />
+          )}
         </Link>
 
         <div className="flex-1" />
@@ -112,14 +123,25 @@ export function ClientHeader({ user, profile }: ClientHeaderProps) {
       {/* Desktop: dark header matching Paper design */}
       <header className="hidden md:flex items-center justify-between bg-[#0d0f1a] px-8 py-4">
         {/* Logo */}
-        <Link href="/portal" className="flex items-center">
-          <Image
-            src="/vimi-logo-light.svg"
-            alt="Vimi Studio"
-            width={140}
-            height={45}
-            className="h-8 w-auto"
-          />
+        <Link href="/portal" className="flex items-center gap-3">
+          {clientLogo ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={clientLogo}
+                alt={clientName ?? "Studio"}
+                className="h-9 w-auto max-w-[180px] object-contain"
+              />
+            </>
+          ) : (
+            <Image
+              src="/vimi-logo-light.svg"
+              alt="Vimi Studio"
+              width={140}
+              height={45}
+              className="h-8 w-auto"
+            />
+          )}
         </Link>
 
         {/* Search */}

@@ -58,4 +58,5 @@ export const form = {
   "form.success.body": { en: "Your designer will take it from here. We'll let you know when there's something to see.", es: "Tu diseñador se encarga desde aquí. Te avisaremos cuando haya algo que ver." },
   "form.error.title": { en: "Hmm, something went wrong", es: "Algo salió mal" },
   "form.error.body": { en: "We couldn't send your request. Please try again.", es: "No pudimos enviar tu solicitud. Inténtalo de nuevo." },
+  "form.uploadFailed": { en: "{count} file{s} failed to upload. Your request was still submitted.", es: "{count} archivo{s} no se pudieron subir. Tu solicitud se envió de todos modos." },
 } as const;
