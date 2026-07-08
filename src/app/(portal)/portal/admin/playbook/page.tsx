@@ -48,8 +48,10 @@ export default async function AdminPlaybookPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Playbook</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="font-serif italic text-[28px] md:text-[34px] leading-tight tracking-tight text-[color:var(--vimi-ink)]">
+          Playbook
+        </h1>
+        <p className="text-sm text-[color:var(--vimi-muted)] mt-1">
           All completed work across your clients.
         </p>
       </div>
@@ -99,7 +101,7 @@ export default async function AdminPlaybookPage() {
           })}
         </div>
       ) : (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-16 text-[color:var(--vimi-muted)]">
           No completed work yet. Deliverables will appear here as you finish
           requests.
         </div>
