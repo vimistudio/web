@@ -39,9 +39,12 @@ export async function GET(request: Request) {
   let scopeClientId: string | null = null;
 
   if (!isAdmin) {
-    if (profile.client_id) {
-      scopeClientId = profile.client_id;
+    // Fail closed: a non-admin without a linked client_id must see nothing.
+    // RLS already enforces this, but the route should not depend on it alone.
+    if (!profile.client_id) {
+      return NextResponse.json({ requests: [], comments: [], deliverables: [] });
     }
+    scopeClientId = profile.client_id;
   } else {
     const impersonateClientId = cookies().get("impersonate_client")?.value;
     if (impersonateClientId) {
