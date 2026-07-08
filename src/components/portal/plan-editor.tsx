@@ -19,6 +19,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
+import { useLocale } from "./locale-provider";
+import { t as translate, type Locale } from "@/lib/portal-i18n";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,6 +71,9 @@ interface RequestOption {
 interface PlanEditorProps {
   clientId: string;
   clientName: string;
+  /** The client's own locale — drives the "what the client sees" preview so it
+   *  is a truthful mirror of their board, independent of the admin's language. */
+  clientLocale?: Locale;
   requests: RequestOption[];
   milestones: {
     id: string;
@@ -105,13 +110,6 @@ interface SourceAgg {
 const TRACK_PALETTE = ["#5B4BD6", "#4064C9", "#2E8B57", "#C9821B", "#B03A5B", "#7A5CD0"];
 const STANDARD_TRACKS = ["La web", "El sistema"];
 
-const STATUS_TIP: Record<Status, string> = {
-  upcoming: "Próximo · clic para marcar en curso",
-  current: "En curso · clic para marcar hecho",
-  done: "Hecho · clic para volver a próximo",
-  delayed: "Se movió · clic para volver a en curso",
-};
-
 const MOVE_WEEKS = [
   { w: 1, name: "S1" },
   { w: 2, name: "S2" },
@@ -123,8 +121,6 @@ const MOVE_WEEKS = [
 // Milestones map onto a fixed 5-segment month rail (SEM 01-04 + a final
 // bucket). Defensive clamp keeps stray week numbers in range.
 const segOf = (week: number) => Math.min(5, Math.max(1, week));
-const weekLabel = (w: number) =>
-  w >= 5 ? "DÍA 30 · FINAL" : `SEMANA 0${w}`;
 
 function toEditor(m: PlanEditorProps["milestones"][number]): EditorMilestone {
   return {
@@ -193,10 +189,29 @@ function SortableItem({
 export function PlanEditorDialog({
   clientId,
   clientName,
+  clientLocale = "en",
   requests,
   milestones,
 }: PlanEditorProps) {
   const router = useRouter();
+  // Editor chrome follows the ADMIN's locale (this dialog lives in the admin
+  // shell's LocaleProvider). The client preview uses `tc` (client locale).
+  const { t } = useLocale();
+  const tc = (key: Parameters<typeof translate>[0], vars?: Record<string, string | number>) =>
+    translate(key, clientLocale, vars);
+  const s = (n: number) => (n === 1 ? "" : "s");
+  const weekName = (w: number) =>
+    w >= 5
+      ? t("planEditor.weekFinal")
+      : t("planEditor.weekLabel", { n: `0${w}` });
+  const statusTip = (st: Status) =>
+    st === "done"
+      ? t("planEditor.statusDone")
+      : st === "current"
+        ? t("planEditor.statusCurrent")
+        : st === "delayed"
+          ? t("planEditor.statusDelayed")
+          : t("planEditor.statusUpcoming");
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<TabKey>("editor");
   const [rows, setRows] = useState<EditorMilestone[]>(() =>
@@ -320,7 +335,7 @@ export function PlanEditorDialog({
       .eq("id", merged.id);
     endSave();
     if (error) {
-      toast.error("No se pudo guardar el cambio");
+      toast.error(t("planEditor.saveError"));
       reloadRows();
       return;
     }
@@ -394,7 +409,7 @@ export function PlanEditorDialog({
     endSave();
     if (error || !data) {
       setRows((prev) => prev.filter((r) => r.key !== tempKey));
-      toast.error("No se pudo agregar el hito");
+      toast.error(t("planEditor.addError"));
       return;
     }
     setRows((prev) =>
@@ -419,7 +434,7 @@ export function PlanEditorDialog({
     endSave();
     if (error) {
       setRows(snapshot);
-      toast.error("No se pudo eliminar el hito");
+      toast.error(t("planEditor.deleteError"));
       return;
     }
     router.refresh();
@@ -470,7 +485,7 @@ export function PlanEditorDialog({
     );
     endSave();
     if (results.some((x) => x.error)) {
-      toast.error("No se pudo reordenar");
+      toast.error(t("planEditor.reorderError"));
       reloadRows();
       return;
     }
@@ -524,12 +539,16 @@ export function PlanEditorDialog({
       .select("*");
     endSave();
     if (error || !data) {
-      toast.error("No se pudo duplicar la semana");
+      toast.error(t("planEditor.duplicateError"));
       return;
     }
     setRows((prev) => [...prev, ...data.map(toEditor)]);
     toast.success(
-      `Se copiaron ${data.length} hito${data.length === 1 ? "" : "s"} a ${weekLabel(target)}`
+      t("planEditor.duplicated", {
+        n: data.length,
+        s: s(data.length),
+        week: weekName(target),
+      })
     );
     router.refresh();
   }
@@ -604,7 +623,7 @@ export function PlanEditorDialog({
       .order("week", { ascending: true })
       .order("sort", { ascending: true });
     if (readErr || !srcRows || srcRows.length === 0) {
-      toast.error("No se pudo leer ese plan");
+      toast.error(t("planEditor.readError"));
       return;
     }
     const payload = srcRows.map((r) => ({
@@ -628,7 +647,7 @@ export function PlanEditorDialog({
         .eq("client_id", clientId);
       if (delErr) {
         endSave();
-        toast.error("No se pudo limpiar el plan actual");
+        toast.error(t("planEditor.clearError"));
         return;
       }
     }
@@ -637,12 +656,12 @@ export function PlanEditorDialog({
       .insert(payload);
     endSave();
     if (insErr) {
-      toast.error("No se pudo aplicar el plan");
+      toast.error(t("planEditor.applyError"));
       reloadRows();
       return;
     }
     toast.success(
-      `Se aplicaron ${payload.length} hito${payload.length === 1 ? "" : "s"}`
+      t("planEditor.applied", { n: payload.length, s: s(payload.length) })
     );
     await reloadRows();
     setTab("editor");
@@ -699,7 +718,7 @@ export function PlanEditorDialog({
 
   const saveColor = saving ? "#B26F0E" : "#2E8B57";
   const saveDot = saving ? "#C9821B" : "#2E8B57";
-  const saveLabel = saving ? "Guardando…" : "Guardado";
+  const saveLabel = saving ? t("planEditor.saving") : t("planEditor.saved");
 
   const tabBtn = (key: TabKey, label: string) => {
     const active = tab === key;
@@ -765,7 +784,7 @@ export function PlanEditorDialog({
               className="font-serif italic"
               style={{ fontSize: 23, fontWeight: 400 }}
             >
-              Plan — {clientName}
+              {t("planEditor.title", { name: clientName })}
             </DialogTitle>
             <span
               style={{
@@ -775,7 +794,7 @@ export function PlanEditorDialog({
                 color: "var(--vimi-faint)",
               }}
             >
-              MES 01
+              {t("planEditor.month")}
             </span>
             <span
               style={{
@@ -810,9 +829,9 @@ export function PlanEditorDialog({
                 gap: 2,
               }}
             >
-              {tabBtn("editor", "Plan")}
-              {tabBtn("templates", "Plantillas")}
-              {tabBtn("preview", "Lo que ve el cliente")}
+              {tabBtn("editor", t("planEditor.tabPlan"))}
+              {tabBtn("templates", t("planEditor.tabTemplates"))}
+              {tabBtn("preview", t("planEditor.tabPreview"))}
             </div>
             <span
               style={{
@@ -821,7 +840,11 @@ export function PlanEditorDialog({
                 color: "var(--vimi-faint)",
               }}
             >
-              {doneCount} de {total} hitos · {owedCount} del cliente
+              {t("planEditor.counts", {
+                done: doneCount,
+                total,
+                owed: owedCount,
+              })}
             </span>
           </div>
           <div style={{ height: 1, background: "rgba(28,27,31,.07)" }} />
@@ -861,7 +884,7 @@ export function PlanEditorDialog({
                         color: isCurrent ? "var(--vimi-ink)" : "var(--vimi-faint)",
                       }}
                     >
-                      {weekLabel(w)}
+                      {weekName(w)}
                     </span>
                     {isCurrent && (
                       <span
@@ -875,7 +898,7 @@ export function PlanEditorDialog({
                           padding: "3px 7px",
                         }}
                       >
-                        AHORA
+                        {t("planEditor.now")}
                       </span>
                     )}
                     <span
@@ -884,7 +907,7 @@ export function PlanEditorDialog({
                     {w < 5 && weekRows.length > 0 && (
                       <button
                         onClick={() => duplicateWeek(w)}
-                        title="Duplicar semana"
+                        title={t("planEditor.duplicate")}
                         style={{
                           background: "none",
                           border: "none",
@@ -896,7 +919,7 @@ export function PlanEditorDialog({
                           borderRadius: 7,
                         }}
                       >
-                        ⧉ duplicar
+                        ⧉ {t("planEditor.duplicate")}
                       </button>
                     )}
                   </div>
@@ -941,7 +964,7 @@ export function PlanEditorDialog({
                           }}
                         >
                           <span
-                            title="Arrastra para reordenar"
+                            title={t("planEditor.dragTip")}
                             {...attributes}
                             {...listeners}
                             style={{
@@ -957,8 +980,8 @@ export function PlanEditorDialog({
                           </span>
                           <button
                             onClick={() => cycleStatus(row)}
-                            title={STATUS_TIP[row.status]}
-                            aria-label={STATUS_TIP[row.status]}
+                            title={statusTip(row.status)}
+                            aria-label={statusTip(row.status)}
                             style={{
                               width: 22,
                               height: 22,
@@ -979,7 +1002,7 @@ export function PlanEditorDialog({
                           </button>
                           <button
                             onClick={() => cycleTrack(row)}
-                            title="Cambiar de track"
+                            title={t("planEditor.trackTip")}
                             style={{
                               fontSize: 9.5,
                               fontWeight: 800,
@@ -1021,7 +1044,7 @@ export function PlanEditorDialog({
                             onClick={() =>
                               apply(row.key, { needs_client: !row.needs_client })
                             }
-                            title="El cliente debe completarlo"
+                            title={t("planEditor.clientPillTip")}
                             style={{
                               fontSize: 9.5,
                               fontWeight: 800,
@@ -1043,11 +1066,15 @@ export function PlanEditorDialog({
                               flex: "none",
                             }}
                           >
-                            CLIENTE
+                            {t("planEditor.clientPill")}
                           </button>
                           <button
                             onClick={() => toggleExpand(row.key)}
-                            aria-label={isOpen ? "Contraer" : "Expandir"}
+                            aria-label={
+                              isOpen
+                                ? t("planEditor.collapse")
+                                : t("planEditor.expand")
+                            }
                             style={{
                               background: "none",
                               border: "none",
@@ -1081,7 +1108,7 @@ export function PlanEditorDialog({
                                 applyText(row.key, "description", e.target.value)
                               }
                               onBlur={() => flushText(row.key, "description")}
-                              placeholder="Descripción — visible para el cliente"
+                              placeholder={t("planEditor.descPlaceholder")}
                               rows={2}
                               style={{
                                 border: "1px solid rgba(28,27,31,.1)",
@@ -1111,7 +1138,7 @@ export function PlanEditorDialog({
                                   color: "var(--vimi-faint)",
                                 }}
                               >
-                                Mover a
+                                {t("planEditor.moveTo")}
                               </span>
                               {MOVE_WEEKS.map((mw) => {
                                 const here = segOf(row.week) === mw.w;
@@ -1152,7 +1179,7 @@ export function PlanEditorDialog({
                                   borderRadius: 7,
                                 }}
                               >
-                                Eliminar
+                                {t("planEditor.delete")}
                               </button>
                             </div>
 
@@ -1172,7 +1199,7 @@ export function PlanEditorDialog({
                                   color: "var(--vimi-faint)",
                                 }}
                               >
-                                Tarjeta
+                                {t("planEditor.card")}
                               </span>
                               <div style={{ minWidth: 220 }}>
                                 <Select
@@ -1184,11 +1211,13 @@ export function PlanEditorDialog({
                                   }
                                 >
                                   <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue placeholder="Sin tarjeta vinculada" />
+                                    <SelectValue
+                                      placeholder={t("planEditor.linkNone")}
+                                    />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value={NONE}>
-                                      Sin tarjeta vinculada
+                                      {t("planEditor.linkNone")}
                                     </SelectItem>
                                     {requests.map((r) => (
                                       <SelectItem key={r.id} value={r.id}>
@@ -1233,7 +1262,7 @@ export function PlanEditorDialog({
                                   cursor: "pointer",
                                 }}
                               >
-                                Se movió
+                                {t("planEditor.moved")}
                               </button>
                               {row.status === "delayed" && (
                                 <span
@@ -1242,7 +1271,8 @@ export function PlanEditorDialog({
                                     color: "var(--vimi-faint)",
                                   }}
                                 >
-                                  Nota requerida <span style={{ color: "#B03A5B" }}>*</span>
+                                  {t("planEditor.noteRequired")}{" "}
+                                  <span style={{ color: "#B03A5B" }}>*</span>
                                 </span>
                               )}
                             </div>
@@ -1253,7 +1283,7 @@ export function PlanEditorDialog({
                                   applyText(row.key, "delay_note", e.target.value)
                                 }
                                 onBlur={() => flushText(row.key, "delay_note")}
-                                placeholder="Por qué se movió — visible para el cliente"
+                                placeholder={t("planEditor.delayPlaceholder")}
                                 rows={2}
                                 style={{
                                   border: "1px solid rgba(176,58,91,.3)",
@@ -1305,7 +1335,9 @@ export function PlanEditorDialog({
                           addMilestone(w, drafts[w] ?? "");
                         }
                       }}
-                      placeholder={`Agregar hito a ${weekLabel(w).toLowerCase()}`}
+                      placeholder={t("planEditor.quickAdd", {
+                        week: weekName(w).toLowerCase(),
+                      })}
                       style={{
                         flex: 1,
                         border: "none",
@@ -1325,7 +1357,7 @@ export function PlanEditorDialog({
                         fontWeight: 600,
                       }}
                     >
-                      ↵ Enter
+                      {t("planEditor.enter")}
                     </span>
                   </div>
                 </div>
@@ -1355,13 +1387,13 @@ export function PlanEditorDialog({
                 maxWidth: 520,
               }}
             >
-              Nunca armes un plan desde cero. Aplica una plantilla del estudio o
-              copia el plan de otro cliente — después ajustas los detalles en el
-              editor.
+              {t("planEditor.tplIntro")}
             </p>
 
             {loadingSources && (
-              <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>Cargando…</p>
+              <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
+                {t("planEditor.loading")}
+              </p>
             )}
 
             <div
@@ -1372,11 +1404,11 @@ export function PlanEditorDialog({
                 color: "var(--vimi-faint)",
               }}
             >
-              PLANTILLAS DEL ESTUDIO
+              {t("planEditor.studioTemplates")}
             </div>
             {templates.length === 0 && !loadingSources ? (
               <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
-                Aún no hay plantillas del estudio.
+                {t("planEditor.noTemplates")}
               </p>
             ) : (
               <div
@@ -1386,9 +1418,9 @@ export function PlanEditorDialog({
                   gap: 12,
                 }}
               >
-                {templates.map((t) => (
+                {templates.map((tpl) => (
                   <div
-                    key={t.id}
+                    key={tpl.id}
                     style={{
                       background: "#FFFFFF",
                       border: "1.5px solid rgba(28,27,31,.08)",
@@ -1410,7 +1442,7 @@ export function PlanEditorDialog({
                         }}
                       />
                       <span style={{ fontSize: 14.5, fontWeight: 700 }}>
-                        {t.displayName}
+                        {tpl.displayName}
                       </span>
                     </div>
                     <div
@@ -1423,13 +1455,14 @@ export function PlanEditorDialog({
                       }}
                     >
                       <span>
-                        <b style={{ color: "var(--vimi-ink)" }}>{t.count}</b> hitos
+                        <b style={{ color: "var(--vimi-ink)" }}>{tpl.count}</b>{" "}
+                        {t("planEditor.cardMilestones")}
                       </span>
-                      <span>{t.weeks} semanas</span>
-                      <span>{t.owed} del cliente</span>
+                      <span>{t("planEditor.cardWeeks", { n: tpl.weeks })}</span>
+                      <span>{t("planEditor.cardOwed", { n: tpl.owed })}</span>
                     </div>
                     <button
-                      onClick={() => onApplyClick(t)}
+                      onClick={() => onApplyClick(tpl)}
                       style={{
                         marginTop: 4,
                         background: "var(--vimi-ink)",
@@ -1442,7 +1475,7 @@ export function PlanEditorDialog({
                         cursor: "pointer",
                       }}
                     >
-                      Aplicar plantilla
+                      {t("planEditor.applyTemplate")}
                     </button>
                   </div>
                 ))}
@@ -1458,11 +1491,11 @@ export function PlanEditorDialog({
                 marginTop: 4,
               }}
             >
-              O COPIAR DE OTRO CLIENTE
+              {t("planEditor.copyOther")}
             </div>
             {otherClients.length === 0 && !loadingSources ? (
               <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
-                No hay otros planes para copiar.
+                {t("planEditor.noOthers")}
               </p>
             ) : (
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1491,9 +1524,15 @@ export function PlanEditorDialog({
                         background: c.isCurrent ? "var(--accent)" : "var(--vimi-faint)",
                       }}
                     />
-                    {c.isCurrent ? `${c.displayName} (mes anterior)` : c.displayName}
+                    {c.isCurrent
+                      ? `${c.displayName} ${t("planEditor.rollover")}`
+                      : c.displayName}
                     <span style={{ color: "var(--vimi-faint)", fontWeight: 500 }}>
-                      · {c.count} hito{c.count === 1 ? "" : "s"}
+                      ·{" "}
+                      {t("planEditor.pillMilestones", {
+                        n: c.count,
+                        s: s(c.count),
+                      })}
                     </span>
                   </button>
                 ))}
@@ -1515,8 +1554,7 @@ export function PlanEditorDialog({
             }}
           >
             <p style={{ margin: 0, fontSize: 12.5, color: "var(--vimi-faint)" }}>
-              Exactamente lo que {clientName} ve en su tablero — se actualiza en
-              vivo con cada cambio del plan.
+              {t("planEditor.previewCaption", { name: clientName })}
             </p>
             <div
               style={{
@@ -1534,7 +1572,7 @@ export function PlanEditorDialog({
                   className="font-serif italic"
                   style={{ fontSize: 19 }}
                 >
-                  Tu plan del mes 01
+                  {tc("plan.title")}
                 </span>
                 <span
                   style={{
@@ -1542,9 +1580,10 @@ export function PlanEditorDialog({
                     fontWeight: 800,
                     letterSpacing: ".1em",
                     color: "var(--vimi-muted)",
+                    textTransform: "uppercase",
                   }}
                 >
-                  SEMANA {Math.min(4, currentWeek)} DE 4
+                  {tc("plan.week", { n: Math.min(4, currentWeek) })}
                 </span>
                 <span
                   style={{
@@ -1554,7 +1593,7 @@ export function PlanEditorDialog({
                     color: "var(--accent)",
                   }}
                 >
-                  {progressPct}% completado
+                  {tc("plan.pctComplete", { pct: progressPct })}
                 </span>
               </div>
               <div
@@ -1577,7 +1616,7 @@ export function PlanEditorDialog({
               </div>
               {previewItems.length === 0 ? (
                 <p style={{ fontSize: 13, color: "var(--vimi-faint)" }}>
-                  Aún no hay hitos en esta semana.
+                  {tc("plan.weekEmpty")}
                 </p>
               ) : (
                 previewItems.map((p) => {
@@ -1649,7 +1688,7 @@ export function PlanEditorDialog({
                                   : "var(--vimi-ink)",
                             }}
                           >
-                            {p.title || "Sin título"}
+                            {p.title.trim() || tc("plan.untitled")}
                           </span>
                           {p.needs_client && (
                             <span
@@ -1663,7 +1702,7 @@ export function PlanEditorDialog({
                                 padding: "3px 6px",
                               }}
                             >
-                              TE TOCA
+                              {tc("plan.yourTurn")}
                             </span>
                           )}
                         </div>
@@ -1687,7 +1726,7 @@ export function PlanEditorDialog({
                               fontWeight: 500,
                             }}
                           >
-                            {p.delay_note}
+                            {tc("plan.delayed", { note: p.delay_note })}
                           </span>
                         )}
                       </div>
@@ -1709,24 +1748,27 @@ export function PlanEditorDialog({
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {clientName} ya tiene un plan
+                {t("planEditor.alertTitle", { name: clientName })}
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Este cliente ya tiene {total} hito{total === 1 ? "" : "s"}.
-                {pendingSource
-                  ? ` ¿Reemplazarlo con ${pendingSource.count} de ${pendingSource.displayName}, o agregarlos al plan actual?`
-                  : ""}{" "}
-                Reemplazar borra los hitos actuales y no se puede deshacer.
+                {t("planEditor.alertBody", {
+                  total,
+                  s: s(total),
+                  count: pendingSource?.count ?? 0,
+                  source: pendingSource?.displayName ?? "",
+                })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel>
+                {t("planEditor.alertCancel")}
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() =>
                   pendingSource && applyPlan(pendingSource, "add")
                 }
               >
-                Agregar al plan
+                {t("planEditor.alertAdd")}
               </AlertDialogAction>
               <AlertDialogAction
                 onClick={() =>
@@ -1734,7 +1776,7 @@ export function PlanEditorDialog({
                 }
                 style={{ background: "#B03A5B" }}
               >
-                Reemplazar ({total})
+                {t("planEditor.alertReplace", { total })}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

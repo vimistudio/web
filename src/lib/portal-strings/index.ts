@@ -15,6 +15,7 @@ import { detail } from "./strings/detail";
 import { gallery } from "./strings/gallery";
 import { chrome } from "./strings/chrome";
 import { plan } from "./strings/plan";
+import { planEditor } from "./strings/plan-editor";
 import { welcome } from "./strings/welcome";
 import { agreement } from "./strings/agreement";
 
@@ -27,6 +28,7 @@ const portal = {
   ...gallery,
   ...chrome,
   ...plan,
+  ...planEditor,
   ...welcome,
   ...agreement,
 } as const;

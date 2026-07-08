@@ -16,6 +16,12 @@ export const plan = {
   },
   "plan.allCaughtUp": { en: "Nothing needed from you right now", es: "Nada pendiente de tu parte por ahora" },
 
+  // Owed chip + progress shown on the live editor preview (client vocabulary,
+  // rendered in the client's own locale so the preview matches their board).
+  "plan.yourTurn": { en: "YOUR TURN", es: "TE TOCA" },
+  "plan.pctComplete": { en: "{pct}% complete", es: "{pct}% completado" },
+  "plan.untitled": { en: "Untitled", es: "Sin título" },
+
   "plan.viewCard": { en: "View card", es: "Ver tarjeta" },
   "plan.checkedToast": { en: "Done — we've been notified", es: "¡Listo! Ya nos avisamos" },
   "plan.undo": { en: "Undo", es: "Deshacer" },
