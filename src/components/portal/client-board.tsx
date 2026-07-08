@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useLocale } from "./locale-provider";
 import { PlanTracker, type Milestone } from "./plan-tracker";
+import { WelcomeOverlay } from "./welcome-overlay";
 import { type PortalKey } from "@/lib/portal-i18n";
 
 interface Request {
@@ -40,7 +41,9 @@ interface Request {
 type RequestStatus = Request["status"];
 
 interface ClientBoardProps {
+  clientId: string;
   clientName: string;
+  clientLogoUrl?: string | null;
   firstName?: string | null;
   requests: Request[];
   requestCount: number;
@@ -261,7 +264,9 @@ function DroppableColumn({
 }
 
 export function ClientBoard({
+  clientId,
   clientName,
+  clientLogoUrl,
   firstName,
   requests: initialRequests,
   requestCount,
@@ -398,6 +403,13 @@ export function ClientBoard({
 
   const hasRequests = requests.length > 0;
 
+  const scrollToPlan = useCallback(() => {
+    const el = document.getElementById("plan-tracker");
+    if (!el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, []);
+
   // Status summary dots (hide zero segments)
   const summarySegments = [
     reviewRequests.length > 0
@@ -410,6 +422,17 @@ export function ClientBoard({
 
   return (
     <div className="space-y-5 md:space-y-7">
+      {/* First-visit welcome — clients only, never for admins/impersonation */}
+      {!isAdmin && (
+        <WelcomeOverlay
+          clientId={clientId}
+          clientName={clientName}
+          clientLogoUrl={clientLogoUrl}
+          hasMilestones={milestones.length > 0}
+          onSeePlan={scrollToPlan}
+        />
+      )}
+
       {/* ── Hero ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-2 md:gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -452,11 +475,13 @@ export function ClientBoard({
 
       {/* ── Plan tracker (renders nothing when the client has no plan) ── */}
       {milestones.length > 0 && (
-        <PlanTracker
-          milestones={milestones}
-          retainerAmount={retainerAmount}
-          isImpersonatingAdmin={isAdmin}
-        />
+        <div id="plan-tracker" className="scroll-mt-24">
+          <PlanTracker
+            milestones={milestones}
+            retainerAmount={retainerAmount}
+            isImpersonatingAdmin={isAdmin}
+          />
+        </div>
       )}
 
       {/* ── Needs-you banner (amber) — highest priority ── */}
