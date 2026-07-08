@@ -126,7 +126,7 @@ export function PlanTracker({ milestones: initial }: { milestones: Milestone[] }
       setMilestones((prev) =>
         prev.map((m) => (m.id === id ? { ...m, client_done: false } : m))
       );
-      toast.error("Couldn't save. Please try again.");
+      toast.error(t("plan.saveError"));
       return;
     }
 

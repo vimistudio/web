@@ -16,6 +16,7 @@ export const plan = {
 
   "plan.viewCard": { en: "View card", es: "Ver tarjeta" },
   "plan.checkedToast": { en: "Done — we've been notified", es: "¡Listo! Ya nos avisamos" },
+  "plan.saveError": { en: "Couldn't save. Please try again.", es: "No se pudo guardar. Inténtalo de nuevo." },
   "plan.expand": { en: "Show plan", es: "Ver plan" },
   "plan.collapse": { en: "Hide plan", es: "Ocultar plan" },
 } as const;
