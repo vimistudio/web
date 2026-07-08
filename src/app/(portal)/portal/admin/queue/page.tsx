@@ -18,11 +18,12 @@ export default async function QueuePage() {
 
   if (profile?.role !== "admin") redirect("/portal");
 
-  // Fetch ALL non-done requests across all clients
+  // Fetch ALL non-done requests across all clients (is_active drives the
+  // default active-only view; paused clients are togglable client-side)
   const { data: requests } = await supabase
     .from("requests")
     .select(
-      "*, clients(name, slug), deliverables(id), comments(id, created_at, author_id)"
+      "*, clients(name, slug, is_active), deliverables(id), comments(id, created_at, author_id)"
     )
     .neq("status", "done")
     .order("priority", { ascending: false })
