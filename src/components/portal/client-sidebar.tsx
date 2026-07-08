@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLocale } from "./locale-provider";
 import { type PortalKey } from "@/lib/portal-i18n";
 import { STUDIO_WHATSAPP_URL } from "@/lib/studio";
-import type { Profile } from "./portal-shell";
+import type { Profile, StudioDesigner } from "./portal-shell";
 
 const navItems: { titleKey: PortalKey; href: string }[] = [
   { titleKey: "tab.board", href: "/portal" },
@@ -19,7 +19,13 @@ const navItems: { titleKey: PortalKey; href: string }[] = [
  * Client identity chip on top, soft-pill nav in the middle, studio contact
  * card pinned to the bottom.
  */
-export function ClientSidebar({ profile }: { profile: Profile }) {
+export function ClientSidebar({
+  profile,
+  designer,
+}: {
+  profile: Profile;
+  designer?: StudioDesigner | null;
+}) {
   const pathname = usePathname();
   const { t } = useLocale();
 
@@ -84,18 +90,28 @@ export function ClientSidebar({ profile }: { profile: Profile }) {
         );
       })}
 
-      {/* Studio contact card */}
+      {/* Studio contact card — shows the assigned designer when set, else a
+          generic studio card. */}
       <div className="mt-auto flex flex-col gap-2.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white p-3.5">
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-xs shrink-0">
-            V
-          </span>
+          {designer?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={designer.avatar_url}
+              alt={designer.full_name ?? "Vimi Studio"}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <span className="w-8 h-8 rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-xs shrink-0">
+              {designer?.full_name?.charAt(0).toUpperCase() || "V"}
+            </span>
+          )}
           <div className="flex flex-col min-w-0">
             <span className="text-[12.5px] font-bold truncate text-[color:var(--vimi-ink)]">
-              Vimi Studio · Carlos
+              {designer?.full_name || "Vimi Studio · Carlos"}
             </span>
             <span className="text-[11.5px] text-[color:var(--vimi-muted)]">
-              {t("studio.tagline")}
+              {designer ? t("studio.yourDesigner") : t("studio.tagline")}
             </span>
           </div>
         </div>

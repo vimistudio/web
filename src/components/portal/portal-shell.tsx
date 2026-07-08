@@ -23,6 +23,18 @@ interface Client {
   /** Optional per-client note shown in the sidebar studio card. Undefined
    *  before the migration lands (column absent) → treated as hidden. */
   studio_note?: string | null;
+  /** When the studio note was last written — drives the freshness caption and
+   *  14-day staleness guard. Undefined before the migration lands. */
+  studio_note_updated_at?: string | null;
+  /** Assigned designer (admin) for this client, if any. */
+  designer_id?: string | null;
+}
+
+/** Resolved designer profile shown in the client studio card / strip. */
+export interface StudioDesigner {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
 }
 
 export interface Profile {
@@ -42,6 +54,8 @@ interface PortalShellProps {
   /** Admin previewing the client shell via impersonation. Suppresses
    *  admin-owned surfaces (e.g. the notification bell) inside the preview. */
   impersonating?: boolean;
+  /** Resolved designer for this client, shown in the sidebar studio card. */
+  designer?: StudioDesigner | null;
 }
 
 export function PortalShell({
@@ -49,6 +63,7 @@ export function PortalShell({
   profile,
   children,
   impersonating = false,
+  designer = null,
 }: PortalShellProps) {
   const isAdmin = profile.role === "admin";
   // Fall back to the client's configured locale when the user hasn't made an
@@ -89,7 +104,7 @@ export function PortalShell({
       >
         <div className="flex min-h-dvh">
           {/* Desktop-only sidebar (identity, nav, studio contact) */}
-          <ClientSidebar profile={profile} />
+          <ClientSidebar profile={profile} designer={designer} />
           <div className="flex flex-1 min-w-0 flex-col">
             <ClientHeader user={user} profile={profile} impersonating={impersonating} />
             <main className="flex-1 p-4 pb-24 md:pb-8 md:px-12">{children}</main>

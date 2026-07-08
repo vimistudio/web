@@ -91,6 +91,18 @@ export default async function PortalLayout({
     return <NoAccess locale={selfLocale} />;
   }
 
+  // Resolve a client's assigned designer (admin) for the studio card. Clients
+  // may read admin profiles (RLS policy from 20260413_allow_clients_to_read_admin_profiles).
+  const fetchDesigner = async (designerId: string | null | undefined) => {
+    if (!designerId) return null;
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .eq("id", designerId)
+      .maybeSingle();
+    return data ?? null;
+  };
+
   // Admin impersonation: check cookie
   const cookieStore = cookies();
   const impersonateClientId = cookieStore.get("impersonate_client")?.value;
@@ -111,6 +123,9 @@ export default async function PortalLayout({
         client_id: impersonatedClient.id,
         clients: impersonatedClient,
       };
+      const impersonatedDesigner = await fetchDesigner(
+        impersonatedClient.designer_id
+      );
 
       return (
         <>
@@ -122,7 +137,12 @@ export default async function PortalLayout({
           />
           <div className="min-h-screen flex flex-col">
             <ImpersonateBanner clientName={impersonatedClient.name} />
-            <PortalShell user={user} profile={clientProfile} impersonating>
+            <PortalShell
+              user={user}
+              profile={clientProfile}
+              impersonating
+              designer={impersonatedDesigner}
+            >
               {children}
             </PortalShell>
           </div>
@@ -130,6 +150,10 @@ export default async function PortalLayout({
       );
     }
   }
+
+  const designer = await fetchDesigner(
+    (profile.clients as { designer_id?: string | null } | null)?.designer_id
+  );
 
   return (
     <>
@@ -139,7 +163,7 @@ export default async function PortalLayout({
         mobileOffset="96px"
         richColors
       />
-      <PortalShell user={user} profile={profile}>
+      <PortalShell user={user} profile={profile} designer={designer}>
         {children}
       </PortalShell>
     </>

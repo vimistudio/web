@@ -75,6 +75,7 @@ export const chrome = {
   // Studio sidebar card (client shell)
   "studio.tagline": { en: "your studio", es: "tu estudio" },
   "studio.whatsapp": { en: "WhatsApp us", es: "WhatsApp directo" },
+  "studio.yourDesigner": { en: "your designer · Vimi Studio", es: "tu diseñador · Vimi Studio" },
 
   // Common
   "common.for": { en: "for", es: "para" },
