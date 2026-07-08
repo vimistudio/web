@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -29,6 +30,34 @@ export async function GET(request: Request) {
   }
 
   const isAdmin = profile.role === "admin";
+
+  // Determine the client scope for this search:
+  //   - Real clients: their own client_id.
+  //   - Admins impersonating a client (impersonate_client cookie): that
+  //     client's id, so the preview is scoped exactly like a real client.
+  //   - Admins otherwise: no scope (studio-wide search).
+  let scopeClientId: string | null = null;
+
+  if (!isAdmin) {
+    if (profile.client_id) {
+      scopeClientId = profile.client_id;
+    }
+  } else {
+    const impersonateClientId = cookies().get("impersonate_client")?.value;
+    if (impersonateClientId) {
+      // Validate the cookie points at a real client before trusting it.
+      const { data: impersonatedClient } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("id", impersonateClientId)
+        .single();
+      if (impersonatedClient) {
+        scopeClientId = impersonatedClient.id;
+      }
+    }
+  }
+
+  const scoped = scopeClientId !== null;
   const pattern = `%${query}%`;
 
   // Search requests
@@ -38,8 +67,8 @@ export async function GET(request: Request) {
     .or(`title.ilike.${pattern},description.ilike.${pattern}`)
     .limit(5);
 
-  if (!isAdmin && profile.client_id) {
-    requestsQuery = requestsQuery.eq("client_id", profile.client_id);
+  if (scopeClientId) {
+    requestsQuery = requestsQuery.eq("client_id", scopeClientId);
   }
 
   const { data: requests } = await requestsQuery;
@@ -49,15 +78,15 @@ export async function GET(request: Request) {
   let commentsQuery = supabase
     .from("comments")
     .select(
-      isAdmin
-        ? "id, body, created_at, request_id, requests(id, title)"
-        : "id, body, created_at, request_id, requests!inner(id, title, client_id)"
+      scoped
+        ? "id, body, created_at, request_id, requests!inner(id, title, client_id)"
+        : "id, body, created_at, request_id, requests(id, title)"
     )
     .ilike("body", pattern)
     .limit(5);
 
-  if (!isAdmin && profile.client_id) {
-    commentsQuery = commentsQuery.eq("requests.client_id", profile.client_id);
+  if (scopeClientId) {
+    commentsQuery = commentsQuery.eq("requests.client_id", scopeClientId);
   }
 
   const { data: comments } = await commentsQuery;
@@ -66,15 +95,15 @@ export async function GET(request: Request) {
   let deliverablesQuery = supabase
     .from("deliverables")
     .select(
-      isAdmin
-        ? "id, file_name, mime_type, request_id, requests(id, title)"
-        : "id, file_name, mime_type, request_id, requests!inner(id, title, client_id)"
+      scoped
+        ? "id, file_name, mime_type, request_id, requests!inner(id, title, client_id)"
+        : "id, file_name, mime_type, request_id, requests(id, title)"
     )
     .ilike("file_name", pattern)
     .limit(5);
 
-  if (!isAdmin && profile.client_id) {
-    deliverablesQuery = deliverablesQuery.eq("requests.client_id", profile.client_id);
+  if (scopeClientId) {
+    deliverablesQuery = deliverablesQuery.eq("requests.client_id", scopeClientId);
   }
 
   const { data: deliverables } = await deliverablesQuery;
