@@ -17,6 +17,7 @@ import { chrome } from "./strings/chrome";
 import { plan } from "./strings/plan";
 import { planEditor } from "./strings/plan-editor";
 import { clientEditor } from "./strings/client-editor";
+import { team } from "./strings/team";
 import { welcome } from "./strings/welcome";
 import { agreement } from "./strings/agreement";
 
@@ -31,6 +32,7 @@ const portal = {
   ...plan,
   ...planEditor,
   ...clientEditor,
+  ...team,
   ...welcome,
   ...agreement,
 } as const;

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AgreementView } from "@/components/portal/agreement-view";
 import { computeEngagementMonth } from "@/lib/agreement";
 import { type Locale } from "@/lib/portal-i18n";
+import { fetchClientTeam } from "@/lib/client-team";
 
 export default async function AgreementPage() {
   const supabase = createClient();
@@ -81,6 +82,15 @@ export default async function AgreementPage() {
     .eq("client_id", clientId)
     .eq("role", "client");
 
+  // Studio crew (lead first). Empty before the migration → the studio card
+  // falls back to the single-designer display.
+  const studioTeam = (await fetchClientTeam(supabase, clientId)).map((m) => ({
+    fullName: m.fullName,
+    avatarUrl: m.avatarUrl,
+    roleLabel: m.roleLabel,
+    isLead: m.isLead,
+  }));
+
   const engagementStartedAt =
     (client as { engagement_started_at?: string | null } | null)?.engagement_started_at ?? null;
   const month = computeEngagementMonth(engagementStartedAt);
@@ -113,6 +123,7 @@ export default async function AgreementPage() {
       sinceDate={sinceDate}
       docs={docsWithUrls}
       designer={designer ?? null}
+      team={studioTeam}
       members={members ?? []}
       isImpersonatingAdmin={isImpersonating}
     />

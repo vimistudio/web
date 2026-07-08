@@ -8,6 +8,7 @@ import { ImpersonateBanner } from "@/components/portal/impersonate-banner";
 import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
 import { type Locale } from "@/lib/portal-i18n";
+import { fetchClientTeam } from "@/lib/client-team";
 
 export default async function PortalLayout({
   children,
@@ -126,6 +127,9 @@ export default async function PortalLayout({
       const impersonatedDesigner = await fetchDesigner(
         impersonatedClient.designer_id
       );
+      const impersonatedTeam = (
+        await fetchClientTeam(supabase, impersonatedClient.id)
+      ).map((m) => ({ fullName: m.fullName, avatarUrl: m.avatarUrl }));
 
       return (
         <>
@@ -142,6 +146,7 @@ export default async function PortalLayout({
               profile={clientProfile}
               impersonating
               designer={impersonatedDesigner}
+              team={impersonatedTeam}
             >
               {children}
             </PortalShell>
@@ -154,6 +159,12 @@ export default async function PortalLayout({
   const designer = await fetchDesigner(
     (profile.clients as { designer_id?: string | null } | null)?.designer_id
   );
+  const team = profile.client_id
+    ? (await fetchClientTeam(supabase, profile.client_id)).map((m) => ({
+        fullName: m.fullName,
+        avatarUrl: m.avatarUrl,
+      }))
+    : [];
 
   return (
     <>
@@ -163,7 +174,7 @@ export default async function PortalLayout({
         mobileOffset="96px"
         richColors
       />
-      <PortalShell user={user} profile={profile} designer={designer}>
+      <PortalShell user={user} profile={profile} designer={designer} team={team}>
         {children}
       </PortalShell>
     </>

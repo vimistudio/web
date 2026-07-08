@@ -14,7 +14,27 @@ export const clientEditor = {
   // Section headers
   "clientEditor.sectionIdentity": { en: "IDENTITY", es: "IDENTIDAD" },
   "clientEditor.sectionAgreement": { en: "AGREEMENT", es: "ACUERDO" },
-  "clientEditor.sectionStudio": { en: "STUDIO", es: "ESTUDIO" },
+  "clientEditor.sectionTeam": { en: "TEAM", es: "EQUIPO" },
+  "clientEditor.teamSubtitle": {
+    en: "the main contact signs the portal note",
+    es: "el contacto principal firma la nota del portal",
+  },
+  "clientEditor.contact": { en: "CONTACT", es: "CONTACTO" },
+  "clientEditor.addFromStudio": { en: "+ Add from studio", es: "+ Añadir del estudio" },
+  "clientEditor.rosterEmpty": {
+    en: "The whole studio is already on this project.",
+    es: "Todo el estudio ya está en este proyecto.",
+  },
+  "clientEditor.rolePlaceholder": { en: "Role", es: "Rol" },
+  "clientEditor.removeMember": { en: "Remove {name}", es: "Quitar a {name}" },
+  "clientEditor.cantRemoveLast": {
+    en: "Keep at least one person on the team.",
+    es: "Debe quedar al menos una persona en el equipo.",
+  },
+  "clientEditor.cantRemoveLead": {
+    en: "Pick a new contact before removing the current one.",
+    es: "Elige un nuevo contacto antes de quitar al actual.",
+  },
 
   // Identity
   "clientEditor.name": { en: "Name", es: "Nombre" },

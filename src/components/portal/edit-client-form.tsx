@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -24,6 +17,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useLocale } from "./locale-provider";
 import { t as translate, type Locale } from "@/lib/portal-i18n";
+import { fetchClientTeam } from "@/lib/client-team";
+import { TeamAvatarCluster } from "./team-cluster";
 
 interface Client {
   id: string;
@@ -44,10 +39,28 @@ interface AdminOption {
   id: string;
   full_name: string | null;
   email: string | null;
+  avatar_url: string | null;
+  title: string | null;
 }
 
-const UNASSIGNED = "none";
+/** A team member as edited locally (diffed against the loaded snapshot on save). */
+interface EditorTeamMember {
+  profileId: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  roleLabel: string | null;
+  isLead: boolean;
+}
+
 const DEFAULT_ACCENT = "#5B4BD6";
+
+/** Stable key for dirty-diffing the team (order-independent). */
+const teamKey = (team: EditorTeamMember[]) =>
+  JSON.stringify(
+    team
+      .map((m) => [m.profileId, m.isLead, (m.roleLabel ?? "").trim()])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+  );
 
 // The five Vimi Client Journey preset accents (approved v2 prototype).
 const ACCENTS: { hex: string; name: string }[] = [
@@ -103,28 +116,64 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [accentColor, setAccentColor] = useState(client.accent_color ?? DEFAULT_ACCENT);
   const [dealTerms, setDealTerms] = useState(client.deal_terms ?? "");
   const [studioNote, setStudioNote] = useState(client.studio_note ?? "");
-  const [designerId, setDesignerId] = useState(client.designer_id ?? UNASSIGNED);
   const [engagementStartedAt, setEngagementStartedAt] = useState(
     client.engagement_started_at ?? ""
   );
   const [admins, setAdmins] = useState<AdminOption[]>([]);
+  const [team, setTeam] = useState<EditorTeamMember[]>([]);
+  // Snapshot of the team as loaded — diffed on save for upserts/deletes + dirty.
+  const [initialTeamKey, setInitialTeamKey] = useState("[]");
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false); // mobile toggle
 
-  // Load studio admins to populate the designer picker (only while open).
+  // Load studio admins (roster) + the client's current team (only while open).
   useEffect(() => {
     if (!open) return;
     const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .eq("role", "admin")
-      .order("full_name")
-      .then(({ data }) => setAdmins(data ?? []));
-  }, [open]);
+
+    // Admins — include title/avatar for roster pills. `title` may not exist
+    // before the migration; fall back to a title-less select if so.
+    (async () => {
+      const primary = await supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url, title")
+        .eq("role", "admin")
+        .order("full_name");
+      if (primary.error) {
+        const fb = await supabase
+          .from("profiles")
+          .select("id, full_name, email, avatar_url")
+          .eq("role", "admin")
+          .order("full_name");
+        setAdmins((fb.data ?? []).map((a) => ({ ...a, title: null })));
+      } else {
+        setAdmins((primary.data ?? []) as AdminOption[]);
+      }
+    })();
+
+    // Team — fetchClientTeam tolerates the table not existing (→ []).
+    fetchClientTeam(supabase, client.id).then((rows) => {
+      // Guarantee exactly one lead when the crew is non-empty.
+      let members: EditorTeamMember[] = rows.map((r) => ({
+        profileId: r.profileId,
+        fullName: r.fullName,
+        avatarUrl: r.avatarUrl,
+        roleLabel: r.roleLabel,
+        isLead: r.isLead,
+      }));
+      if (members.length > 0 && !members.some((m) => m.isLead)) {
+        members = members.map((m, i) => ({ ...m, isLead: i === 0 }));
+      }
+      setTeam(members);
+      setInitialTeamKey(teamKey(members));
+    });
+  }, [open, client.id]);
 
   const accentValid = isHex6(accentColor);
 
+  const teamDirty = teamKey(team) !== initialTeamKey;
   const isDirty =
     name !== client.name ||
     slug !== client.slug ||
@@ -135,15 +184,50 @@ export function EditClientDialog({ client }: { client: Client }) {
     accentColor !== (client.accent_color ?? DEFAULT_ACCENT) ||
     dealTerms !== (client.deal_terms ?? "") ||
     studioNote !== (client.studio_note ?? "") ||
-    designerId !== (client.designer_id ?? UNASSIGNED) ||
+    teamDirty ||
     engagementStartedAt !== (client.engagement_started_at ?? "");
 
-  const selectedAdmin = admins.find((a) => a.id === designerId);
-  const designerFirstName =
-    designerId === UNASSIGNED
-      ? "Vimi"
-      : firstName(selectedAdmin?.full_name ?? null, selectedAdmin?.email ?? null);
+  const lead = team.find((m) => m.isLead) ?? team[0] ?? null;
+  const leadFirstName = lead ? firstName(lead.fullName, null) : "Vimi";
+  const roster = admins.filter((a) => !team.some((m) => m.profileId === a.id));
   const showLogo = Boolean(logoUrl.trim()) && !logoError;
+
+  const makeLead = (profileId: string) =>
+    setTeam((prev) => prev.map((m) => ({ ...m, isLead: m.profileId === profileId })));
+
+  const addMember = (a: AdminOption) => {
+    setTeam((prev) =>
+      prev.some((m) => m.profileId === a.id)
+        ? prev
+        : [
+            ...prev,
+            {
+              profileId: a.id,
+              fullName: a.full_name,
+              avatarUrl: a.avatar_url,
+              roleLabel: a.title,
+              isLead: prev.length === 0, // first member is the contact
+            },
+          ]
+    );
+  };
+
+  const removeMember = (m: EditorTeamMember) => {
+    if (team.length <= 1) {
+      toast.error(t("clientEditor.cantRemoveLast"));
+      return;
+    }
+    if (m.isLead) {
+      toast.error(t("clientEditor.cantRemoveLead"));
+      return;
+    }
+    setTeam((prev) => prev.filter((x) => x.profileId !== m.profileId));
+  };
+
+  const setRole = (profileId: string, label: string) =>
+    setTeam((prev) =>
+      prev.map((m) => (m.profileId === profileId ? { ...m, roleLabel: label } : m))
+    );
 
   const handleNameChange = (v: string) => {
     setName(v);
@@ -171,6 +255,12 @@ export function EditClientDialog({ client }: { client: Client }) {
     // editing unrelated fields doesn't falsely refresh the "hace X días" caption.
     const noteChanged =
       (studioNote.trim() || null) !== (client.studio_note ?? null);
+    // designer_id stays the routing source of truth — keep it in sync with the
+    // team's lead (contacto principal). When the team is empty (no crew, or the
+    // client_team table isn't there yet pre-migration) DON'T touch designer_id,
+    // so saving other fields never wipes a client's existing designer.
+    const leadProfileId =
+      team.length > 0 ? lead?.profileId ?? null : client.designer_id ?? null;
     const { error } = await supabase
       .from("clients")
       .update({
@@ -183,7 +273,7 @@ export function EditClientDialog({ client }: { client: Client }) {
         accent_color: accentColor.trim() || null,
         deal_terms: dealTerms.trim() || null,
         studio_note: studioNote.trim() || null,
-        designer_id: designerId === UNASSIGNED ? null : designerId,
+        designer_id: leadProfileId,
         engagement_started_at: engagementStartedAt || null,
         ...(noteChanged && {
           studio_note_updated_at: studioNote.trim()
@@ -197,6 +287,43 @@ export function EditClientDialog({ client }: { client: Client }) {
       toast.error(error.message || "Couldn't save changes. Please try again.");
       setIsSaving(false);
       return;
+    }
+
+    // Team sync (diff-based). Only touch client_team when the crew changed, so
+    // pre-migration saves that never opened the team still succeed.
+    if (teamDirty) {
+      if (team.length > 0) {
+        const { error: upsertErr } = await supabase.from("client_team").upsert(
+          team.map((m) => ({
+            client_id: client.id,
+            profile_id: m.profileId,
+            role_label: m.roleLabel?.trim() || null,
+            is_lead: m.isLead,
+          })),
+          { onConflict: "client_id,profile_id" }
+        );
+        if (upsertErr) {
+          toast.error(upsertErr.message || "Couldn't save the team.");
+          setIsSaving(false);
+          return;
+        }
+      }
+      const currentIds = new Set(team.map((m) => m.profileId));
+      const removedIds = JSON.parse(initialTeamKey)
+        .map((row: [string, boolean, string]) => row[0])
+        .filter((id: string) => !currentIds.has(id));
+      if (removedIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from("client_team")
+          .delete()
+          .eq("client_id", client.id)
+          .in("profile_id", removedIds);
+        if (delErr) {
+          toast.error(delErr.message || "Couldn't update the team.");
+          setIsSaving(false);
+          return;
+        }
+      }
     }
 
     toast.success("Client updated");
@@ -450,75 +577,136 @@ export function EditClientDialog({ client }: { client: Client }) {
                 </div>
               </section>
 
-              {/* STUDIO */}
+              {/* TEAM */}
               <section className="space-y-4">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6E6B75]">
-                  {t("clientEditor.sectionStudio")}
-                </h3>
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6E6B75]">
+                    {t("clientEditor.sectionTeam")}
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    · {t("clientEditor.teamSubtitle")}
+                  </span>
+                </div>
 
                 <div className="space-y-2">
-                  <Label>{t("clientEditor.designer")}</Label>
-                  {admins.length > 3 ? (
-                    // Too many admins for avatar toggles — fall back to a Select.
-                    <Select value={designerId} onValueChange={setDesignerId}>
-                      <SelectTrigger id="client-designer">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent position="popper" className="bg-white border shadow-lg z-50">
-                        <SelectItem value={UNASSIGNED}>
-                          {t("clientEditor.designerDefault")}
-                        </SelectItem>
-                        {admins.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.full_name || a.email || "Admin"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
+                  {team.map((m) => (
+                    <div
+                      key={m.profileId}
+                      className="flex items-center gap-3 rounded-xl border border-[color:rgba(28,27,31,0.1)] bg-white px-3 py-2.5"
+                    >
+                      {m.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={m.avatarUrl}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span
+                          className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                          style={{ background: accentValid ? accentColor : "#C9C6BF", ...accentStyle }}
+                        >
+                          {initials(m.fullName || "A")}
+                        </span>
+                      )}
+
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-[color:var(--vimi-ink)] truncate">
+                          {m.fullName || "Admin"}
+                        </span>
+                        {editingRole === m.profileId ? (
+                          <input
+                            autoFocus
+                            value={m.roleLabel ?? ""}
+                            placeholder={t("clientEditor.rolePlaceholder")}
+                            onChange={(e) => setRole(m.profileId, e.target.value)}
+                            onBlur={() => setEditingRole(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") setEditingRole(null);
+                            }}
+                            className="mt-0.5 w-32 rounded border border-input bg-background px-1.5 py-0.5 text-[10px] uppercase tracking-[0.06em] outline-none focus:ring-2 focus:ring-ring"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setEditingRole(m.profileId)}
+                            className="mt-0.5 self-start rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] bg-[color:rgba(28,27,31,0.06)] text-[#6E6B75] hover:bg-[color:rgba(28,27,31,0.1)] transition-colors"
+                          >
+                            {(m.roleLabel?.trim() || t("clientEditor.rolePlaceholder")).toUpperCase()}
+                          </button>
+                        )}
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => setDesignerId(UNASSIGNED)}
-                        aria-pressed={designerId === UNASSIGNED}
-                        className={toggleBtn(designerId === UNASSIGNED)}
-                        style={designerId === UNASSIGNED ? { background: accentColor, ...accentStyle } : undefined}
+                        onClick={() => makeLead(m.profileId)}
+                        aria-pressed={m.isLead}
+                        className="shrink-0 inline-flex items-center rounded-full px-2.5 min-h-[32px] text-[10px] font-bold tracking-[0.06em] transition-colors"
+                        style={
+                          m.isLead
+                            ? { background: "#FFF3DE", color: "#B26F0E" }
+                            : { background: "rgba(28,27,31,0.05)", color: "#6E6B75" }
+                        }
                       >
-                        <span
-                          className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                            designerId === UNASSIGNED
-                              ? "bg-white/25 text-white"
-                              : "bg-[color:rgba(28,27,31,0.08)] text-[color:var(--vimi-ink)]"
-                          }`}
-                        >
-                          V
-                        </span>
-                        {t("clientEditor.designerDefault")}
+                        {m.isLead ? "★ " : ""}
+                        {t("clientEditor.contact")}
                       </button>
-                      {admins.map((a) => {
-                        const selected = designerId === a.id;
-                        return (
-                          <button
-                            key={a.id}
-                            type="button"
-                            onClick={() => setDesignerId(a.id)}
-                            aria-pressed={selected}
-                            className={toggleBtn(selected)}
-                            style={selected ? { background: accentColor, ...accentStyle } : undefined}
-                          >
-                            <span
-                              className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                                selected
-                                  ? "bg-white/25 text-white"
-                                  : "bg-[color:rgba(28,27,31,0.08)] text-[color:var(--vimi-ink)]"
-                              }`}
+
+                      <button
+                        type="button"
+                        onClick={() => removeMember(m)}
+                        aria-label={t("clientEditor.removeMember", { name: m.fullName || "" })}
+                        className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:bg-[color:rgba(28,27,31,0.06)] hover:text-foreground transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterOpen((v) => !v)}
+                    aria-expanded={rosterOpen}
+                    className="w-full rounded-xl border border-dashed border-[color:rgba(28,27,31,0.2)] px-3 py-2.5 text-sm font-semibold text-[color:var(--vimi-muted)] hover:border-[color:rgba(28,27,31,0.35)] hover:text-[color:var(--vimi-ink)] transition-colors min-h-[44px]"
+                  >
+                    {t("clientEditor.addFromStudio")}
+                  </button>
+
+                  {rosterOpen && (
+                    <div className="rounded-xl border border-[color:rgba(28,27,31,0.1)] bg-[color:rgba(28,27,31,0.02)] p-2.5">
+                      {roster.length === 0 ? (
+                        <p className="px-1 py-1.5 text-[12px] text-muted-foreground">
+                          {t("clientEditor.rosterEmpty")}
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {roster.map((a) => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onClick={() => addMember(a)}
+                              className="inline-flex items-center gap-2 rounded-full border border-[color:rgba(28,27,31,0.14)] bg-white px-2.5 py-1.5 text-[12px] font-medium text-[color:var(--vimi-ink)] hover:bg-[color:rgba(28,27,31,0.04)] transition-colors min-h-[36px]"
                             >
-                              {initials(a.full_name || a.email || "A")}
-                            </span>
-                            {a.full_name || a.email || "Admin"}
-                          </button>
-                        );
-                      })}
+                              {a.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={a.avatar_url} alt="" className="h-5 w-5 rounded-full object-cover" />
+                              ) : (
+                                <span className="h-5 w-5 rounded-full bg-[color:rgba(28,27,31,0.1)] text-[color:var(--vimi-ink)] flex items-center justify-center text-[9px] font-bold">
+                                  {initials(a.full_name || a.email || "A")}
+                                </span>
+                              )}
+                              <span className="truncate max-w-[120px]">
+                                {a.full_name || a.email || "Admin"}
+                              </span>
+                              {a.title && (
+                                <span className="text-[10px] uppercase tracking-[0.05em] text-[#6E6B75]">
+                                  {a.title}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -638,7 +826,7 @@ export function EditClientDialog({ client }: { client: Client }) {
               </div>
             </div>
 
-            {/* Studio note, quoted + signed */}
+            {/* Studio note, quoted + signed by the lead */}
             {studioNote.trim() && (
               <div className="mt-4">
                 <p className="font-serif italic text-[13px] leading-snug text-[color:var(--vimi-ink)]">
@@ -649,10 +837,26 @@ export function EditClientDialog({ client }: { client: Client }) {
                     className="h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
                     style={{ background: accentValid ? accentColor : "#C9C6BF", ...accentStyle }}
                   >
-                    {initials(designerFirstName)}
+                    {initials(leadFirstName)}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">— {designerFirstName}</span>
+                  <span className="text-[11px] text-muted-foreground">— {leadFirstName}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Crew cluster + count — mirrors the client's sidebar / agreement */}
+            {team.length > 0 && (
+              <div className="mt-4 flex items-center gap-2">
+                <TeamAvatarCluster
+                  members={team.map((m) => ({ fullName: m.fullName, avatarUrl: m.avatarUrl }))}
+                  accent={accentValid ? accentColor : "#C9C6BF"}
+                  size={22}
+                />
+                <span className="text-[11px] text-muted-foreground">
+                  {team.length === 1
+                    ? tc("team.countOne")
+                    : tc("team.count", { n: team.length })}
+                </span>
               </div>
             )}
 

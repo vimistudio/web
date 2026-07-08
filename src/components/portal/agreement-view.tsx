@@ -32,6 +32,13 @@ interface Person {
   avatar_url: string | null;
 }
 
+interface StudioTeamMember {
+  fullName: string | null;
+  avatarUrl: string | null;
+  roleLabel: string | null;
+  isLead: boolean;
+}
+
 interface AgreementViewProps {
   companyName: string;
   retainerAmount: number | null;
@@ -41,6 +48,8 @@ interface AgreementViewProps {
   sinceDate: string | null;
   docs: HubDoc[];
   designer: Person | null;
+  /** Full studio crew, lead first. Empty → fall back to single-designer card. */
+  team: StudioTeamMember[];
   members: Person[];
   isImpersonatingAdmin?: boolean;
 }
@@ -58,6 +67,7 @@ export function AgreementView({
   sinceDate,
   docs,
   designer,
+  team,
   members,
   isImpersonatingAdmin = false,
 }: AgreementViewProps) {
@@ -198,28 +208,60 @@ export function AgreementView({
           <span className="text-xs font-bold text-[color:var(--vimi-muted)]">
             {t("agreement.fromStudio")}
           </span>
-          <div className="flex items-center gap-3">
-            {designer?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={designer.avatar_url}
-                alt={designer.full_name ?? "Vimi Studio"}
-                className="w-[42px] h-[42px] rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <span className="w-[42px] h-[42px] rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-[15px] shrink-0">
-                {designer ? initialOf(designer.full_name) : "V"}
-              </span>
-            )}
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm font-bold text-[color:var(--vimi-ink)]">
-                {designer?.full_name || "Vimi Studio"}
-              </span>
-              <span className="text-[12.5px] text-[color:var(--vimi-muted)]">
-                Vimi Studio
-              </span>
+          {team.length > 0 ? (
+            <div className="flex flex-col gap-3.5">
+              {team.map((m, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  {m.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.avatarUrl}
+                      alt={m.fullName ?? ""}
+                      className="w-[42px] h-[42px] rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <span
+                      className="w-[42px] h-[42px] rounded-full text-white flex items-center justify-center font-bold text-[15px] shrink-0"
+                      style={{ background: "var(--accent)" }}
+                    >
+                      {initialOf(m.fullName)}
+                    </span>
+                  )}
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-bold text-[color:var(--vimi-ink)] truncate">
+                      {m.fullName || "Vimi Studio"}
+                    </span>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--vimi-muted)]">
+                      {m.roleLabel?.trim() || "Vimi Studio"}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              {designer?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={designer.avatar_url}
+                  alt={designer.full_name ?? "Vimi Studio"}
+                  className="w-[42px] h-[42px] rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <span className="w-[42px] h-[42px] rounded-full bg-[#5B4BD6] text-white flex items-center justify-center font-bold text-[15px] shrink-0">
+                  {designer ? initialOf(designer.full_name) : "V"}
+                </span>
+              )}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-bold text-[color:var(--vimi-ink)]">
+                  {designer?.full_name || "Vimi Studio"}
+                </span>
+                <span className="text-[12.5px] text-[color:var(--vimi-muted)]">
+                  Vimi Studio
+                </span>
+              </div>
+            </div>
+          )}
           {/* Mobile only: on desktop the sidebar already carries this WhatsApp CTA. */}
           <a
             href={STUDIO_WHATSAPP_URL}
