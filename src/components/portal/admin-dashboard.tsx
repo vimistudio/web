@@ -59,10 +59,10 @@ interface AdminDashboardProps {
 }
 
 const statCards = [
-  { key: "totalClients" as const, label: "ACTIVE CLIENTS", icon: UserGroupIcon, color: "text-foreground" },
-  { key: "openRequests" as const, label: "OPEN REQUESTS", icon: Task01Icon, color: "text-blue-600" },
-  { key: "needsReview" as const, label: "NEEDS REVIEW", icon: ViewIcon, color: "text-amber-500" },
-  { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-500" },
+  { key: "totalClients" as const, label: "ACTIVE CLIENTS", icon: UserGroupIcon, color: "text-[color:var(--vimi-ink)]", subtitle: undefined },
+  { key: "openRequests" as const, label: "OPEN REQUESTS", icon: Task01Icon, color: "text-blue-600", subtitle: "across active clients" },
+  { key: "needsReview" as const, label: "NEEDS REVIEW", icon: ViewIcon, color: "text-amber-500", subtitle: "across active clients" },
+  { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-600", subtitle: undefined },
 ];
 
 const statusPills = [
@@ -220,32 +220,36 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
   const { hidden: pricesHidden } = usePricePrivacy();
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const firstName = adminName ? adminName.split(" ")[0] : "";
+  const dateEyebrow = now
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    })
+    .toUpperCase();
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {greeting}{adminName ? `, ${adminName.split(" ")[0]}` : ""}
+      {/* Hero — matches the client board hero language */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-2 md:gap-2.5">
+          <div className="text-[11px] md:text-xs font-semibold tracking-[0.12em] text-[color:var(--vimi-faint)]">
+            {dateEyebrow}
+          </div>
+          <h1 className="font-serif italic text-[30px] md:text-[40px] leading-[1.08] tracking-tight text-[color:var(--vimi-ink)]">
+            {greeting}{firstName ? `, ${firstName}` : ""}.
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{dateStr}</p>
         </div>
-        <Link href="/portal/admin/clients">
-          <Button variant="outline" className="gap-2">
-            <PlusSignIcon size={16} />
+        <Link href="/portal/admin/clients" className="shrink-0">
+          <button className="inline-flex items-center gap-2 bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] rounded-full px-5 py-3 text-sm font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 min-h-[44px]">
+            <PlusSignIcon size={16} color="currentColor" />
             New Client
-          </Button>
+          </button>
         </Link>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — journey card language */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const value = stats[card.key];
@@ -254,26 +258,33 @@ export function AdminDashboard({ stats, clients, recentActivity, adminName }: Ad
               ? maskPrice(`$${value.toLocaleString()}`, pricesHidden)
               : value;
           return (
-            <Card key={card.key}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground tracking-wider">
-                    {card.label}
-                  </p>
-                  <card.icon size={16} className="text-muted-foreground/50" />
-                </div>
-                <p className={`text-3xl font-semibold mt-2 ${card.color}`}>
-                  {display}
+            <div
+              key={card.key}
+              className="rounded-2xl border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] p-5 shadow-[0_2px_8px_rgba(28,27,31,0.04)]"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-[color:var(--vimi-faint)] tracking-[0.12em]">
+                  {card.label}
                 </p>
-                {card.key === "monthlyRevenue" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {pricesHidden
-                      ? `${PRICE_MASK} active clients`
-                      : `${stats.activeClientCount} active ${stats.activeClientCount === 1 ? "client" : "clients"}`}
+                <card.icon size={16} className="text-[color:var(--vimi-faint)]" />
+              </div>
+              <p className={`text-3xl font-semibold mt-2 ${card.color}`}>
+                {display}
+              </p>
+              {card.key === "monthlyRevenue" ? (
+                <p className="text-xs text-[color:var(--vimi-muted)] mt-1">
+                  {pricesHidden
+                    ? `${PRICE_MASK} active clients`
+                    : `${stats.activeClientCount} active ${stats.activeClientCount === 1 ? "client" : "clients"}`}
+                </p>
+              ) : (
+                card.subtitle && (
+                  <p className="text-xs text-[color:var(--vimi-muted)] mt-1">
+                    {card.subtitle}
                   </p>
-                )}
-              </CardContent>
-            </Card>
+                )
+              )}
+            </div>
           );
         })}
       </div>

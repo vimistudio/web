@@ -57,14 +57,15 @@ export default async function AdminDashboardPage() {
     .order("created_at", { ascending: false })
     .limit(500);
 
-  // Aggregate stats
+  // Aggregate stats — active clients only (paused clients pollute the numbers).
+  // `clients` is already scoped to is_active above, so its ids define "active".
+  const activeClientIds = new Set((clients ?? []).map((c) => c.id));
+  const activeRequests = (requests ?? []).filter((r) =>
+    activeClientIds.has(r.client_id)
+  );
   const totalClients = clients?.length ?? 0;
-  const openRequests = requests?.filter(
-    (r) => r.status !== "done"
-  ).length ?? 0;
-  const needsReview = requests?.filter(
-    (r) => r.status === "review"
-  ).length ?? 0;
+  const openRequests = activeRequests.filter((r) => r.status !== "done").length;
+  const needsReview = activeRequests.filter((r) => r.status === "review").length;
   const monthlyRevenue = clients?.reduce(
     (sum, c) => sum + (c.retainer_amount ?? 0),
     0
