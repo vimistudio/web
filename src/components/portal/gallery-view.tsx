@@ -119,7 +119,8 @@ function GalleryImageCard({
 }
 
 export function GalleryView({ clientName, deliverables, socialPostsMap = {} }: GalleryViewProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const dateLocale = locale === "es" ? "es" : "en-US";
   const [filter, setFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -149,7 +150,7 @@ export function GalleryView({ clientName, deliverables, socialPostsMap = {} }: G
 
   const groups = new Map<string, Deliverable[]>();
   sorted.forEach(d => {
-    const key = new Date(d.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    const key = new Date(d.created_at).toLocaleDateString(dateLocale, { month: "long", year: "numeric" });
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(d);
   });
@@ -165,7 +166,7 @@ export function GalleryView({ clientName, deliverables, socialPostsMap = {} }: G
     }));
 
   const deliveredDate = (d: Deliverable) =>
-    new Date(d.created_at).toLocaleDateString(undefined, {
+    new Date(d.created_at).toLocaleDateString(dateLocale, {
       month: "short",
       day: "numeric",
     });

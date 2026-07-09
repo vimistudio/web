@@ -518,6 +518,13 @@ export function ClientBoard({
               </span>
             )}
           </div>
+          {/* Quiet WhatsApp affordance — a hint the strip is tappable, never a shout */}
+          <span className="ml-auto flex items-center gap-1 shrink-0 text-[10.5px] text-[color:var(--vimi-faint)]">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#25D366]" aria-hidden="true">
+              <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.13c-.24.68-1.42 1.32-1.95 1.36-.5.04-.96.24-3.23-.67-2.72-1.07-4.44-3.85-4.57-4.03-.13-.18-1.1-1.46-1.1-2.78 0-1.32.69-1.97.94-2.24.24-.27.53-.34.71-.34.18 0 .35 0 .5.01.16.01.38-.06.59.45.24.58.82 2 .89 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45-.13.16-.28.35-.4.47-.13.13-.27.28-.12.54.15.27.66 1.09 1.42 1.77.98.87 1.8 1.14 2.06 1.27.26.13.41.11.56-.07.15-.18.65-.76.83-1.02.18-.27.35-.22.59-.13.24.09 1.52.72 1.78.85.26.13.43.2.5.31.06.11.06.63-.18 1.31Z" />
+            </svg>
+            <span className="whitespace-nowrap">{t("board.studio.writeUs")} &rarr;</span>
+          </span>
         </a>
       )}
 
@@ -578,7 +585,7 @@ export function ClientBoard({
             <p className="text-xs text-[color:var(--vimi-muted)]">
               {t("board.sinceLastVisit")}{" "}
               {completed > 0 && t("board.delivered", { count: completed, s: completed > 1 ? "s" : "" })}
-              {completed === 0 && t("board.updates", { count: totalUpdated, s: totalUpdated > 1 ? "s" : "", es: totalUpdated > 1 ? "es" : "" })}
+              {completed === 0 && t("board.updates", { count: totalUpdated, word: t(totalUpdated > 1 ? "board.update.many" : "board.update.one") })}
             </p>
           </div>
           <button

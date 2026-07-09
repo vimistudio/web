@@ -1,8 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { LoginForm } from "@/components/portal/login-form";
+import { LoginPanel } from "./login-panel";
 
 export default async function LoginPage({
   searchParams,
@@ -56,44 +55,7 @@ export default async function LoginPage({
           </div>
 
           {/* Card */}
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-8 space-y-8 shadow-2xl shadow-black/20">
-            <div className="text-center space-y-2">
-              <h1 className="text-xl font-semibold text-white tracking-tight">
-                Welcome to your studio
-              </h1>
-              <p className="text-sm text-[#6B6F99]">
-                Sign in to see your designs and collaborate with your studio
-              </p>
-            </div>
-
-            <LoginForm error={searchParams.error} next={searchParams.next} />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/[0.06]" />
-              </div>
-            </div>
-
-            <p className="text-center text-[11px] text-[#4a4d66] leading-relaxed">
-              Invite-only access. Your studio will set up your account.
-              <br />
-              By signing in, you agree to our{" "}
-              <Link
-                href="/terms"
-                className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer"
-              >
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                className="text-[#6B6F99] hover:text-[#909af7] cursor-pointer"
-              >
-                Privacy Policy
-              </Link>
-              .
-            </p>
-          </div>
+          <LoginPanel error={searchParams.error} next={searchParams.next} />
 
           {/* Footer */}
           <p className="text-center text-[11px] text-[#2a2d46]">

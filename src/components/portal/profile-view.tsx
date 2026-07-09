@@ -8,6 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Logout01Icon, PlusSignIcon, Cancel01Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -79,6 +90,9 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
   const [teamInvites, setTeamInvites] = useState<
     { email: string; created_at: string }[]
   >([]);
+  const [members, setMembers] = useState<
+    { id: string; full_name: string | null; avatar_url: string | null; email: string | null }[]
+  >([]);
 
   const loadInvites = useCallback(async () => {
     if (isAdmin || !profile.client_id) return;
@@ -91,9 +105,23 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
     setTeamInvites(data ?? []);
   }, [isAdmin, profile.client_id]);
 
+  // Active members: same-client profiles (readable via RLS). Read-only here —
+  // removing a member is an admin action.
+  const loadMembers = useCallback(async () => {
+    if (isAdmin || !profile.client_id) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, email")
+      .eq("client_id", profile.client_id)
+      .order("created_at", { ascending: true });
+    setMembers(data ?? []);
+  }, [isAdmin, profile.client_id]);
+
   useEffect(() => {
     loadInvites();
-  }, [loadInvites]);
+    loadMembers();
+  }, [loadInvites, loadMembers]);
 
   const handleInvite = async () => {
     const email = inviteEmail.trim().toLowerCase();
@@ -101,6 +129,11 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
     setInviteError("");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setInviteError(t("team.errorInvalid"));
+      return;
+    }
+    // Re-invite guard: someone already on the team can't be re-invited.
+    if (members.some((m) => m.email?.toLowerCase() === email)) {
+      setInviteError(t("team.alreadyMember"));
       return;
     }
     setIsInviting(true);
@@ -127,7 +160,7 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
       body: JSON.stringify({
         type: "team_invite",
         invite_email: email,
-        client_name: clientName || "your project",
+        client_name: clientName || t("team.yourProject"),
       }),
     }).catch(() => {});
 
@@ -238,11 +271,12 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
                   if (inviteError) setInviteError("");
                 }}
                 onKeyDown={(e) => e.key === "Enter" && handleInvite()}
+                className="h-11"
               />
               <Button
                 onClick={handleInvite}
                 disabled={!inviteEmail.trim() || isInviting}
-                className="gap-2 bg-primary hover:bg-primary/90 shrink-0"
+                className="h-11 gap-2 bg-primary hover:bg-primary/90 shrink-0"
               >
                 <PlusSignIcon size={16} color="white" />
                 {isInviting ? t("team.inviting") : t("team.invite")}
@@ -251,6 +285,45 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
 
             {inviteError && (
               <p className="text-sm text-red-500">{inviteError}</p>
+            )}
+
+            {members.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+                  {t("team.members")}
+                </p>
+                {members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 rounded-lg border px-3 py-2"
+                  >
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={member.avatar_url ?? undefined} />
+                      <AvatarFallback className="bg-primary text-white text-xs">
+                        {(member.full_name ?? member.email ?? "?")[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {member.full_name ?? member.email ?? t("profile.unknown")}
+                      </p>
+                      {member.email && member.full_name && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {member.email}
+                        </p>
+                      )}
+                    </div>
+                    {member.id === profile.id && (
+                      <Badge
+                        variant="outline"
+                        className="shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200"
+                      >
+                        {t("team.you")}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
 
             {teamInvites.length > 0 && (
@@ -272,14 +345,38 @@ export function ProfileView({ user, profile }: ProfileViewProps) {
                         )}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleRevoke(invite.email)}
-                      aria-label={t("team.revoke")}
-                      title={t("team.revoke")}
-                      className="text-muted-foreground hover:text-red-500 transition-colors p-1 shrink-0"
-                    >
-                      <Cancel01Icon size={16} />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          aria-label={t("team.revoke")}
+                          title={t("team.revoke")}
+                          className="flex items-center justify-center min-w-[44px] min-h-[44px] shrink-0 -mr-2 text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          <Cancel01Icon size={16} />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-white">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("team.revokeConfirmTitle")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("team.revokeConfirmBody", { email: invite.email })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {t("team.revokeKeep")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRevoke(invite.email)}
+                            className="bg-red-500 hover:bg-red-600 text-white"
+                          >
+                            {t("team.revokeConfirm")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 ))}
               </div>

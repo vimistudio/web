@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Notification03Icon, CheckmarkCircle01Icon } from "@/components/ui/icons";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { useRealtime } from "@/hooks/use-realtime";
 import { toast } from "sonner";
 
@@ -35,7 +36,7 @@ import { Comment01Icon, ArrowRight01Icon, Upload01Icon } from "@/components/ui/i
 import { useLocale } from "./locale-provider";
 
 export function NotificationDropdown({ variant = "light" }: NotificationDropdownProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -177,6 +178,7 @@ export function NotificationDropdown({ variant = "light" }: NotificationDropdown
                   <p className="text-[10px] text-muted-foreground/70 mt-1">
                     {formatDistanceToNow(new Date(n.created_at), {
                       addSuffix: true,
+                      locale: locale === "es" ? es : undefined,
                     })}
                   </p>
                 </div>

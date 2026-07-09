@@ -56,6 +56,9 @@ export const chrome = {
   "login.terms": { en: "Terms", es: "Términos" },
   "login.privacy": { en: "Privacy Policy", es: "Política de Privacidad" },
   "login.continueGoogle": { en: "Continue with Google", es: "Continuar con Google" },
+  "login.inviteSetup": { en: "Invite-only access. Your studio will set up your account.", es: "Acceso solo con invitación. Tu estudio configurará tu cuenta." },
+  "login.agree": { en: "By signing in, you agree to our", es: "Al iniciar sesión, aceptas nuestros" },
+  "login.and": { en: "and", es: "y" },
 
   // Team invites (client-side)
   "team.title": { en: "Invite your team", es: "Invita a tu equipo" },
@@ -71,6 +74,14 @@ export const chrome = {
   "team.errorDuplicate": { en: "That email is already invited.", es: "Ese correo ya está invitado." },
   "team.errorInvalid": { en: "Enter a valid email address.", es: "Ingresa un correo válido." },
   "team.errorPermission": { en: "We couldn't send that invite. Please ask your studio for help.", es: "No pudimos enviar la invitación. Pídele ayuda a tu estudio." },
+  "team.members": { en: "On your team", es: "En tu equipo" },
+  "team.you": { en: "You", es: "Tú" },
+  "team.alreadyMember": { en: "They're already on your team.", es: "Ya es parte del equipo." },
+  "team.yourProject": { en: "your project", es: "tu proyecto" },
+  "team.revokeConfirmTitle": { en: "Revoke this invite?", es: "¿Revocar esta invitación?" },
+  "team.revokeConfirmBody": { en: "{email} won't be able to join with this invite. You can invite them again later.", es: "{email} no podrá unirse con esta invitación. Puedes volver a invitarle más tarde." },
+  "team.revokeKeep": { en: "Keep invite", es: "Mantener invitación" },
+  "team.revokeConfirm": { en: "Revoke", es: "Revocar" },
 
   // Studio sidebar card (client shell)
   "studio.whatsapp": { en: "WhatsApp us", es: "WhatsApp directo" },

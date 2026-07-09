@@ -13,7 +13,7 @@ import { type PortalKey } from "@/lib/portal-i18n";
 const clientTabs: { titleKey: PortalKey; href: string; icon: typeof GridViewIcon }[] = [
   { titleKey: "tab.board", href: "/portal", icon: GridViewIcon },
   { titleKey: "tab.gallery", href: "/portal/gallery", icon: Image01Icon },
-  { titleKey: "tab.agreement", href: "/portal/agreement", icon: File01Icon },
+  { titleKey: "tab.agreementShort", href: "/portal/agreement", icon: File01Icon },
   { titleKey: "tab.profile", href: "/portal/profile", icon: UserCircleIcon },
 ];
 
@@ -42,7 +42,7 @@ export function ClientBottomTabs() {
               )}
             >
               <tab.icon size={20} />
-              <span>{t(tab.titleKey)}</span>
+              <span className="whitespace-nowrap">{t(tab.titleKey)}</span>
             </Link>
           );
         })}
