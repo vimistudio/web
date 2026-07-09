@@ -453,19 +453,19 @@ export type Database = {
       }
       invited_emails: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string
           email: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string
           email: string
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           email?: string
           role?: Database["public"]["Enums"]["user_role"]
@@ -547,6 +547,7 @@ export type Database = {
           first_login_at: string | null
           full_name: string | null
           id: string
+          is_owner: boolean
           locale: string
           role: Database["public"]["Enums"]["user_role"]
           title: string | null
@@ -560,6 +561,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id: string
+          is_owner?: boolean
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           title?: string | null
@@ -573,6 +575,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id?: string
+          is_owner?: boolean
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           title?: string | null

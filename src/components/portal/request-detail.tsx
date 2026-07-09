@@ -1760,8 +1760,8 @@ export function RequestDetail({
                 </div>
                 <div className="text-xs opacity-90 mt-1">
                   {locale === "es"
-                    ? "Tu diseñador recomienda esta. Toca para elegirla, o explora ambas abajo."
-                    : "Your designer recommends this one. Tap to choose it, or explore both below."}
+                    ? "Tu estudio recomienda esta. Toca para elegirla, o explora ambas abajo."
+                    : "Your studio recommends this one. Tap to choose it, or explore both below."}
                 </div>
               </button>
             )}

@@ -76,6 +76,8 @@ interface AdminBoardProps {
   requests: Request[];
   milestones?: PlanMilestone[];
   admins?: Admin[];
+  /** Owner sees retainer + the client-settings editor; Staff does not. */
+  isOwner?: boolean;
 }
 
 const columns = [
@@ -316,7 +318,7 @@ function DroppableColumn({
   );
 }
 
-export function AdminBoard({ client, requests: initialRequests, milestones = [], admins = [] }: AdminBoardProps) {
+export function AdminBoard({ client, requests: initialRequests, milestones = [], admins = [], isOwner = true }: AdminBoardProps) {
   const router = useRouter();
   const { hidden: pricesHidden } = usePricePrivacy();
   const [requests, setRequests] = useState<Request[]>(initialRequests);
@@ -473,7 +475,7 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [],
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold">{client.name}</h1>
-              <EditClientDialog client={client} />
+              {isOwner && <EditClientDialog client={client} />}
               <Badge
                 variant="outline"
                 className={
@@ -486,7 +488,10 @@ export function AdminBoard({ client, requests: initialRequests, milestones = [],
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot; {openCount} open{" "}
+              {isOwner && (
+                <>{maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo &middot; </>
+              )}
+              {openCount} open{" "}
               {openCount === 1 ? "request" : "requests"}
             </p>
           </div>

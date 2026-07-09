@@ -35,7 +35,7 @@ const STRINGS = {
       default: "View Request",
     },
     heading: {
-      in_progress: "Your Designer Started Working",
+      in_progress: "Vimi Studio started working on your design",
       review: "Your Designs Are Ready for Review",
       done: "Your Designs Have Been Delivered",
       default: "Status Updated",
@@ -51,7 +51,7 @@ const STRINGS = {
       default: "Ver la solicitud",
     },
     heading: {
-      in_progress: "Tu diseñador empezó a trabajar",
+      in_progress: "Vimi Studio está trabajando en tu diseño",
       review: "Tus diseños están listos para revisar",
       done: "Tus diseños fueron entregados",
       default: "Estado actualizado",

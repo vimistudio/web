@@ -7,6 +7,8 @@ interface InviteEmailProps {
   portalUrl: string;
   invitedByName: string;
   locale?: Locale;
+  /** Studio staff invite (not a client) — swaps to team-oriented copy. */
+  staff?: boolean;
 }
 
 const STRINGS = {
@@ -43,13 +45,50 @@ const STRINGS = {
   },
 } as const;
 
+// Staff variant — a studio teammate, not a client. Same 3-part render, so
+// clientName here carries the studio name ("Vimi Studio").
+const STAFF_STRINGS = {
+  en: {
+    preview: (by: string, studio: string) =>
+      `${by} added you to the ${studio} team`,
+    cta: "Sign In to the Portal",
+    heading: "You're on the team",
+    welcome: (by: string) => `${by} added you to the team at`,
+    onVimi: ".",
+    features: [
+      "Manage client requests across every project",
+      "Upload deliverables and move work forward",
+      "Comment and collaborate with the studio",
+      "Get notified when something needs you",
+    ],
+    signInNote: "Sign in with Google using this email address to get started.",
+  },
+  es: {
+    preview: (by: string, studio: string) =>
+      `${by} te sumó al equipo de ${studio}`,
+    cta: "Entrar al portal",
+    heading: "Ya eres parte del equipo",
+    welcome: (by: string) => `${by} te sumó al equipo de`,
+    onVimi: ".",
+    features: [
+      "Gestiona las solicitudes de todos los clientes",
+      "Sube entregas y haz avanzar el trabajo",
+      "Comenta y colabora con el estudio",
+      "Recibe avisos cuando algo te necesite",
+    ],
+    signInNote:
+      "Inicia sesión con Google usando este correo para empezar.",
+  },
+} as const;
+
 export function InviteEmail({
   clientName,
   portalUrl,
   invitedByName,
   locale = "en",
+  staff = false,
 }: InviteEmailProps) {
-  const s = STRINGS[locale];
+  const s = staff ? STAFF_STRINGS[locale] : STRINGS[locale];
   return (
     <EmailLayout
       previewText={s.preview(invitedByName, clientName)}

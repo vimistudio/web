@@ -13,11 +13,14 @@ export default async function AdminDashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, is_owner")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+  // Fail OPEN (only explicit false = staff) so the sole owner keeps revenue
+  // during the pre-migration deploy window.
+  const isOwner = profile.is_owner !== false;
 
   // Surface a stale invite addressed to the signed-in admin (they clicked a
   // client invite email but have an admin account).
@@ -84,6 +87,14 @@ export default async function AdminDashboardPage() {
     (sum, c) => sum + (c.retainer_amount ?? 0),
     0
   );
+  // Staff-facing neutral stat (no money): requests delivered this calendar
+  // month across active clients — derived from the same data we already have.
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const doneThisMonth = activeRequests.filter(
+    (r) => r.status === "done" && new Date(r.updated_at) >= monthStart
+  ).length;
 
   // Needs-attention strip (Pareto): the few things that actually need action
   // today, active clients only, ordered review > overdue > owed, capped at 5.
@@ -211,7 +222,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      {selfInvite && (
+      {selfInvite?.client_id && (
         <AdminInviteBanner
           email={selfInvite.email}
           clientId={selfInvite.client_id}
@@ -224,6 +235,7 @@ export default async function AdminDashboardPage() {
           openRequests,
           needsReview,
           monthlyRevenue,
+          doneThisMonth,
           activeClientCount: totalClients,
         }}
         clients={clientSummaries}
@@ -232,6 +244,7 @@ export default async function AdminDashboardPage() {
         adminName={profile.full_name ?? undefined}
         adminId={user.id}
         admins={admins ?? []}
+        isOwner={isOwner}
       />
     </>
   );

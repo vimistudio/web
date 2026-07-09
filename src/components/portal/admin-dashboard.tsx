@@ -13,6 +13,7 @@ import {
   ArrowRight01Icon,
   PlusSignIcon,
   Comment01Icon,
+  CheckmarkCircle01Icon,
 } from "@/components/ui/icons";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -43,6 +44,7 @@ interface Stats {
   openRequests: number;
   needsReview: number;
   monthlyRevenue: number;
+  doneThisMonth: number;
   activeClientCount: number;
 }
 
@@ -75,6 +77,8 @@ interface AdminDashboardProps {
   adminName?: string;
   adminId?: string;
   admins?: Admin[];
+  /** Owner sees revenue; Staff sees a neutral delivered-this-month count. */
+  isOwner?: boolean;
 }
 
 const attentionConfig: Record<
@@ -136,12 +140,14 @@ function AttentionRow({ item }: { item: AttentionItem }) {
   );
 }
 
-const statCards = [
+const baseStatCards = [
   { key: "totalClients" as const, label: "ACTIVE CLIENTS", icon: UserGroupIcon, color: "text-[color:var(--vimi-ink)]", subtitle: undefined },
   { key: "openRequests" as const, label: "OPEN REQUESTS", icon: Task01Icon, color: "text-blue-600", subtitle: "across active clients" },
   { key: "needsReview" as const, label: "NEEDS REVIEW", icon: ViewIcon, color: "text-amber-500", subtitle: "across active clients" },
-  { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-600", subtitle: undefined },
 ];
+const revenueCard = { key: "monthlyRevenue" as const, label: "MONTHLY REVENUE", icon: DollarCircleIcon, color: "text-emerald-600", subtitle: undefined };
+// Staff's money-free fourth card — neutral, still useful.
+const deliveredCard = { key: "doneThisMonth" as const, label: "DELIVERED THIS MONTH", icon: CheckmarkCircle01Icon, color: "text-emerald-600", subtitle: "across active clients" };
 
 const statusPills = [
   { key: "queued" as const, label: "Up Next", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" },
@@ -150,7 +156,7 @@ const statusPills = [
   { key: "done" as const, label: "Delivered", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
 ];
 
-function ClientCard({ client, admins }: { client: ClientSummary; admins: Admin[] }) {
+function ClientCard({ client, admins, isOwner }: { client: ClientSummary; admins: Admin[]; isOwner: boolean }) {
   const { hidden: pricesHidden } = usePricePrivacy();
   const totalRequests = client.counts.queued + client.counts.in_progress + client.counts.review + client.counts.done;
   const completedPercent = totalRequests > 0 ? Math.round((client.counts.done / totalRequests) * 100) : 0;
@@ -174,7 +180,10 @@ function ClientCard({ client, admins }: { client: ClientSummary; admins: Admin[]
               <div>
                 <h3 className="font-semibold">{client.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo · {openCount} open
+                  {isOwner && (
+                    <>{maskPrice(`$${client.retainer_amount ?? 0}`, pricesHidden)}/mo · </>
+                  )}
+                  {openCount} open
                 </p>
               </div>
             </div>
@@ -297,8 +306,10 @@ function ClientCard({ client, admins }: { client: ClientSummary; admins: Admin[]
   );
 }
 
-export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName, adminId, admins = [] }: AdminDashboardProps) {
+export function AdminDashboard({ stats, clients, recentActivity, attention = [], adminName, adminId, admins = [], isOwner = true }: AdminDashboardProps) {
   const { hidden: pricesHidden } = usePricePrivacy();
+  // Fourth stat card is money for owners, a neutral delivered count for staff.
+  const statCards = [...baseStatCards, isOwner ? revenueCard : deliveredCard];
   const { scope, setScope } = useWorkScope();
   const [showPaused, setShowPaused] = useState(false);
   // Solo-admin mode: one-person studio → no "mine vs everyone" scope toggle.
@@ -451,7 +462,7 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
 
         <div className="grid gap-4 md:grid-cols-2">
           {visibleClients.map((client) => (
-            <ClientCard key={client.id} client={client} admins={admins} />
+            <ClientCard key={client.id} client={client} admins={admins} isOwner={isOwner} />
           ))}
 
           {clients.length === 0 && (

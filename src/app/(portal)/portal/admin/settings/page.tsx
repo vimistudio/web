@@ -12,11 +12,15 @@ export default async function AdminSettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_owner")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+  // Settings (people management + studio config) is owner-only. Fail OPEN so
+  // the sole owner isn't locked out pre-migration (only explicit false = staff).
+  const isOwner = profile.is_owner !== false;
+  if (!isOwner) redirect("/portal/admin");
 
   // Fetch pending invites
   const { data: invites } = await supabase
@@ -34,7 +38,7 @@ export default async function AdminSettingsPage() {
   // Fetch ALL profiles for the Team & Roles section
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, email, full_name, avatar_url, client_id, role, first_login_at, created_at, clients!profiles_client_id_fkey(id, name)")
+    .select("id, email, full_name, avatar_url, client_id, role, is_owner, title, first_login_at, created_at, clients!profiles_client_id_fkey(id, name)")
     .order("created_at", { ascending: false });
 
   return (
@@ -43,6 +47,7 @@ export default async function AdminSettingsPage() {
       clients={clients ?? []}
       profiles={profiles ?? []}
       currentUserId={user.id}
+      isOwner={isOwner}
     />
   );
 }
