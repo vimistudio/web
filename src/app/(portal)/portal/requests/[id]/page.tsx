@@ -107,6 +107,23 @@ export default async function RequestDetailPage({
 
   const clientName = request.clients?.name ?? "Client";
 
+  // Request creator + client member count. We only surface "Created by …" when
+  // the client has 2+ members (otherwise the author is obvious). Profiles are
+  // readable within the same client team (RLS), so the name resolves for both
+  // client members and admins.
+  const [{ data: creatorProfile }, { count: memberCount }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", request.created_by)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", request.client_id),
+  ]);
+  const creatorName = creatorProfile?.full_name ?? null;
+
   // Admin roster for the assignee control (admins only; joined in JS, never
   // embedded on the request — keeps requests↔profiles embed-free).
   const { data: admins } =
@@ -146,6 +163,8 @@ export default async function RequestDetailPage({
         comments: sortedComments,
       }}
       clientName={clientName}
+      creatorName={creatorName}
+      memberCount={memberCount ?? 1}
       currentUserId={user.id}
       isAdmin={profile.role === "admin" && !isImpersonating}
       isImpersonating={isImpersonating}

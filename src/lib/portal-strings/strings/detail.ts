@@ -150,4 +150,7 @@ export const detail = {
   "detail.membersDisagree": { en: "Members picked different directions", es: "Los miembros eligieron distinto" },
   "detail.someone": { en: "A teammate", es: "Un compañero" },
   "detail.picked": { en: "picked", es: "eligió" },
+
+  // Request creator attribution
+  "detail.createdBy": { en: "Created by {name}", es: "Creado por {name}" },
 } as const;

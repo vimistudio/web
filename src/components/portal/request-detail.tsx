@@ -153,6 +153,8 @@ interface SocialPost {
 interface RequestDetailProps {
   request: Request;
   clientName: string;
+  creatorName?: string | null;
+  memberCount?: number;
   currentUserId: string;
   isAdmin: boolean;
   isImpersonating: boolean;
@@ -780,6 +782,8 @@ function ActivityTimeline({ entries, locale }: { entries: ActivityEntry[]; local
 export function RequestDetail({
   request,
   clientName,
+  creatorName = null,
+  memberCount = 1,
   currentUserId,
   isAdmin,
   isImpersonating,
@@ -1657,6 +1661,11 @@ export function RequestDetail({
               <span className="text-xs text-muted-foreground">
                 · {t("detail.updated")} {updatedDate}
               </span>
+              {memberCount >= 2 && creatorName && (
+                <span className="text-xs text-muted-foreground">
+                  · {t("detail.createdBy", { name: creatorName.trim().split(/\s+/)[0] })}
+                </span>
+              )}
               {request.due_date && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   · <CalendarIcon size={12} />
