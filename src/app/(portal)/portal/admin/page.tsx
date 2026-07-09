@@ -222,7 +222,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      {selfInvite && (
+      {selfInvite?.client_id && (
         <AdminInviteBanner
           email={selfInvite.email}
           clientId={selfInvite.client_id}

@@ -100,7 +100,7 @@ async function resolveRequestNotifyAdmins(
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, request_id, new_status, old_status, invite_email, client_name, priority: reqPriority, description: reqDescription, direction_label, vote_comment, milestone_id } = body;
+    const { type, request_id, new_status, old_status, invite_email, client_name, staff: inviteStaff, priority: reqPriority, description: reqDescription, direction_label, vote_comment, milestone_id } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json(
@@ -148,10 +148,15 @@ export async function POST(request: Request) {
         (inviteRow as { clients?: { locale?: string } | null } | null)?.clients
           ?.locale
       );
+      // Staff invite → team-oriented copy (no client project).
+      const isStaffInvite = inviteStaff === true;
       const result = await sendEmail({
         to: invite_email,
-        subject:
-          inviteLocale === "es"
+        subject: isStaffInvite
+          ? inviteLocale === "es"
+            ? `${actorName} te sumó al equipo de ${client_name}`
+            : `${actorName} added you to the ${client_name} team`
+          : inviteLocale === "es"
             ? `Te invitamos a tu portal de diseño de ${client_name}`
             : `You're invited to your ${client_name} design portal`,
         react: InviteEmail({
@@ -159,6 +164,7 @@ export async function POST(request: Request) {
           portalUrl: "https://vimistudio.com/portal/login",
           invitedByName: actorName,
           locale: inviteLocale,
+          staff: isStaffInvite,
         }),
       });
       return NextResponse.json({ success: result.success, sent: result.success ? 1 : 0 });

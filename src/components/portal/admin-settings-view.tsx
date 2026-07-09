@@ -33,7 +33,7 @@ import { TeamRolesSection, type Profile } from "@/components/portal/team-roles-s
 
 interface Invite {
   email: string;
-  client_id: string;
+  client_id: string | null;
   role: string;
   created_at: string;
   clients: { name: string } | null;
@@ -50,6 +50,7 @@ interface AdminSettingsViewProps {
   clients: Client[];
   profiles: Profile[];
   currentUserId: string;
+  isOwner?: boolean;
 }
 
 export function AdminSettingsView({
@@ -57,8 +58,10 @@ export function AdminSettingsView({
   clients,
   profiles,
   currentUserId,
+  isOwner = true,
 }: AdminSettingsViewProps) {
   const router = useRouter();
+  const [inviteMode, setInviteMode] = useState<"client" | "staff">("client");
   const [email, setEmail] = useState("");
   const [clientId, setClientId] = useState("");
   const [isInviting, setIsInviting] = useState(false);
@@ -86,7 +89,7 @@ export function AdminSettingsView({
   }, [profiles]);
 
   const handleResolveInvite = async () => {
-    if (!inviteToResolve) return;
+    if (!inviteToResolve || !inviteToResolve.client_id) return;
     const existing = profileByEmail.get(inviteToResolve.email.toLowerCase());
     if (!existing) return;
     setIsResolvingInvite(true);
@@ -122,14 +125,58 @@ export function AdminSettingsView({
   };
 
   const handleInvite = async () => {
-    if (!email.trim() || !clientId) return;
     const normalized = email.trim().toLowerCase();
+    if (!normalized) return;
+    if (inviteMode === "client" && !clientId) return;
 
-    // Only ever create an invite row for an email that will genuinely consume
-    // it on first sign-in. If a profile already exists, branch instead.
     const existing = profiles.find(
       (p) => p.email?.toLowerCase() === normalized
     );
+
+    // Staff invite: a studio-wide member (role='admin', is_owner=false) with no
+    // client. Insert with client_id=null; claim_invite/handle_new_user set the
+    // role on first sign-in (see 20260719_staff_invites.sql).
+    if (inviteMode === "staff") {
+      if (existing) {
+        setError(
+          "This person already has an account — set their role in Team & Roles below."
+        );
+        return;
+      }
+      setIsInviting(true);
+      setError("");
+      const supabase = createClient();
+      const { error: insertError } = await supabase
+        .from("invited_emails")
+        .insert({ email: normalized, client_id: null, role: "admin" });
+      if (insertError) {
+        setError(
+          insertError.code === "23505"
+            ? "This email is already invited."
+            : "Failed to send invite."
+        );
+        setIsInviting(false);
+        return;
+      }
+      fetch("/api/portal/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "invite",
+          invite_email: normalized,
+          client_name: "Vimi Studio",
+          staff: true,
+        }),
+      }).catch(() => {});
+      setEmail("");
+      setIsInviting(false);
+      router.refresh();
+      return;
+    }
+
+    // Client invite. Only ever create an invite row for an email that will
+    // genuinely consume it on first sign-in. If a profile already exists,
+    // branch instead.
     if (existing) {
       if (existing.role === "admin") {
         setConflict({ kind: "admin", profile: existing });
@@ -221,18 +268,40 @@ export function AdminSettingsView({
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-2xl font-semibold">Settings</h1>
 
-      {/* Invite Client Section */}
+      {/* Invite Section */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-medium">Invite a Client</h2>
+          <h2 className="text-lg font-medium">Invite someone</h2>
           <p className="text-sm text-muted-foreground">
-            Pre-approve an email so they can sign in with Google and
-            automatically join their project.
+            {inviteMode === "client"
+              ? "Pre-approve an email so they can sign in with Google and automatically join their project."
+              : "Give a studio member access to every client board. No revenue, no settings — that stays owner-only."}
           </p>
         </div>
 
         <Card>
           <CardContent className="pt-6 space-y-4">
+            {/* Client vs Staff */}
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-[color:var(--muted)] p-1">
+              {(["client", "staff"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setInviteMode(m);
+                    resetConflict();
+                  }}
+                  className={`rounded-md py-1.5 text-sm font-medium transition-colors ${
+                    inviteMode === m
+                      ? "bg-white text-[color:var(--vimi-ink)] shadow-sm"
+                      : "text-[color:var(--vimi-muted)] hover:text-[color:var(--vimi-ink)]"
+                  }`}
+                >
+                  {m === "client" ? "Client" : "Staff member"}
+                </button>
+              ))}
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs font-medium tracking-wider text-muted-foreground">
                 EMAIL
@@ -248,29 +317,31 @@ export function AdminSettingsView({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs font-medium tracking-wider text-muted-foreground">
-                PROJECT
-              </Label>
-              <Select
-                value={clientId}
-                onValueChange={(v) => {
-                  setClientId(v);
-                  resetConflict();
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a client project" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="bg-white border shadow-lg z-50">
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {inviteMode === "client" && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium tracking-wider text-muted-foreground">
+                  PROJECT
+                </Label>
+                <Select
+                  value={clientId}
+                  onValueChange={(v) => {
+                    setClientId(v);
+                    resetConflict();
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client project" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="bg-white border shadow-lg z-50">
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {error && (
               <p className="text-sm text-red-500">{error}</p>
@@ -329,7 +400,11 @@ export function AdminSettingsView({
 
             <Button
               onClick={handleInvite}
-              disabled={!email.trim() || !clientId || isInviting}
+              disabled={
+                !email.trim() ||
+                (inviteMode === "client" && !clientId) ||
+                isInviting
+              }
               className="w-full gap-2 bg-primary hover:bg-primary/90"
             >
               <PlusSignIcon size={16} />
@@ -414,6 +489,7 @@ export function AdminSettingsView({
         clients={clients}
         invites={invites}
         currentUserId={currentUserId}
+        isOwner={isOwner}
       />
 
       {/* Resolve stale invite confirmation */}

@@ -453,19 +453,19 @@ export type Database = {
       }
       invited_emails: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string
           email: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string
           email: string
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           email?: string
           role?: Database["public"]["Enums"]["user_role"]
