@@ -116,4 +116,41 @@ export const detail = {
   "directions.captionMore": { en: "more", es: "más" },
   "directions.captionLess": { en: "less", es: "menos" },
   "directions.option": { en: "Option", es: "Opción" },
+
+  // Completion banner
+  "detail.requestComplete": { en: "Request Complete", es: "Solicitud completada" },
+
+  // Request-changes prompt (empty comment)
+  "detail.writeFeedbackFirst": { en: "Write your comment first", es: "Escribe tu comentario primero" },
+
+  // Download-all + single-file toasts
+  "detail.tooManyFiles": { en: "Too many files to download at once. Please download individually.", es: "Demasiados archivos para descargar a la vez. Descárgalos uno por uno." },
+  "detail.filesTooLarge": { en: "Files are too large to zip. Please download individually.", es: "Los archivos son muy grandes para comprimir. Descárgalos uno por uno." },
+  "detail.downloadPartial": { en: "Downloaded, but {count} file{s} couldn't be included.", es: "Descargado, pero {count} archivo{s} no se pudieron incluir." },
+  "detail.downloadFailed": { en: "Couldn't prepare the download", es: "No pudimos preparar la descarga" },
+  "detail.downloadFileFailed": { en: "Couldn't download file", es: "No pudimos descargar el archivo" },
+
+  // Vote button (deliverable card)
+  "detail.onePick": { en: "1 pick", es: "1 elección" },
+  "detail.nPicks": { en: "{count} picks", es: "{count} elecciones" },
+
+  // Carousel section headings
+  "detail.carouselsHeading": { en: "Instagram Carousels ({count})", es: "Carruseles de Instagram ({count})" },
+  "detail.carouselHeading": { en: "Instagram Carousel", es: "Carrusel de Instagram" },
+
+  // Comment thread fallbacks
+  "detail.justNow": { en: "just now", es: "justo ahora" },
+  "detail.attachment": { en: "Attachment", es: "Archivo adjunto" },
+  "detail.unknownUser": { en: "Unknown", es: "Desconocido" },
+
+  // Per-member voting attribution
+  "detail.memberPicked": { en: "{name} chose this", es: "{name} eligió esta" },
+  "detail.memberPickedOther": { en: "{name} chose {label} — you can each pick your own; your studio sees both", es: "{name} eligió {label} — pueden elegir distinto, su estudio verá ambos" },
+  "detail.membersPickedDifferent": { en: "Your team picked different directions — that's fine, your studio sees them all", es: "Tu equipo eligió direcciones distintas — está bien, tu estudio las verá todas" },
+  "detail.membersDisagree": { en: "Members picked different directions", es: "Los miembros eligieron distinto" },
+  "detail.someone": { en: "A teammate", es: "Un compañero" },
+  "detail.picked": { en: "picked", es: "eligió" },
+
+  // Request creator attribution
+  "detail.createdBy": { en: "Created by {name}", es: "Creado por {name}" },
 } as const;

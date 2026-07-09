@@ -32,6 +32,7 @@ import {
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import { fireConfetti } from "@/lib/fire-confetti";
 import { sanitizeFileName } from "@/lib/files";
@@ -41,7 +42,7 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ImageLightbox } from "@/components/portal/image-lightbox";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "./locale-provider";
-import { type PortalKey } from "@/lib/portal-i18n";
+import { type PortalKey, type Locale } from "@/lib/portal-i18n";
 import { InstagramCarouselPreview } from "./social/instagram-carousel-preview";
 import { DirectionOrganizer } from "./admin/direction-organizer";
 import { DirectionsVoting } from "./directions-voting";
@@ -152,6 +153,8 @@ interface SocialPost {
 interface RequestDetailProps {
   request: Request;
   clientName: string;
+  creatorName?: string | null;
+  memberCount?: number;
   currentUserId: string;
   isAdmin: boolean;
   isImpersonating: boolean;
@@ -290,7 +293,13 @@ const typeColors: Record<string, string> = {
 
 // --- Sub-components ---
 
-function ProgressStepper({ currentStatus }: { currentStatus: string }) {
+function ProgressStepper({
+  currentStatus,
+  t,
+}: {
+  currentStatus: string;
+  t: (key: PortalKey, vars?: Record<string, string | number>) => string;
+}) {
   const currentIndex = statusSteps.findIndex((s) => s.key === currentStatus);
 
   return (
@@ -320,7 +329,7 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
                   : "text-muted-foreground/40"
               }`}
             >
-              {step.label}
+              {t(`status.${step.key}` as PortalKey)}
             </span>
           </div>
           {i < statusSteps.length - 1 && (
@@ -336,7 +345,15 @@ function ProgressStepper({ currentStatus }: { currentStatus: string }) {
   );
 }
 
-function CompletionBanner({ updatedAt }: { updatedAt: string }) {
+function CompletionBanner({
+  updatedAt,
+  locale,
+  t,
+}: {
+  updatedAt: string;
+  locale: Locale;
+  t: (key: PortalKey, vars?: Record<string, string | number>) => string;
+}) {
   return (
     <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
       <CheckmarkCircle01Icon
@@ -345,11 +362,11 @@ function CompletionBanner({ updatedAt }: { updatedAt: string }) {
       />
       <div>
         <p className="text-sm font-semibold text-emerald-900">
-          Request Complete
+          {t("detail.requestComplete")}
         </p>
         <p className="text-xs text-emerald-700">
-          Delivered on{" "}
-          {new Date(updatedAt).toLocaleDateString(undefined, {
+          {t("detail.deliveredOn")}{" "}
+          {new Date(updatedAt).toLocaleDateString(locale === "es" ? "es-ES" : "en-US", {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -370,7 +387,8 @@ function DeliverableCard({
   onDownload,
   onVote,
   isVoted,
-  voteCount,
+  voteLabel,
+  downloadErrorLabel,
 }: {
   d: Deliverable;
   isAdmin: boolean;
@@ -381,7 +399,8 @@ function DeliverableCard({
   onDownload?: () => void;
   onVote?: () => void;
   isVoted?: boolean;
-  voteCount?: number;
+  voteLabel?: string;
+  downloadErrorLabel?: string;
 }) {
   const isImage = d.mime_type?.startsWith("image/");
   const [loaded, setLoaded] = useState(false);
@@ -461,7 +480,7 @@ function DeliverableCard({
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      {(voteCount ?? 0) > 0 ? `${voteCount} pick${(voteCount ?? 0) !== 1 ? "s" : ""}` : "Pick this one"}
+      {voteLabel}
     </button>
   ) : null;
 
@@ -638,7 +657,7 @@ function DeliverableCard({
           URL.revokeObjectURL(url);
           onDownload?.();
         } catch {
-          toast.error("Couldn't download file");
+          toast.error(downloadErrorLabel ?? "Couldn't download file");
         }
       }}
     >
@@ -688,8 +707,9 @@ const activityConfig: Record<string, { label: (oldVal: string | null, newVal: st
 
 const ACTIVITY_COLLAPSED_COUNT = 5;
 
-function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
+function ActivityTimeline({ entries, locale }: { entries: ActivityEntry[]; locale: Locale }) {
   const [expanded, setExpanded] = useState(false);
+  const dfnsLocale = locale === "es" ? es : undefined;
 
   if (entries.length === 0) return null;
 
@@ -736,7 +756,7 @@ function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
                   className="text-[10px] text-muted-foreground/60"
                   title={absoluteTimestamp}
                 >
-                  {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true, locale: dfnsLocale })}
                 </p>
               </div>
             </div>
@@ -762,6 +782,8 @@ function ActivityTimeline({ entries }: { entries: ActivityEntry[] }) {
 export function RequestDetail({
   request,
   clientName,
+  creatorName = null,
+  memberCount = 1,
   currentUserId,
   isAdmin,
   isImpersonating,
@@ -869,8 +891,10 @@ export function RequestDetail({
     undefined,
     { month: "short", day: "numeric", year: "numeric" }
   );
+  const dfnsLocale = locale === "es" ? es : undefined;
   const updatedDate = formatDistanceToNow(new Date(request.updated_at), {
     addSuffix: true,
+    locale: dfnsLocale,
   });
 
   // Review header meta line — real delivered date + visible file count.
@@ -1089,7 +1113,7 @@ export function RequestDetail({
   const handleRequestChanges = useCallback(() => {
     if (!comment.trim()) {
       toast(
-        t("detail.couldntUpdate"),
+        t("detail.writeFeedbackFirst"),
         { description: t("detail.addComment"), duration: 5000 }
       );
       // Scroll textarea into view and focus with visual pulse
@@ -1439,16 +1463,16 @@ export function RequestDetail({
               {t(priority.labelKey as PortalKey)}
             </span>
           )}
-          <Badge className={status.color}>{status.label}</Badge>
+          <Badge className={status.color}>{t(`status.${currentStatus}` as PortalKey)}</Badge>
         </div>
       </div>
 
       {/* Progress Stepper */}
-      <ProgressStepper currentStatus={currentStatus} />
+      <ProgressStepper currentStatus={currentStatus} t={t} />
 
       {/* Completion Banner */}
       {currentStatus === "done" && (
-        <CompletionBanner updatedAt={request.updated_at} />
+        <CompletionBanner updatedAt={request.updated_at} locale={locale} t={t} />
       )}
 
       {/* Review hero moment — directions voting or standard banner */}
@@ -1562,7 +1586,7 @@ export function RequestDetail({
                         : "border-[color:rgba(28,27,31,0.12)] bg-white text-muted-foreground hover:border-gray-300"
                     }`}
                   >
-                    {typeLabels[typeKey]}
+                    {t(`form.type.${typeKey}` as PortalKey)}
                   </button>
                 );
               })}
@@ -1629,7 +1653,7 @@ export function RequestDetail({
                 variant="secondary"
                 className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
               >
-                {typeLabels[request.type] ?? request.type}
+                {typeLabels[request.type] ? t(`form.type.${request.type}` as PortalKey) : request.type}
               </Badge>
               <span className="text-xs text-muted-foreground">
                 {t("detail.requested")} {requestedDate}
@@ -1637,6 +1661,11 @@ export function RequestDetail({
               <span className="text-xs text-muted-foreground">
                 · {t("detail.updated")} {updatedDate}
               </span>
+              {memberCount >= 2 && creatorName && (
+                <span className="text-xs text-muted-foreground">
+                  · {t("detail.createdBy", { name: creatorName.trim().split(/\s+/)[0] })}
+                </span>
+              )}
               {request.due_date && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   · <CalendarIcon size={12} />
@@ -1713,7 +1742,7 @@ export function RequestDetail({
             )}
             {!inDirections && (
               <h2 className="text-sm font-medium">
-                {multi ? `Instagram Carousels (${visiblePosts.length})` : "Instagram Carousel"}
+                {multi ? t("detail.carouselsHeading", { count: visiblePosts.length }) : t("detail.carouselHeading")}
               </h2>
             )}
 
@@ -1935,10 +1964,10 @@ export function RequestDetail({
                 onClick={async () => {
                   // Guard: warn if too many files
                   if (downloadAllUrls.length > 20) {
-                    toast.error("Too many files to download at once. Please download individually.");
+                    toast.error(t("detail.tooManyFiles"));
                     return;
                   }
-                  const toastId = toast.loading(`Preparing ${downloadAllUrls.length} files...`);
+                  const toastId = toast.loading(t("detail.preparingFiles", { count: downloadAllUrls.length }));
                   try {
                     const zip = new JSZip();
                     let failed = 0;
@@ -1954,7 +1983,7 @@ export function RequestDetail({
                         const blob = await res.blob();
                         totalSize += blob.size;
                         if (totalSize > MAX_SIZE) {
-                          toast.error("Files are too large to zip. Please download individually.", { id: toastId });
+                          toast.error(t("detail.filesTooLarge"), { id: toastId });
                           return;
                         }
                         // Deduplicate file names to prevent silent overwrites
@@ -1978,12 +2007,12 @@ export function RequestDetail({
                     saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
 
                     if (failed > 0) {
-                      toast.warning(`Downloaded, but ${failed} file${failed > 1 ? "s" : ""} couldn't be included.`, { id: toastId });
+                      toast.warning(t("detail.downloadPartial", { count: failed, s: failed > 1 ? "s" : "" }), { id: toastId });
                     } else {
-                      toast.success("Download ready!", { id: toastId });
+                      toast.success(t("detail.downloadReady"), { id: toastId });
                     }
                   } catch {
-                    toast.error("Couldn't prepare the download", { id: toastId });
+                    toast.error(t("detail.downloadFailed"), { id: toastId });
                   }
                 }}
               >
@@ -2046,7 +2075,12 @@ export function RequestDetail({
                       : undefined
                   }
                   isVoted={votedDeliverableId === d.id}
-                  voteCount={getVoteCount(d.id)}
+                  voteLabel={(() => {
+                    const n = getVoteCount(d.id);
+                    if (n === 0) return t("detail.pickThis");
+                    return n === 1 ? t("detail.onePick") : t("detail.nPicks", { count: n });
+                  })()}
+                  downloadErrorLabel={t("detail.downloadFileFailed")}
                 />
               );
             })}
@@ -2211,7 +2245,7 @@ export function RequestDetail({
       )}
 
       {/* Activity Timeline */}
-      {activityLog.length > 0 && <ActivityTimeline entries={activityLog} />}
+      {activityLog.length > 0 && <ActivityTimeline entries={activityLog} locale={locale} />}
 
       {/* Comments */}
       <div className="space-y-4">
@@ -2247,7 +2281,7 @@ export function RequestDetail({
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-medium">
-                    {c.profiles?.full_name ?? "Unknown"}
+                    {c.profiles?.full_name ?? t("detail.unknownUser")}
                   </span>
                   {isAdminComment && !isOwnComment && (
                     <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
@@ -2264,9 +2298,10 @@ export function RequestDetail({
                     title={new Date(c.created_at).toLocaleString()}
                   >
                     {isOptimistic
-                      ? "just now"
+                      ? t("detail.justNow")
                       : formatDistanceToNow(new Date(c.created_at), {
                           addSuffix: true,
+                          locale: dfnsLocale,
                         })}
                   </span>
                 </div>
@@ -2287,7 +2322,7 @@ export function RequestDetail({
                     className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                   >
                     <Download01Icon size={12} />
-                    {c.attachment_name ?? "Attachment"}
+                    {c.attachment_name ?? t("detail.attachment")}
                   </a>
                 )}
               </div>
@@ -2372,7 +2407,7 @@ export function RequestDetail({
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
-              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors mb-0.5"
+              className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors"
               aria-label="Attach image"
             >
               <PlusSignIcon size={14} />
@@ -2435,7 +2470,7 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
+              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                 comment.trim() || commentAttachment
                   ? "bg-primary hover:bg-primary/90 text-white"
                   : "bg-transparent text-gray-300"

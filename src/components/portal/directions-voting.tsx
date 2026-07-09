@@ -56,6 +56,7 @@ interface DirectionDeliverable {
     event_type: string;
     comment: string | null;
     created_at: string;
+    profiles?: { full_name: string | null } | null;
   }[];
 }
 
@@ -91,6 +92,45 @@ function getVoteCount(d: DirectionDeliverable): number {
       (e) => e.event_type === "direction_vote" || e.event_type === "vote"
     ).length ?? 0
   );
+}
+
+function isVoteEvent(eventType: string): boolean {
+  return eventType === "direction_vote" || eventType === "vote";
+}
+
+function firstName(name: string | null | undefined, fallback: string): string {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed) return fallback;
+  return trimmed.split(/\s+/)[0];
+}
+
+interface MemberVote {
+  userId: string;
+  name: string | null;
+  deliverableId: string;
+  label: string;
+  comment: string | null;
+  createdAt: string;
+}
+
+// Collapse every vote event down to one vote per person (a person can only
+// hold one active vote; last event wins). Returns votes keyed by user.
+function collectMemberVotes(directions: DirectionDeliverable[]): MemberVote[] {
+  const byUser = new Map<string, MemberVote>();
+  for (const d of directions) {
+    for (const e of d.deliverable_events ?? []) {
+      if (!isVoteEvent(e.event_type)) continue;
+      byUser.set(e.user_id, {
+        userId: e.user_id,
+        name: e.profiles?.full_name ?? null,
+        deliverableId: d.id,
+        label: d.direction_label || d.file_name,
+        comment: e.comment,
+        createdAt: e.created_at,
+      });
+    }
+  }
+  return Array.from(byUser.values());
 }
 
 // --- Main Component ---
@@ -133,6 +173,40 @@ export function DirectionsVoting({
       setCurrentSlide(api.selectedScrollSnap());
     });
   }, []);
+
+  // --- Per-member vote attribution (client view) ---
+  // Other client members' votes are surfaced as quiet chips on each card, plus
+  // a note when the team diverges — per-person votes never overwrite each other.
+  const memberVotes = collectMemberVotes(sorted);
+  const otherMemberVotes = memberVotes.filter((v) => v.userId !== currentUserId);
+  const chipsFor = (deliverableId: string): string[] =>
+    otherMemberVotes
+      .filter((v) => v.deliverableId === deliverableId)
+      .map((v) => t("detail.memberPicked", { name: firstName(v.name, t("detail.someone")) }));
+
+  const distinctChoices = new Set([
+    ...otherMemberVotes.map((v) => v.deliverableId),
+    ...(votedId ? [votedId] : []),
+  ]);
+  const divergent = distinctChoices.size > 1;
+  const differingOthers = otherMemberVotes.filter((v) =>
+    votedId ? v.deliverableId !== votedId : true
+  );
+  const divergenceNote =
+    divergent && differingOthers.length > 0
+      ? differingOthers.length === 1
+        ? t("detail.memberPickedOther", {
+            name: firstName(differingOthers[0].name, t("detail.someone")),
+            label: differingOthers[0].label,
+          })
+        : t("detail.membersPickedDifferent")
+      : null;
+
+  const noteBanner = divergenceNote ? (
+    <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+      {divergenceNote}
+    </div>
+  ) : null;
 
   // --- Vote Flow ---
 
@@ -243,41 +317,52 @@ export function DirectionsVoting({
 
   // --- Admin Vote Summary ---
   if (isAdmin) {
-    const vote = sorted.find((d) =>
-      d.deliverable_events?.some(
-        (e) =>
-          e.event_type === "direction_vote" || e.event_type === "vote"
-      )
-    );
-    const voteEvent = vote?.deliverable_events?.find(
-      (e) => e.event_type === "direction_vote" || e.event_type === "vote"
-    );
+    // Per-person votes (a client team may have several members). Each member's
+    // pick is shown with attribution so the studio never loses a vote.
+    const memberVotes = collectMemberVotes(sorted);
 
-    if (vote && voteEvent) {
+    if (memberVotes.length > 0) {
+      const distinctDirections = new Set(memberVotes.map((v) => v.deliverableId));
+      const agree = distinctDirections.size === 1;
+      const votesWithComments = memberVotes.filter((v) => v.comment);
+
       return (
-        <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-5 space-y-3">
+        <div
+          className={`rounded-xl p-5 space-y-3 border ${
+            agree
+              ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20"
+              : "bg-amber-50 border-amber-200"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <CheckmarkCircle01Icon size={20} className="text-primary" />
-            <p className="font-semibold text-sm">
-              {clientName} {t("detail.clientPicked")}{" "}
-              <span className="text-primary">
-                {vote.direction_label || vote.file_name}
-              </span>
-            </p>
+            <CheckmarkCircle01Icon
+              size={20}
+              className={agree ? "text-primary" : "text-amber-600"}
+            />
+            {agree ? (
+              <p className="font-semibold text-sm">
+                {memberVotes.map((v) => firstName(v.name, clientName)).join(", ")}{" "}
+                {t("detail.picked")}{" "}
+                <span className="text-primary">{memberVotes[0].label}</span>
+              </p>
+            ) : (
+              <p className="font-semibold text-sm text-amber-900">
+                {memberVotes
+                  .map((v) => `${firstName(v.name, t("detail.someone"))} → ${v.label}`)
+                  .join(" · ")}
+              </p>
+            )}
           </div>
-          {voteEvent.comment && (
-            <p className="text-sm text-muted-foreground ml-7 italic">
-              &ldquo;{voteEvent.comment}&rdquo;
+          {!agree && (
+            <p className="text-xs font-medium text-amber-700 ml-7">
+              {t("detail.membersDisagree")}
             </p>
           )}
-          <p className="text-xs text-muted-foreground ml-7">
-            {new Date(voteEvent.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </p>
+          {votesWithComments.map((v) => (
+            <p key={v.userId} className="text-sm text-muted-foreground ml-7 italic">
+              {firstName(v.name, clientName)}: &ldquo;{v.comment}&rdquo;
+            </p>
+          ))}
         </div>
       );
     }
@@ -303,6 +388,8 @@ export function DirectionsVoting({
 
     return (
       <div className="space-y-4">
+        {noteBanner}
+
         {/* Winner hero */}
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold">{t("detail.greatChoice")}</p>
@@ -403,6 +490,8 @@ export function DirectionsVoting({
         </p>
       </div>
 
+      {noteBanner}
+
       {/* Carousel (mobile) or Grid (desktop) */}
       {isMobile ? (
         <div className="space-y-3">
@@ -420,6 +509,7 @@ export function DirectionsVoting({
                     onPick={() => handlePickDirection(d.id)}
                     isPending={pendingVoteId === d.id}
                     disabled={isConfirmed}
+                    chips={chipsFor(d.id)}
                     ref={pendingVoteId === d.id ? voteButtonRef : undefined}
                     labels={{
                       pickThis: t("detail.pickThis"),
@@ -466,6 +556,7 @@ export function DirectionsVoting({
               onPick={() => handlePickDirection(d.id)}
               isPending={pendingVoteId === d.id}
               disabled={isConfirmed}
+              chips={chipsFor(d.id)}
               labels={{
                 pickThis: t("detail.pickThis"),
                 thisOne: t("detail.thisOne"),
@@ -543,13 +634,14 @@ const DirectionCard = forwardRef<
     onPick: () => void;
     isPending: boolean;
     disabled: boolean;
+    chips?: string[];
     labels: {
       pickThis: string;
       thisOne: string;
       designersPick: string;
     };
   }
->(function DirectionCard({ direction, onPick, isPending, disabled, labels }, ref) {
+>(function DirectionCard({ direction, onPick, isPending, disabled, chips = [], labels }, ref) {
   const isImage = direction.mime_type?.startsWith("image/");
   const voteCount = getVoteCount(direction);
 
@@ -601,6 +693,21 @@ const DirectionCard = forwardRef<
           <p className="text-xs text-muted-foreground">
             {voteCount} {voteCount === 1 ? "pick" : "picks"}
           </p>
+        )}
+
+        {/* Other members' picks — attributed chips */}
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((chip, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[11px] font-medium px-2 py-0.5"
+              >
+                <CheckmarkCircle01Icon size={11} />
+                {chip}
+              </span>
+            ))}
+          </div>
         )}
 
         {/* Pick Button — Fitts's Law: full width, 56px tall */}
