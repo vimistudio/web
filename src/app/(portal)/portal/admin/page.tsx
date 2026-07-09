@@ -93,10 +93,14 @@ export default async function AdminDashboardPage() {
   const nameFor = (id: string) => clientById.get(id)?.name ?? "Client";
   const designerFor = (id: string) => clientById.get(id)?.designer_id ?? null;
 
-  // Whether an attention item belongs to the signed-in admin: the request's
-  // assignee when set, else the client's designer (mirrors notify precedence).
-  const requestIsMine = (r: { assignee_id?: string | null; client_id: string }) =>
-    r.assignee_id ? r.assignee_id === user.id : designerFor(r.client_id) === user.id;
+  // Whether an attention item belongs to the signed-in admin: assigned to me,
+  // OR unassigned when the client's designer is me or the client has no designer
+  // (so an ownerless request never goes dark). Identical to the queue predicate.
+  const requestIsMine = (r: { assignee_id?: string | null; client_id: string }) => {
+    if (r.assignee_id) return r.assignee_id === user.id;
+    const designerId = designerFor(r.client_id);
+    return designerId === user.id || designerId == null;
+  };
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);

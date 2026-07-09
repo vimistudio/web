@@ -25,7 +25,10 @@ function subscribe(cb: () => void) {
 
 function getSnapshot() {
   if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(KEY) === "true";
+  // Safe-by-default for screen-share: with no stored preference, prices start
+  // HIDDEN. Only an explicit reveal (persisted as "false") unmasks them.
+  const stored = window.localStorage.getItem(KEY);
+  return stored === null ? true : stored === "true";
 }
 
 function getServerSnapshot() {

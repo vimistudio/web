@@ -27,7 +27,7 @@ interface QueueRequest {
   created_at: string;
   updated_at: string;
   due_date: string | null;
-  clients: { name: string; slug: string; is_active: boolean } | null;
+  clients: { name: string; slug: string; is_active: boolean; designer_id: string | null } | null;
   deliverables: { id: string }[];
   comments: { id: string; created_at: string; author_id: string }[];
 }
@@ -113,6 +113,9 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   const [showPaused, setShowPaused] = useState(false);
   const [clientFilter, setClientFilter] = useState<string>("all");
   const { scope, setScope } = useWorkScope();
+  // Solo-admin mode: one-person studio → no "mine vs everyone" distinction.
+  // Hide the scope pills and show everything. Reappears at admin #2.
+  const solo = admins.length <= 1;
 
   // Requests belonging to paused clients — hidden from the default view
   const pausedCount = useMemo(
@@ -126,9 +129,15 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     [requests, showPaused]
   );
 
-  // "Mine" = assigned to me OR unassigned, so nothing slips through the cracks.
+  // "Mine" = assigned to me, OR unassigned when the client's designer is me or
+  // the client has no designer (so an ownerless request never goes dark for
+  // anyone). Kept identical to the dashboard predicate.
   const isMine = useCallback(
-    (r: QueueRequest) => r.assignee_id === adminId || r.assignee_id == null,
+    (r: QueueRequest) => {
+      if (r.assignee_id) return r.assignee_id === adminId;
+      const designerId = r.clients?.designer_id ?? null;
+      return designerId === adminId || designerId == null;
+    },
     [adminId]
   );
   const mineCount = useMemo(
@@ -137,10 +146,10 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   );
   const everyoneCount = baseRequests.length;
 
-  // Work-scope layer sits above every other filter.
+  // Work-scope layer sits above every other filter (ignored when solo).
   const scopedRequests = useMemo(
-    () => (scope === "mine" ? baseRequests.filter(isMine) : baseRequests),
-    [baseRequests, scope, isMine]
+    () => (scope === "mine" && !solo ? baseRequests.filter(isMine) : baseRequests),
+    [baseRequests, scope, isMine, solo]
   );
 
   // Clients with open requests in the current inclusion set (for filter chips)
@@ -250,6 +259,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
         </div>
 
         {/* Work scope: Mine (assigned to me + unassigned) vs Everyone */}
+        {!solo && (
         <div
           className="inline-flex items-center rounded-full bg-gray-100 p-0.5 shrink-0 self-start"
           role="tablist"
@@ -286,6 +296,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
             </span>
           </button>
         </div>
+        )}
       </div>
 
       {/* Tabs + Sort */}

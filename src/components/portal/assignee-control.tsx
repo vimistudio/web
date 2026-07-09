@@ -61,6 +61,10 @@ export function AssigneeAvatar({
   size?: "sm" | "md";
   tooltip?: boolean;
 }) {
+  // Solo-admin mode: with a one-person studio there's nothing to assign, so the
+  // assignee chrome disappears everywhere this renders. Reappears at admin #2.
+  if (admins.length <= 1) return null;
+
   const admin = assigneeId
     ? admins.find((a) => a.id === assigneeId) ?? null
     : null;
@@ -169,6 +173,10 @@ export function AssigneeMenu({
   const current = assigneeId
     ? admins.find((a) => a.id === assigneeId) ?? null
     : null;
+
+  // Solo-admin mode: nothing to pick, so hide the picker entirely. Placed after
+  // the hooks above to respect the rules of hooks. Reappears at admin #2.
+  if (admins.length <= 1) return null;
 
   return (
     <DropdownMenu>

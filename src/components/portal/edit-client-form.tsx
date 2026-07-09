@@ -19,6 +19,7 @@ import { useLocale } from "./locale-provider";
 import { t as translate, type Locale } from "@/lib/portal-i18n";
 import { fetchClientTeam } from "@/lib/client-team";
 import { TeamAvatarCluster } from "./team-cluster";
+import { usePricePrivacy, PRICE_MASK } from "@/hooks/use-price-privacy";
 
 interface Client {
   id: string;
@@ -127,6 +128,11 @@ export function EditClientDialog({ client }: { client: Client }) {
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false); // mobile toggle
+  // Screen-share safety: money is masked in the editor while prices are hidden.
+  // The retainer input reveals its real value only while focused (for editing).
+  const { hidden: pricesHidden } = usePricePrivacy();
+  const [retainerFocused, setRetainerFocused] = useState(false);
+  const maskRetainer = pricesHidden && !retainerFocused;
 
   // Load studio admins (roster) + the client's current team (only while open).
   useEffect(() => {
@@ -535,7 +541,9 @@ export function EditClientDialog({ client }: { client: Client }) {
                       <input
                         id="client-retainer"
                         inputMode="numeric"
-                        value={retainer}
+                        value={maskRetainer ? PRICE_MASK : retainer}
+                        onFocus={() => setRetainerFocused(true)}
+                        onBlur={() => setRetainerFocused(false)}
                         onChange={(e) =>
                           setRetainer(Number(e.target.value.replace(/\D/g, "")) || 0)
                         }
@@ -869,7 +877,7 @@ export function EditClientDialog({ client }: { client: Client }) {
               <div className="flex gap-2">
                 <dt className="text-muted-foreground shrink-0">{t("clientEditor.previewAgreement")}</dt>
                 <dd className="text-[color:var(--vimi-ink)] truncate">
-                  ${retainer}
+                  {pricesHidden ? PRICE_MASK : `$${retainer}`}
                   {t("clientEditor.perMonth")}
                   {dealTerms.trim() ? ` · ${dealTerms.trim()}` : ""}
                 </dd>
