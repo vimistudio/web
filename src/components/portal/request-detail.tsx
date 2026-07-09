@@ -2340,7 +2340,7 @@ export function RequestDetail({
       </div>
 
       {/* Comment Input — WhatsApp-style, sticky on mobile */}
-      <div className="fixed bottom-14 left-0 right-0 bg-background/95 backdrop-blur-sm border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 md:bg-background md:backdrop-blur-none z-30">
+      <div className="fixed bottom-[calc(3.5rem+max(env(safe-area-inset-bottom),0.5rem))] left-0 right-0 bg-background/95 backdrop-blur-sm border-t px-4 py-2 md:static md:border-t-0 md:px-0 md:py-0 md:bg-background md:backdrop-blur-none z-30">
         <div
           className={`mx-auto ${
             isAdmin ? "max-w-3xl" : "max-w-2xl"

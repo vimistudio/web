@@ -532,7 +532,7 @@ export function ClientBoard({
       <Link href="/portal/requests/new">
         <Button
           size="icon"
-          className="md:hidden rounded-full h-14 w-14 bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] shadow-[0_10px_26px_rgba(28,27,31,0.28)] fixed bottom-24 right-4 z-50"
+          className="md:hidden rounded-full h-14 w-14 bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] shadow-[0_10px_26px_rgba(28,27,31,0.28)] fixed bottom-[calc(4.5rem+max(env(safe-area-inset-bottom),0.5rem))] right-4 z-50"
         >
           <PlusSignIcon size={22} color="currentColor" />
         </Button>

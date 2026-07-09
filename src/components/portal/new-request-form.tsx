@@ -556,7 +556,7 @@ export function NewRequestForm({ clientId, userId, clientName, isAdmin, pastRequ
 
           {/* Bottom bar: Back + primary — hidden on step 1 (type selection advances) */}
           {step > 0 && (
-            <div className="fixed bottom-14 left-0 right-0 bg-[var(--vimi-page)]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
+            <div className="fixed bottom-[calc(3.5rem+max(env(safe-area-inset-bottom),0.5rem))] left-0 right-0 bg-[var(--vimi-page)]/95 backdrop-blur-sm border-t px-4 py-3 z-30 md:static md:border-t-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:mt-auto md:pt-6 md:pb-2">
               <div className="max-w-lg mx-auto md:max-w-none">
                 {!canAdvance && !isSubmitting && (
                   <p className="text-xs text-muted-foreground mb-2 text-center md:text-left">
