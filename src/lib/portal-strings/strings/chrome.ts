@@ -56,6 +56,9 @@ export const chrome = {
   "login.terms": { en: "Terms", es: "Términos" },
   "login.privacy": { en: "Privacy Policy", es: "Política de Privacidad" },
   "login.continueGoogle": { en: "Continue with Google", es: "Continuar con Google" },
+  "login.inviteSetup": { en: "Invite-only access. Your studio will set up your account.", es: "Acceso solo con invitación. Tu estudio configurará tu cuenta." },
+  "login.agree": { en: "By signing in, you agree to our", es: "Al iniciar sesión, aceptas nuestros" },
+  "login.and": { en: "and", es: "y" },
 
   // Team invites (client-side)
   "team.title": { en: "Invite your team", es: "Invita a tu equipo" },

@@ -2,13 +2,15 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
+import { t, type Locale } from "@/lib/portal-i18n";
 
 interface LoginFormProps {
   error?: string;
   next?: string;
+  locale?: Locale;
 }
 
-export function LoginForm({ error, next }: LoginFormProps) {
+export function LoginForm({ error, next, locale = "en" }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -29,9 +31,7 @@ export function LoginForm({ error, next }: LoginFormProps) {
     <div className="space-y-3">
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
-          <p className="text-sm text-red-400">
-            Something went wrong signing in. Please try again.
-          </p>
+          <p className="text-sm text-red-400">{t("login.error", locale)}</p>
         </div>
       )}
       <button
@@ -60,10 +60,10 @@ export function LoginForm({ error, next }: LoginFormProps) {
         {isLoading ? (
           <span className="flex items-center gap-2">
             <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Signing in...
+            {t("login.signingIn", locale)}
           </span>
         ) : (
-          "Continue with Google"
+          t("login.continueGoogle", locale)
         )}
       </button>
     </div>
