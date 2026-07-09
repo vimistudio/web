@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DOC_KINDS, formatFileSize } from "@/lib/agreement";
+import { DOC_KINDS, DOC_KIND_LABELS, formatFileSize } from "@/lib/agreement";
 import { sanitizeFileName } from "@/lib/files";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50MB — docs, not video
@@ -332,7 +332,7 @@ export function ClientDocsDialog({
                     <SelectContent position="popper" className="bg-white border shadow-lg z-50">
                       {DOC_KINDS.map((k) => (
                         <SelectItem key={k} value={k}>
-                          {k}
+                          {DOC_KIND_LABELS[k]}
                         </SelectItem>
                       ))}
                     </SelectContent>

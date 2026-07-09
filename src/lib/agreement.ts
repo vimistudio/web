@@ -13,6 +13,15 @@ export const DOC_KINDS = [
 ] as const;
 export type DocKind = (typeof DOC_KINDS)[number];
 
+/** Title-Case English labels for the admin kind picker (stored values unchanged). */
+export const DOC_KIND_LABELS: Record<DocKind, string> = {
+  proposal: "Proposal",
+  plan: "Plan",
+  manual: "Manual",
+  contract: "Contract",
+  other: "Other",
+};
+
 /** A 30-day retainer "month" derived from the engagement start date. */
 export interface EngagementMonth {
   /** 1-based month index (day 0–29 → 1, day 30–59 → 2, …). */
