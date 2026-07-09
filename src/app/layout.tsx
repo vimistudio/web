@@ -29,6 +29,9 @@ export const viewport: Viewport = {
   // Ensure zooming/scaling is enabled for accessibility
   minimumScale: 1,
   maximumScale: 5,
+  // Required for env(safe-area-inset-*) to be non-zero in standalone PWA mode
+  // (without it the bottom tab bar hugs the iPhone home indicator).
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {

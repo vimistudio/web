@@ -22,7 +22,7 @@ export function ClientBottomTabs() {
   const { t } = useLocale();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-gray-200 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
       <div className="flex items-center justify-around h-14">
         {clientTabs.map((tab) => {
           const isActive =
