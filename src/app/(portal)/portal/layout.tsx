@@ -9,6 +9,8 @@ import { SetLastVisited } from "@/components/portal/set-last-visited";
 import { Toaster } from "@/components/ui/sonner";
 import { type Locale } from "@/lib/portal-i18n";
 import { fetchClientTeam } from "@/lib/client-team";
+import { sendEmail } from "@/lib/email/send";
+import { ClientSignedInEmail } from "@/lib/email/templates/client-signed-in";
 
 export default async function PortalLayout({
   children,
@@ -54,6 +56,46 @@ export default async function PortalLayout({
         .eq("id", user.id)
         .single();
       profile = re.data;
+
+      // Self-healed users never hit the auth-callback first-sign-in path (they
+      // had no client_id at callback time), so stamp first_login_at and notify
+      // admins here — same payload as the callback. Guard on the null we just
+      // observed so this fires exactly once.
+      if (profile && !profile.first_login_at) {
+        const clientName =
+          (profile.clients as { name?: string } | null)?.name || "their project";
+        const callerName = profile.full_name || "A client";
+        const callerEmail = user.email || "";
+        void (async () => {
+          try {
+            await supabase
+              .from("profiles")
+              .update({ first_login_at: new Date().toISOString() })
+              .eq("id", user.id);
+
+            const { data: admins } = await supabase
+              .from("profiles")
+              .select("email")
+              .eq("role", "admin");
+            await Promise.allSettled(
+              (admins ?? [])
+                .filter((a) => a.email)
+                .map((admin) =>
+                  sendEmail({
+                    to: admin.email!,
+                    subject: `${callerName} just signed in to ${clientName}'s portal`,
+                    react: ClientSignedInEmail({
+                      clientUserName: callerName,
+                      clientUserEmail: callerEmail,
+                      clientName,
+                      portalUrl: "https://vimistudio.com/portal/admin",
+                    }),
+                  })
+                )
+            );
+          } catch {}
+        })();
+      }
     }
   }
 
