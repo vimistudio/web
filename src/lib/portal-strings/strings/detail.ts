@@ -142,4 +142,12 @@ export const detail = {
   "detail.justNow": { en: "just now", es: "justo ahora" },
   "detail.attachment": { en: "Attachment", es: "Archivo adjunto" },
   "detail.unknownUser": { en: "Unknown", es: "Desconocido" },
+
+  // Per-member voting attribution
+  "detail.memberPicked": { en: "{name} chose this", es: "{name} eligió esta" },
+  "detail.memberPickedOther": { en: "{name} chose {label} — you can each pick your own; your studio sees both", es: "{name} eligió {label} — pueden elegir distinto, su estudio verá ambos" },
+  "detail.membersPickedDifferent": { en: "Your team picked different directions — that's fine, your studio sees them all", es: "Tu equipo eligió direcciones distintas — está bien, tu estudio las verá todas" },
+  "detail.membersDisagree": { en: "Members picked different directions", es: "Los miembros eligieron distinto" },
+  "detail.someone": { en: "A teammate", es: "Un compañero" },
+  "detail.picked": { en: "picked", es: "eligió" },
 } as const;
