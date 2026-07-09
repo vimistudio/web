@@ -183,7 +183,7 @@ export function WelcomeOverlay({
                   <img
                     src={clientLogoUrl}
                     alt={clientName}
-                    className="h-14 w-14 shrink-0 rounded-2xl object-cover"
+                    className="h-12 w-auto max-w-[180px] shrink-0 object-contain"
                   />
                 ) : (
                   <span
@@ -194,9 +194,12 @@ export function WelcomeOverlay({
                     {clientName.trim().charAt(0).toUpperCase() || "V"}
                   </span>
                 )}
-                <span className="text-lg font-bold leading-tight text-[color:var(--vimi-ink)]">
-                  {clientName}
-                </span>
+                {/* A wordmark logo already says the name — only render the text when there's no logo. */}
+                {!clientLogoUrl && (
+                  <span className="text-lg font-bold leading-tight text-[color:var(--vimi-ink)]">
+                    {clientName}
+                  </span>
+                )}
               </div>
               <h2
                 id="welcome-title"
