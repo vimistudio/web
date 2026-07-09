@@ -37,11 +37,19 @@ const adminNavItems = [
 interface AdminSidebarProps {
   user: User;
   profile: Profile;
+  /** Owner sees Settings; Staff does not. */
+  isOwner?: boolean;
 }
 
-export function AdminSidebar({ user, profile }: AdminSidebarProps) {
+export function AdminSidebar({ user, profile, isOwner = true }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Staff (admin without is_owner) can't reach Settings — people management and
+  // studio config are owner-only.
+  const navItems = isOwner
+    ? adminNavItems
+    : adminNavItems.filter((item) => item.href !== "/portal/admin/settings");
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -73,7 +81,7 @@ export function AdminSidebar({ user, profile }: AdminSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminNavItems.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild

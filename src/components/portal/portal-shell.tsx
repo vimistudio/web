@@ -43,6 +43,10 @@ export interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   role: "client" | "admin";
+  /** Owner = admin + is_owner; Staff = admin without. Absent before the
+   *  owner-tier migration lands (select * → undefined), which fails OPEN: see
+   *  `isOwner` derivation below and 20260718_owner_tier.sql. */
+  is_owner?: boolean;
   client_id: string | null;
   locale?: string;
   clients: Client | null;
@@ -71,6 +75,9 @@ export function PortalShell({
   team = [],
 }: PortalShellProps) {
   const isAdmin = profile.role === "admin";
+  // Owner gate — fail OPEN (only an explicit `false` is staff) so the sole
+  // owner is never locked out during the pre-migration deploy window.
+  const isOwner = profile.is_owner !== false;
   // Fall back to the client's configured locale when the user hasn't made an
   // explicit language choice, so an invited client sees their studio's default
   // language (e.g. Spanish for SCARTS) before touching profile settings.
@@ -91,9 +98,9 @@ export function PortalShell({
     return (
       <LocaleProvider locale={locale}>
         <SidebarProvider>
-          <AdminSidebar user={user} profile={profile} />
+          <AdminSidebar user={user} profile={profile} isOwner={isOwner} />
           <SidebarInset className="font-sans">
-            <PortalHeader user={user} profile={profile} />
+            <PortalHeader user={user} profile={profile} isOwner={isOwner} />
             <main className="flex-1 p-4 md:p-6">{children}</main>
           </SidebarInset>
         </SidebarProvider>

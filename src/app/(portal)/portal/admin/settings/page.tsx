@@ -12,11 +12,14 @@ export default async function AdminSettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_owner")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+  // Settings (people management + studio config) is owner-only. Fail OPEN so
+  // the sole owner isn't locked out pre-migration (only explicit false = staff).
+  if (profile.is_owner === false) redirect("/portal/admin");
 
   // Fetch pending invites
   const { data: invites } = await supabase

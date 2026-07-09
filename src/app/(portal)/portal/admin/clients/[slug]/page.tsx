@@ -16,11 +16,14 @@ export default async function AdminClientBoardPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_owner")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+  // Fail OPEN (only explicit false = staff) so the sole owner keeps retainer +
+  // the client editor during the pre-migration deploy window.
+  const isOwner = profile.is_owner !== false;
 
   // Fetch client by slug
   const { data: client } = await supabase
@@ -65,6 +68,7 @@ export default async function AdminClientBoardPage({
       requests={requests ?? []}
       milestones={milestones ?? []}
       admins={admins ?? []}
+      isOwner={isOwner}
     />
   );
 }

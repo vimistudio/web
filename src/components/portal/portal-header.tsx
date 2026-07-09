@@ -29,9 +29,11 @@ import type { Profile } from "./portal-shell";
 interface PortalHeaderProps {
   user: User;
   profile: Profile;
+  /** Owner sees the price-privacy eye; Staff has no revenue to reveal. */
+  isOwner?: boolean;
 }
 
-export function PortalHeader({ user, profile }: PortalHeaderProps) {
+export function PortalHeader({ user, profile, isOwner = true }: PortalHeaderProps) {
   const router = useRouter();
   const isAdmin = profile.role === "admin";
   const initials = (profile.full_name ?? user.email ?? "?")[0].toUpperCase();
@@ -73,7 +75,7 @@ export function PortalHeader({ user, profile }: PortalHeaderProps) {
 
       <div className="flex-1" />
 
-      {isAdmin && (
+      {isAdmin && isOwner && (
         <button
           onClick={togglePrices}
           className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
