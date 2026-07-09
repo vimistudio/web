@@ -2398,7 +2398,7 @@ export function RequestDetail({
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
-              className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors mb-0.5"
+              className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-gray-50 transition-colors"
               aria-label="Attach image"
             >
               <PlusSignIcon size={14} />
@@ -2461,7 +2461,7 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all mb-0.5 ${
+              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                 comment.trim() || commentAttachment
                   ? "bg-primary hover:bg-primary/90 text-white"
                   : "bg-transparent text-gray-300"
