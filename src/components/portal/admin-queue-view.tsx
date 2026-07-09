@@ -27,7 +27,7 @@ interface QueueRequest {
   created_at: string;
   updated_at: string;
   due_date: string | null;
-  clients: { name: string; slug: string; is_active: boolean } | null;
+  clients: { name: string; slug: string; is_active: boolean; designer_id: string | null } | null;
   deliverables: { id: string }[];
   comments: { id: string; created_at: string; author_id: string }[];
 }
@@ -129,9 +129,15 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     [requests, showPaused]
   );
 
-  // "Mine" = assigned to me OR unassigned, so nothing slips through the cracks.
+  // "Mine" = assigned to me, OR unassigned when the client's designer is me or
+  // the client has no designer (so an ownerless request never goes dark for
+  // anyone). Kept identical to the dashboard predicate.
   const isMine = useCallback(
-    (r: QueueRequest) => r.assignee_id === adminId || r.assignee_id == null,
+    (r: QueueRequest) => {
+      if (r.assignee_id) return r.assignee_id === adminId;
+      const designerId = r.clients?.designer_id ?? null;
+      return designerId === adminId || designerId == null;
+    },
     [adminId]
   );
   const mineCount = useMemo(

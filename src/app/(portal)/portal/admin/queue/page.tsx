@@ -23,7 +23,7 @@ export default async function QueuePage() {
   const { data: requests } = await supabase
     .from("requests")
     .select(
-      "*, clients(name, slug, is_active), deliverables(id), comments(id, created_at, author_id)"
+      "*, clients(name, slug, is_active, designer_id), deliverables(id), comments(id, created_at, author_id)"
     )
     .neq("status", "done")
     .order("priority", { ascending: false })
