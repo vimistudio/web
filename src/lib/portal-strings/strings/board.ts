@@ -17,7 +17,9 @@ export const board = {
   "board.sinceLastVisit": { en: "Since your last visit:", es: "Desde tu última visita:" },
   "board.designsReady": { en: "{count} design{s} ready for you", es: "{count} diseño{s} listo{s} para ti" },
   "board.delivered": { en: "{count} delivered", es: "{count} entregado{s}" },
-  "board.updates": { en: "{count} update{s} on your designs", es: "{count} actualización{es} en tus diseños" },
+  "board.updates": { en: "{count} {word} on your designs", es: "{count} {word} en tus diseños" },
+  "board.update.one": { en: "update", es: "actualización" },
+  "board.update.many": { en: "updates", es: "actualizaciones" },
   "board.nothingHere": { en: "Nothing here just yet", es: "Nada por aquí aún" },
   "board.empty.queued": { en: "All caught up!", es: "¡Todo al día!" },
   "board.empty.in_progress": { en: "Your designer is heads-down on your work", es: "Tu diseñador está concentrado en tu trabajo" },
@@ -34,4 +36,7 @@ export const board = {
   "home.needsYou.sub": { en: "Ready for your review", es: "Listo para tu revisión" },
   "home.needsYou.more": { en: "+{count} more waiting", es: "+{count} más esperando" },
   "home.needsYou.cta": { en: "Review now", es: "Revisar ahora" },
+
+  // Mobile studio strip WhatsApp affordance
+  "board.studio.writeUs": { en: "Message us", es: "Escríbenos" },
 } as const;

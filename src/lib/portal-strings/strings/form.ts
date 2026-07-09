@@ -63,7 +63,7 @@ export const form = {
   "form.inspiration.title": { en: "Any inspiration?", es: "¿Alguna inspiración?" },
   "form.inspiration.subtitle": { en: "Screenshots from Pinterest, Instagram, or anywhere work great. Or skip this step.", es: "Capturas de Pinterest, Instagram o donde sea van perfecto. O sáltate este paso." },
   "form.inspiration.addFile": { en: "Add file", es: "Agregar" },
-  "form.inspiration.dropzone": { en: "Drag & drop or tap to upload · images or PDF", es: "Arrastra o toca para subir · imágenes o PDF" },
+  "form.inspiration.dropzone": { en: "Tap to upload · or drag a file", es: "Toca para subir · o arrastra un archivo" },
 
   "form.summary.heading": { en: "Quick review", es: "Revisión rápida" },
   "form.summary.request": { en: "Request", es: "Solicitud" },

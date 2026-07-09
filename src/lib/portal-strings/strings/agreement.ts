@@ -1,6 +1,7 @@
 /** Client hub — "Nuestro acuerdo" (agreement page, docs grid, team, viewer) */
 export const agreement = {
   "tab.agreement": { en: "Our agreement", es: "Nuestro acuerdo" },
+  "tab.agreementShort": { en: "Agreement", es: "Acuerdo" },
   "agreement.back": { en: "Your board", es: "Tu tablero" },
   "agreement.title": { en: "Our agreement.", es: "Nuestro acuerdo." },
   "agreement.subtitle": {
