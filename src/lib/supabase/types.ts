@@ -547,6 +547,7 @@ export type Database = {
           first_login_at: string | null
           full_name: string | null
           id: string
+          is_owner: boolean
           locale: string
           role: Database["public"]["Enums"]["user_role"]
           title: string | null
@@ -560,6 +561,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id: string
+          is_owner?: boolean
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           title?: string | null
@@ -573,6 +575,7 @@ export type Database = {
           first_login_at?: string | null
           full_name?: string | null
           id?: string
+          is_owner?: boolean
           locale?: string
           role?: Database["public"]["Enums"]["user_role"]
           title?: string | null
