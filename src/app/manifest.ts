@@ -15,10 +15,11 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#F6F4EF",
     theme_color: "#F6F4EF",
     icons: [
-      { src: "/icons/192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      // The ORIGINAL brand icon set from public/ (Apr 2026), served at their
+      // own static URLs — which also sidesteps the year-long immutable edge
+      // cache the generated /icons/* routes accumulated.
+      { src: "/web-app-manifest-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/web-app-manifest-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
     ],
   };
 }
