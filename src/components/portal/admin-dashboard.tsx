@@ -301,6 +301,8 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
   const { hidden: pricesHidden } = usePricePrivacy();
   const { scope, setScope } = useWorkScope();
   const [showPaused, setShowPaused] = useState(false);
+  // Solo-admin mode: one-person studio → no "mine vs everyone" scope toggle.
+  const solo = admins.length <= 1;
   const activeClients = clients.filter((c) => c.is_active);
   const pausedClients = clients.filter((c) => !c.is_active);
   // Mine-first ordering (never hide): my clients bubble up, everyone else follows.
@@ -316,7 +318,7 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
   // Attention strip respects the shared work scope; a quiet toggle flips it.
   const mineAttentionCount = attention.filter((i) => i.mine).length;
   const scopedAttention =
-    scope === "mine" ? attention.filter((i) => i.mine) : attention;
+    scope === "mine" && !solo ? attention.filter((i) => i.mine) : attention;
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
   const firstName = adminName ? adminName.split(" ")[0] : "";
@@ -400,14 +402,16 @@ export function AdminDashboard({ stats, clients, recentActivity, attention = [],
                 The 20% that matters today. Everything else can wait.
               </p>
             </div>
-            <button
-              onClick={() => setScope(scope === "mine" ? "everyone" : "mine")}
-              className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline mt-1"
-            >
-              {scope === "mine"
-                ? `Show everyone's (${attention.length})`
-                : `Show mine (${mineAttentionCount})`}
-            </button>
+            {!solo && (
+              <button
+                onClick={() => setScope(scope === "mine" ? "everyone" : "mine")}
+                className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline mt-1"
+              >
+                {scope === "mine"
+                  ? `Show everyone's (${attention.length})`
+                  : `Show mine (${mineAttentionCount})`}
+              </button>
+            )}
           </div>
           {scopedAttention.length > 0 ? (
             <div className="flex flex-col gap-2.5">

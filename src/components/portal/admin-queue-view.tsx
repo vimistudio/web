@@ -113,6 +113,9 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   const [showPaused, setShowPaused] = useState(false);
   const [clientFilter, setClientFilter] = useState<string>("all");
   const { scope, setScope } = useWorkScope();
+  // Solo-admin mode: one-person studio → no "mine vs everyone" distinction.
+  // Hide the scope pills and show everything. Reappears at admin #2.
+  const solo = admins.length <= 1;
 
   // Requests belonging to paused clients — hidden from the default view
   const pausedCount = useMemo(
@@ -137,10 +140,10 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
   );
   const everyoneCount = baseRequests.length;
 
-  // Work-scope layer sits above every other filter.
+  // Work-scope layer sits above every other filter (ignored when solo).
   const scopedRequests = useMemo(
-    () => (scope === "mine" ? baseRequests.filter(isMine) : baseRequests),
-    [baseRequests, scope, isMine]
+    () => (scope === "mine" && !solo ? baseRequests.filter(isMine) : baseRequests),
+    [baseRequests, scope, isMine, solo]
   );
 
   // Clients with open requests in the current inclusion set (for filter chips)
@@ -250,6 +253,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
         </div>
 
         {/* Work scope: Mine (assigned to me + unassigned) vs Everyone */}
+        {!solo && (
         <div
           className="inline-flex items-center rounded-full bg-gray-100 p-0.5 shrink-0 self-start"
           role="tablist"
@@ -286,6 +290,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
             </span>
           </button>
         </div>
+        )}
       </div>
 
       {/* Tabs + Sort */}
