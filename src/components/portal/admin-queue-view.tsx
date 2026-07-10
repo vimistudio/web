@@ -414,19 +414,20 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
       return;
     }
 
-    // Fallback: reseed the whole global open order with the moved row in its
-    // new slot, so ranks stay globally consistent (incl. attention rows).
+    // Fallback: reseed the visible reorderable set with the moved row in its
+    // new slot, so ranks stay consistent (incl. attention rows). Reseed over
+    // `statusFiltered` (the on-screen universe: reorder is only offered when
+    // unfiltered), NOT `nonArchived` — the latter includes paused / out-of-scope
+    // requests that aren't in `workOrder`, which would exhaust the queue and
+    // emit `undefined` ids (→ 400 from the reorder route).
     const enOrderIds = reordered.map((r) => r.id);
     const attentionIds = new Set(attention.map((r) => r.id));
     const queue = [...enOrderIds];
-    const allOpenSorted = nonArchived.slice().sort(adminSort);
-    const newGlobalIds = allOpenSorted.map((r) =>
-      attentionIds.has(r.id) ? r.id : (queue.shift() as string)
-    );
-    const updates = newGlobalIds.map((id, i) => ({
-      id,
-      queue_rank: (i + 1) * RANK_STEP,
-    }));
+    const allOpenSorted = statusFiltered.slice().sort(adminSort);
+    const updates = allOpenSorted
+      .map((r) => (attentionIds.has(r.id) ? r.id : queue.shift()))
+      .filter((id): id is string => typeof id === "string")
+      .map((id, i) => ({ id, queue_rank: (i + 1) * RANK_STEP }));
     void persistReorder(updates);
   }
 
