@@ -2522,9 +2522,11 @@ export function RequestDetail({
               {t("celebrate.title")}
             </div>
             <p className="mb-7 text-[color:var(--vimi-muted)] leading-relaxed">
-              {doneCount
-                ? t("celebrate.count", { n: doneCount })
-                : t("celebrate.countFallback")}
+              {doneCount === 1
+                ? t("celebrate.first")
+                : doneCount
+                  ? t("celebrate.count", { n: doneCount })
+                  : t("celebrate.countFallback")}
             </p>
             <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
               {t("celebrate.ratedPrompt")}

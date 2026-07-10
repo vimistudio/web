@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useLocale } from "./locale-provider";
 import {
   Dialog,
   DialogPortal,
@@ -49,6 +50,7 @@ export function ImageLightbox({
   open,
   onOpenChange,
 }: ImageLightboxProps) {
+  const { t } = useLocale();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -312,7 +314,7 @@ export function ImageLightbox({
                     <polyline points="16 6 12 2 8 6" />
                     <line x1="12" y1="2" x2="12" y2="15" />
                   </svg>
-                  Share
+                  {t("lightbox.share")}
                 </button>
               )}
               <button
@@ -328,8 +330,8 @@ export function ImageLightbox({
                           [mimeType]: blobPromise,
                         }),
                       ])
-                      .then(() => toast.success("Copied to clipboard"))
-                      .catch(() => toast.error("Couldn't copy image"));
+                      .then(() => toast.success(t("lightbox.copied")))
+                      .catch(() => toast.error(t("lightbox.copyFail")));
                   } else if (navigator.share) {
                     fetch(current.url)
                       .then((res) => res.blob())
@@ -337,9 +339,9 @@ export function ImageLightbox({
                         const file = new File([blob], current.fileName, { type: blob.type });
                         return navigator.share({ files: [file] });
                       })
-                      .catch(() => toast.error("Couldn't share image"));
+                      .catch(() => toast.error(t("lightbox.shareFail")));
                   } else {
-                    toast.error("Clipboard not supported in this browser");
+                    toast.error(t("lightbox.clipboardUnsupported"));
                   }
                 }}
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -348,7 +350,7 @@ export function ImageLightbox({
                   <rect x="9" y="9" width="13" height="13" rx="2" />
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
-                <span className="hidden sm:inline">Copy</span>
+                <span className="hidden sm:inline">{t("lightbox.copy")}</span>
               </button>
               <button
                 onClick={async () => {
@@ -362,13 +364,13 @@ export function ImageLightbox({
                     a.click();
                     URL.revokeObjectURL(url);
                   } catch {
-                    toast.error("Couldn't download file");
+                    toast.error(t("lightbox.downloadFail"));
                   }
                 }}
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 <Download01Icon size={16} />
-                <span className="hidden sm:inline">Download</span>
+                <span className="hidden sm:inline">{t("lightbox.download")}</span>
               </button>
             </div>
           </div>
