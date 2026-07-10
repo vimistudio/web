@@ -163,7 +163,6 @@ export const detail = {
 
   // Conversation section (v2 chat)
   "detail.conversationEyebrow": { en: "CONVERSATION", es: "CONVERSACIÓN" },
-  "detail.conversationWith": { en: "· directly with {designer}, no middlemen", es: "· directa con {designer}, sin intermediarios" },
   "detail.composerPlaceholder": { en: "Message {designer}…", es: "Escríbele a {designer}…" },
   "detail.send": { en: "Send", es: "Enviar" },
   "detail.emptyChat": {

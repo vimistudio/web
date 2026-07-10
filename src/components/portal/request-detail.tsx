@@ -2496,9 +2496,6 @@ export function RequestDetail({
           <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[color:var(--vimi-faint)]">
             {t("detail.conversationEyebrow")}
           </h2>
-          <span className="text-[11px] text-[color:var(--vimi-faint)]">
-            {t("detail.conversationWith", { designer: designerName })}
-          </span>
         </div>
 
         {allComments.map((c) => {
