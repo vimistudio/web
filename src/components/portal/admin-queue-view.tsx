@@ -22,6 +22,17 @@ import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AssigneeAvatar, type Admin } from "./assignee-control";
 import { useWorkScope } from "@/hooks/use-work-scope";
 
@@ -54,6 +65,8 @@ interface AdminQueueViewProps {
   requests: QueueRequest[];
   adminId: string;
   admins: Admin[];
+  /** Owner = admin + is_owner. Only owners see the permanent-delete action. */
+  isOwner?: boolean;
 }
 
 // --- Constants ---
@@ -162,7 +175,7 @@ function adminSort(a: QueueRequest, b: QueueRequest): number {
 
 // --- Component ---
 
-export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProps) {
+export function AdminQueueView({ requests, adminId, admins, isOwner = true }: AdminQueueViewProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
   const [showPaused, setShowPaused] = useState(false);
@@ -343,6 +356,33 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
       } else {
         toast.success("Solicitud restaurada");
         router.refresh();
+      }
+    },
+    [router]
+  );
+
+  // --- Permanent delete (owner-only, archived rows only) ---
+
+  const handlePurge = useCallback(
+    async (id: string) => {
+      const snapshot = rowsRef.current;
+      // Optimistic: drop the row from the archived list.
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      try {
+        const res = await fetch("/api/portal/queue/purge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? "Error");
+        }
+        toast.success("Solicitud eliminada");
+        router.refresh();
+      } catch {
+        setRows(snapshot);
+        toast.error("No se pudo eliminar. Intenta de nuevo.");
       }
     },
     [router]
@@ -692,6 +732,8 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
                   key={request.id}
                   request={request}
                   onRestore={handleRestore}
+                  onPurge={handlePurge}
+                  canPurge={isOwner}
                 />
               ))}
             </div>
@@ -942,10 +984,24 @@ function AttentionRow({
 function ArchivedRow({
   request,
   onRestore,
+  onPurge,
+  canPurge,
 }: {
   request: QueueRequest;
   onRestore: (id: string) => void;
+  onPurge: (id: string) => Promise<void>;
+  canPurge: boolean;
 }) {
+  const [purging, setPurging] = useState(false);
+
+  const handleConfirm = async () => {
+    setPurging(true);
+    await onPurge(request.id);
+    // Row is removed optimistically on success; on failure it returns and the
+    // component may unmount/remount — resetting here is a no-op either way.
+    setPurging(false);
+  };
+
   return (
     <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
       <Link
@@ -970,6 +1026,45 @@ function ArchivedRow({
       >
         Restaurar
       </button>
+      {canPurge && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            {/* Von Restorff: the one irreversible action — clearly different
+                (rosewood) but restrained, not loud. */}
+            <button
+              title="Eliminar definitivamente"
+              className="shrink-0 text-xs font-medium hover:underline underline-offset-2"
+              style={{ color: ROSEWOOD }}
+            >
+              Eliminar definitivamente
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar definitivamente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esto borra la solicitud «{request.title}», sus mensajes,
+                entregables y archivos. No se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={purging}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  // Keep the dialog open while the request is in flight.
+                  e.preventDefault();
+                  void handleConfirm();
+                }}
+                disabled={purging}
+                className="text-white"
+                style={{ background: ROSEWOOD }}
+              >
+                {purging ? "Eliminando…" : "Eliminar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
