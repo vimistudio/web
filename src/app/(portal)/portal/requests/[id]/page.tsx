@@ -143,6 +143,7 @@ export default async function RequestDetailPage({
       .from("requests")
       .select("id")
       .eq("client_id", request.client_id)
+      .eq("is_archived", false)
       .in("status", ["queued", "in_progress"])
       .order("priority", { ascending: false })
       .order("created_at", { ascending: true });
