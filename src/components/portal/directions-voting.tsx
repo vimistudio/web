@@ -3,8 +3,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Carousel,
@@ -391,17 +389,22 @@ export function DirectionsVoting({
         {noteBanner}
 
         {/* Winner hero */}
-        <div className="text-center space-y-2">
-          <p className="text-lg font-semibold">{t("detail.greatChoice")}</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="text-center space-y-1">
+          <p className="font-serif text-[22px] italic leading-tight text-[color:var(--vimi-ink)]">
+            {t("detail.greatChoice")}
+          </p>
+          <p className="text-sm text-[color:var(--vimi-muted)]">
             {t("detail.willRefine")}
           </p>
         </div>
 
         {winner && (
-          <Card className="ring-2 ring-primary shadow-md overflow-hidden">
+          <div
+            className="overflow-hidden rounded-[18px] border-2 bg-white shadow-[0_6px_18px_rgba(28,27,31,0.10)]"
+            style={{ borderColor: "var(--accent)" }}
+          >
             {isImage && winner.url && (
-              <div className="aspect-[4/3] bg-muted">
+              <div className="aspect-[4/3] bg-[#FBFAF8]">
                 <img
                   src={winner.url}
                   alt={winner.direction_label || winner.file_name}
@@ -409,27 +412,31 @@ export function DirectionsVoting({
                 />
               </div>
             )}
-            <CardContent className="p-4 space-y-1">
+            <div className="p-4 space-y-1">
               <div className="flex items-center gap-2">
-                <p className="font-semibold text-base">
+                <p className="font-serif text-lg italic leading-tight text-[color:var(--vimi-ink)]">
                   {winner.direction_label || winner.file_name}
                 </p>
-                <Badge className="bg-primary text-white text-[10px]">
+                <span
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--accent-foreground)]"
+                  style={{ background: "var(--accent)" }}
+                >
+                  <CheckmarkCircle01Icon size={11} color="currentColor" />
                   {t("detail.yourPick")}
-                </Badge>
+                </span>
               </div>
               {winner.direction_description && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[color:var(--vimi-muted)]">
                   {winner.direction_description}
                 </p>
               )}
               {voteComment && (
-                <p className="text-sm text-muted-foreground italic mt-2">
+                <p className="mt-2 text-sm italic text-[color:var(--vimi-muted)]">
                   &ldquo;{voteComment}&rdquo;
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Other directions — collapsible */}
@@ -438,7 +445,7 @@ export function DirectionsVoting({
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-center py-1"
+                className="w-full py-1 text-center text-xs text-[color:var(--vimi-muted)] transition-colors hover:text-[color:var(--vimi-ink)]"
               >
                 {showOthers
                   ? t("detail.hideOthers")
@@ -446,13 +453,16 @@ export function DirectionsVoting({
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 {others.map((d) => {
                   const isImg = d.mime_type?.startsWith("image/");
                   return (
-                    <Card key={d.id} className="opacity-40 overflow-hidden">
+                    <div
+                      key={d.id}
+                      className="overflow-hidden rounded-[18px] border border-[color:var(--vimi-border)] bg-white opacity-40"
+                    >
                       {isImg && d.url && (
-                        <div className="aspect-[4/3] bg-muted">
+                        <div className="aspect-[4/3] bg-[#FBFAF8]">
                           <img
                             src={d.url}
                             alt={d.direction_label || d.file_name}
@@ -460,12 +470,12 @@ export function DirectionsVoting({
                           />
                         </div>
                       )}
-                      <CardContent className="p-2">
-                        <p className="text-xs font-medium truncate">
+                      <div className="p-2">
+                        <p className="truncate text-xs font-medium text-[color:var(--vimi-ink)]">
                           {d.direction_label || d.file_name}
                         </p>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -482,11 +492,13 @@ export function DirectionsVoting({
 
   return (
     <div className="space-y-4">
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-5 text-center space-y-1">
-        <p className="font-semibold text-base">{t("detail.pickFavorite")}</p>
-        <p className="text-sm text-muted-foreground">
-          {t("detail.pickSub")}
+      {/* Hero (v2) */}
+      <div className="rounded-[18px] border border-[color:var(--vimi-border)] bg-white p-5 text-center shadow-[0_2px_8px_rgba(28,27,31,0.05)]">
+        <p className="font-serif text-[22px] italic leading-tight text-[color:var(--vimi-ink)]">
+          {t("detail.pickFavorite")}
+        </p>
+        <p className="mt-1 text-sm text-[color:var(--vimi-muted)]">
+          {t("detail.pickFavoriteSub")}
         </p>
       </div>
 
@@ -603,7 +615,8 @@ export function DirectionsVoting({
             <Button
               onClick={handleConfirmVote}
               disabled={saving}
-              className="h-14 text-base font-semibold bg-primary hover:bg-primary/90 active:scale-95 transition-all"
+              className="h-14 rounded-full text-base font-semibold text-[color:var(--accent-foreground)] transition-all hover:opacity-90 active:scale-95"
+              style={{ background: "var(--accent)" }}
             >
               {saving ? t("detail.confirming") : t("detail.confirmVote")}
             </Button>
@@ -645,44 +658,45 @@ const DirectionCard = forwardRef<
   const isImage = direction.mime_type?.startsWith("image/");
   const voteCount = getVoteCount(direction);
 
+  const recommendedBadge = direction.is_recommended ? (
+    <span
+      className="absolute top-2 right-2 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-sm"
+      style={{ background: "color-mix(in srgb, var(--accent) 90%, transparent)" }}
+    >
+      {labels.designersPick}
+    </span>
+  ) : null;
+
   return (
-    <Card className="overflow-hidden">
-      {/* Thumbnail */}
+    <div className="overflow-hidden rounded-[18px] border border-[color:var(--vimi-border)] bg-white shadow-[0_2px_8px_rgba(28,27,31,0.05)]">
+      {/* Thumbnail — real deliverable image, else a neutral tint */}
       {isImage && direction.url ? (
-        <div className="aspect-[4/3] bg-muted relative">
+        <div className="aspect-[4/3] bg-[#FBFAF8] relative">
           <img
             src={direction.url}
             alt={direction.direction_label || direction.file_name}
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          {direction.is_recommended && (
-            <Badge className="absolute top-2 right-2 bg-primary/90 text-white text-[10px] backdrop-blur-sm">
-              {labels.designersPick}
-            </Badge>
-          )}
+          {recommendedBadge}
         </div>
       ) : (
-        <div className="aspect-[4/3] bg-muted flex items-center justify-center relative">
-          <span className="text-2xl text-muted-foreground font-medium">
+        <div className="aspect-[4/3] bg-[#FBFAF8] flex items-center justify-center relative">
+          <span className="text-2xl font-medium text-[color:var(--vimi-faint)]">
             {direction.file_name.split(".").pop()?.toUpperCase()}
           </span>
-          {direction.is_recommended && (
-            <Badge className="absolute top-2 right-2 bg-primary/90 text-white text-[10px] backdrop-blur-sm">
-              {labels.designersPick}
-            </Badge>
-          )}
+          {recommendedBadge}
         </div>
       )}
 
-      <CardContent className="p-4 space-y-3">
+      <div className="p-4 space-y-3">
         {/* Label + Description */}
         <div className="space-y-0.5">
-          <p className="font-semibold text-base leading-tight">
+          <p className="font-serif text-lg italic leading-tight text-[color:var(--vimi-ink)]">
             {direction.direction_label || direction.file_name}
           </p>
           {direction.direction_description && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[color:var(--vimi-muted)]">
               {direction.direction_description}
             </p>
           )}
@@ -690,7 +704,7 @@ const DirectionCard = forwardRef<
 
         {/* Vote count (if any) */}
         {voteCount > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-[color:var(--vimi-muted)]">
             {voteCount} {voteCount === 1 ? "pick" : "picks"}
           </p>
         )}
@@ -701,7 +715,8 @@ const DirectionCard = forwardRef<
             {chips.map((chip, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[11px] font-medium px-2 py-0.5"
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-[color:var(--accent)]"
+                style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
               >
                 <CheckmarkCircle01Icon size={11} />
                 {chip}
@@ -712,24 +727,24 @@ const DirectionCard = forwardRef<
 
         {/* Pick Button — Fitts's Law: full width, 56px tall */}
         {!disabled && (
-          <Button
+          <button
             ref={ref}
             onClick={onPick}
-            variant={isPending ? "default" : "outline"}
             aria-label={`${labels.pickThis}: ${direction.direction_label || direction.file_name}`}
-            className={`w-full h-14 text-base font-semibold transition-all active:scale-95 ${
+            className={`w-full h-14 rounded-full text-base font-semibold transition-all active:scale-95 ${
               isPending
-                ? "bg-primary hover:bg-primary/90 text-white"
-                : "hover:border-primary hover:text-primary"
+                ? "text-[color:var(--accent-foreground)]"
+                : "border border-[color:var(--vimi-border)] bg-white text-[color:var(--vimi-ink)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
             }`}
+            style={isPending ? { background: "var(--accent)" } : undefined}
           >
             {isPending ? (
-              <span className="flex items-center gap-2">
-                <CheckmarkCircle01Icon size={18} />
+              <span className="flex items-center justify-center gap-2">
+                <CheckmarkCircle01Icon size={18} color="currentColor" />
                 {labels.thisOne}
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 <svg
                   width="18"
                   height="18"
@@ -746,9 +761,9 @@ const DirectionCard = forwardRef<
                 {labels.pickThis}
               </span>
             )}
-          </Button>
+          </button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });

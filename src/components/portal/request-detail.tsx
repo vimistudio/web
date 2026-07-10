@@ -2,9 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -154,6 +152,8 @@ interface RequestDetailProps {
   request: Request;
   clientName: string;
   creatorName?: string | null;
+  assigneeName?: string | null;
+  queuePosition?: number | null;
   memberCount?: number;
   currentUserId: string;
   isAdmin: boolean;
@@ -212,7 +212,7 @@ function CarouselTagInput({ onAdd }: { onAdd: (tag: string) => void }) {
 const LOOM_REGEX = /https?:\/\/(?:www\.)?loom\.com\/share\/([a-zA-Z0-9]+)(?:\?[^\s]*)?/g;
 const YOUTUBE_REGEX = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s]*)?/g;
 
-function CommentBody({ body }: { body: string }) {
+function CommentBody({ body, mine = false }: { body: string; mine?: boolean }) {
   const loomMatches = Array.from(body.matchAll(LOOM_REGEX));
   const youtubeMatches = Array.from(body.matchAll(YOUTUBE_REGEX));
 
@@ -223,9 +223,14 @@ function CommentBody({ body }: { body: string }) {
   textBody = textBody.trim();
 
   return (
-    <div className="mt-1 space-y-2">
+    <div className="space-y-2">
       {textBody && (
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{textBody}</p>
+        <p
+          className="text-sm whitespace-pre-wrap"
+          style={{ color: mine ? "#F6F4EF" : "#3A3843" }}
+        >
+          {textBody}
+        </p>
       )}
       {loomMatches.map((m, i) => (
         <div key={`loom-${i}`} className="mt-2 rounded-lg overflow-hidden border bg-black/5">
@@ -282,6 +287,14 @@ const typeLabels: Record<string, string> = {
   other: "Other",
 };
 
+// Priority badge backgrounds (v2 header card) — mirror the existing priority
+// palette: whenever/gray, this-week/blue, urgent/red.
+const priorityBadgeColors: Record<number, string> = {
+  1: "bg-gray-100 text-gray-600",
+  2: "bg-[#E8EDFB] text-[#3554A8]",
+  3: "bg-red-100 text-red-600",
+};
+
 const typeColors: Record<string, string> = {
   logo: "bg-purple-100 text-purple-700",
   social: "bg-pink-100 text-pink-700",
@@ -293,6 +306,9 @@ const typeColors: Record<string, string> = {
 
 // --- Sub-components ---
 
+// Goal-gradient stepper — dots + filling bars on one centerline via CSS grid.
+// Progress is purely a function of `currentStatus`; bars fill with the
+// per-client accent (done = 100%, current = partial, future = empty).
 function ProgressStepper({
   currentStatus,
   t,
@@ -301,46 +317,87 @@ function ProgressStepper({
   t: (key: PortalKey, vars?: Record<string, string | number>) => string;
 }) {
   const currentIndex = statusSteps.findIndex((s) => s.key === currentStatus);
+  // "auto 1fr auto 1fr auto 1fr auto" — dot columns are auto, bars stretch.
+  const gridTemplateColumns = statusSteps.map(() => "auto").join(" 1fr ");
 
   return (
-    <div className="flex items-center gap-1 py-2">
-      {statusSteps.map((step, i) => (
-        <Fragment key={step.key}>
-          <div className="flex items-center gap-1.5">
+    <div
+      className="grid items-center gap-y-2 py-1"
+      style={{ gridTemplateColumns }}
+      role="list"
+      aria-label={t(`status.${currentStatus}` as PortalKey)}
+    >
+      {/* Row 1 — dots + connecting bars */}
+      {statusSteps.map((step, i) => {
+        const done = i < currentIndex;
+        const current = i === currentIndex;
+        return (
+          <Fragment key={step.key}>
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-all duration-300 ${
-                i < currentIndex
-                  ? "bg-primary border-primary text-white"
-                  : i === currentIndex
-                    ? "border-primary text-primary scale-110 shadow-sm shadow-primary/30"
-                    : "border-muted-foreground/30 text-muted-foreground/40"
-              }`}
+              className="relative flex h-8 w-8 items-center justify-center"
+              role="listitem"
+              aria-current={current ? "step" : undefined}
             >
-              {i < currentIndex ? (
-                <CheckmarkCircle01Icon size={14} />
-              ) : (
-                i + 1
+              {current && (
+                <span
+                  aria-hidden
+                  className="vm-pulse absolute inset-0 rounded-full"
+                  style={{ background: "var(--accent)" }}
+                />
               )}
+              <div
+                className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-semibold transition-all duration-300"
+                style={
+                  done
+                    ? { background: "var(--status-done)", color: "#fff" }
+                    : current
+                      ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+                      : {
+                          background: "#fff",
+                          color: "var(--vimi-faint)",
+                          border: "1.5px solid var(--vimi-border)",
+                        }
+                }
+              >
+                {done ? <CheckmarkCircle01Icon size={16} /> : i + 1}
+              </div>
             </div>
+            {i < statusSteps.length - 1 && (
+              <div
+                className="h-[3px] rounded-full"
+                style={{ background: "var(--vimi-border)" }}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-500 ease-out"
+                  style={{
+                    width: done ? "100%" : current ? "35%" : "0%",
+                    background: "var(--accent)",
+                  }}
+                />
+              </div>
+            )}
+          </Fragment>
+        );
+      })}
+
+      {/* Row 2 — labels aligned under each dot */}
+      {statusSteps.map((step, i) => {
+        const current = i === currentIndex;
+        return (
+          <Fragment key={`${step.key}-label`}>
             <span
-              className={`text-[10px] sm:text-xs font-medium ${
-                i <= currentIndex
-                  ? "text-foreground"
-                  : "text-muted-foreground/40"
+              className={`text-center text-[10px] leading-tight sm:text-[11px] ${
+                current
+                  ? "font-bold text-[color:var(--vimi-ink)]"
+                  : "font-medium text-[color:var(--vimi-faint)]"
               }`}
             >
               {t(`status.${step.key}` as PortalKey)}
             </span>
-          </div>
-          {i < statusSteps.length - 1 && (
-            <div
-              className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"
-              }`}
-            />
-          )}
-        </Fragment>
-      ))}
+            {i < statusSteps.length - 1 && <span aria-hidden />}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
@@ -349,30 +406,48 @@ function CompletionBanner({
   updatedAt,
   locale,
   t,
+  onDownloadAll,
+  canDownloadAll,
 }: {
   updatedAt: string;
   locale: Locale;
   t: (key: PortalKey, vars?: Record<string, string | number>) => string;
+  onDownloadAll?: () => void;
+  canDownloadAll?: boolean;
 }) {
+  const date = new Date(updatedAt).toLocaleDateString(
+    locale === "es" ? "es-ES" : "en-US",
+    { month: "long", day: "numeric", year: "numeric" }
+  );
   return (
-    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
-      <CheckmarkCircle01Icon
-        size={24}
-        className="text-emerald-600 shrink-0"
-      />
-      <div>
-        <p className="text-sm font-semibold text-emerald-900">
-          {t("detail.requestComplete")}
+    <div
+      className="vm-rise flex flex-col gap-3 rounded-2xl p-5 sm:flex-row sm:items-center"
+      style={{ background: "#E9F4EE", border: "1px solid rgba(46,139,87,0.35)" }}
+    >
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
+        style={{ background: "var(--status-done)" }}
+      >
+        <CheckmarkCircle01Icon size={20} color="currentColor" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold text-[color:var(--vimi-ink)]">
+          {t("detail.doneBannerTitle", { date })}
         </p>
-        <p className="text-xs text-emerald-700">
-          {t("detail.deliveredOn")}{" "}
-          {new Date(updatedAt).toLocaleDateString(locale === "es" ? "es-ES" : "en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
+        <p className="mt-0.5 text-[13px] text-[color:var(--vimi-muted)]">
+          {t("detail.doneBannerSub")}
         </p>
       </div>
+      {canDownloadAll && onDownloadAll && (
+        <button
+          onClick={onDownloadAll}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-semibold text-white transition-transform hover:-translate-y-0.5 active:scale-95"
+          style={{ background: "var(--status-done)" }}
+        >
+          <Download01Icon size={15} color="currentColor" />
+          {t("detail.downloadAll")}
+        </button>
+      )}
     </div>
   );
 }
@@ -596,16 +671,16 @@ function DeliverableCard({
         onClick={onImageClick}
         className="block w-full text-left"
       >
-        <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+        <div className={`group relative overflow-hidden rounded-[18px] border border-[color:var(--vimi-border)] bg-white shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-shadow hover:shadow-[0_6px_18px_rgba(28,27,31,0.10)] ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
           {adminActions}
           {d.is_hidden && (
             <div className="absolute top-8 left-2 z-10 bg-amber-100 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
               Hidden
             </div>
           )}
-          <div className="aspect-[4/3] bg-gray-50 relative">
+          <div className="aspect-[4/3] bg-[#FBFAF8] relative">
             {!loaded && (
-              <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-t-lg" />
+              <div className="vm-shimmer absolute inset-0" />
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -621,9 +696,9 @@ function DeliverableCard({
               </div>
             </div>
           </div>
-          <CardContent className="p-2">
-            <p className="text-xs font-medium truncate">{d.file_name}</p>
-            <p className="text-[10px] text-muted-foreground">
+          <div className="p-2.5">
+            <p className="text-xs font-medium truncate text-[color:var(--vimi-ink)]">{d.file_name}</p>
+            <p className="text-[10px] text-[color:var(--vimi-muted)]">
               {[
                 d.mime_type?.split("/")[1]?.toUpperCase(),
                 d.file_size ? `${(d.file_size / 1024).toFixed(0)} KB` : null,
@@ -633,8 +708,8 @@ function DeliverableCard({
             {tagSection}
             {voteSection}
             {statsSection}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </button>
     );
   }
@@ -661,15 +736,15 @@ function DeliverableCard({
         }
       }}
     >
-      <Card className={`overflow-hidden hover:shadow-md transition-shadow cursor-pointer group relative ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
+      <div className={`group relative overflow-hidden rounded-[18px] border border-[color:var(--vimi-border)] bg-white shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-shadow hover:shadow-[0_6px_18px_rgba(28,27,31,0.10)] ${d.is_hidden ? "opacity-50 ring-2 ring-amber-300 ring-dashed" : ""}`}>
         {adminActions}
-        <CardContent className="p-3">
+        <div className="p-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium truncate text-[color:var(--vimi-ink)]">
                 {d.file_name}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[color:var(--vimi-muted)]">
                 {[
                   d.mime_type?.split("/")[1]?.toUpperCase(),
                   d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : null,
@@ -677,12 +752,12 @@ function DeliverableCard({
                 ].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <Download01Icon size={16} className="text-muted-foreground shrink-0" />
+            <Download01Icon size={16} className="text-[color:var(--vimi-faint)] shrink-0" />
           </div>
           {tagSection}
           {voteSection}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -783,6 +858,8 @@ export function RequestDetail({
   request,
   clientName,
   creatorName = null,
+  assigneeName = null,
+  queuePosition = null,
   memberCount = 1,
   currentUserId,
   isAdmin,
@@ -885,7 +962,6 @@ export function RequestDetail({
       ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
       : "/portal";
 
-  const status = statusConfig[currentStatus];
   const priority = priorityLabels[request.priority];
   const requestedDate = new Date(request.created_at).toLocaleDateString(
     undefined,
@@ -896,6 +972,29 @@ export function RequestDetail({
     addSuffix: true,
     locale: dfnsLocale,
   });
+
+  const firstName = (full: string | null) =>
+    full ? full.trim().split(/\s+/)[0] : null;
+  // Designer for the conversation/queue copy: real assignee name, else neutral.
+  const designerName = firstName(assigneeName) ?? t("detail.queueDesignerFallback");
+  // Composer counterpart: admins message the client, clients message the designer.
+  const composerPartner = isAdmin
+    ? firstName(clientName) ?? clientName
+    : designerName;
+  const showCreator = memberCount >= 2 && !!creatorName;
+  const dueDateShort = request.due_date
+    ? new Date(request.due_date).toLocaleDateString(
+        locale === "es" ? "es-ES" : "en-US",
+        { month: "short", day: "numeric" }
+      )
+    : null;
+  const dueDateLong = request.due_date
+    ? new Date(request.due_date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   // Review header meta line — real delivered date + visible file count.
   const reviewMeta = (() => {
@@ -1441,6 +1540,70 @@ export function RequestDetail({
   const downloadAllUrls = visibleDeliverables.filter((d) => d.url);
   const hiddenDeliverables = realDeliverables.filter((d) => d.is_hidden);
 
+  // Zip + download every visible deliverable. Shared by the deliverables
+  // header button and the delivered-state banner (region A).
+  const handleDownloadAll = async () => {
+    if (downloadAllUrls.length === 0) return;
+    if (downloadAllUrls.length > 20) {
+      toast.error(t("detail.tooManyFiles"));
+      return;
+    }
+    const toastId = toast.loading(
+      t("detail.preparingFiles", { count: downloadAllUrls.length })
+    );
+    try {
+      const zip = new JSZip();
+      let failed = 0;
+      let totalSize = 0;
+      const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
+
+      // Sequential fetch to avoid holding all blobs in memory at once
+      const usedNames = new Set<string>();
+      for (const d of downloadAllUrls) {
+        try {
+          const res = await fetch(d.url!);
+          if (!res.ok) {
+            failed++;
+            continue;
+          }
+          const blob = await res.blob();
+          totalSize += blob.size;
+          if (totalSize > MAX_SIZE) {
+            toast.error(t("detail.filesTooLarge"), { id: toastId });
+            return;
+          }
+          // Deduplicate file names to prevent silent overwrites
+          let name = d.file_name;
+          if (usedNames.has(name)) {
+            const dot = name.lastIndexOf(".");
+            const base = dot >= 0 ? name.slice(0, dot) : name;
+            const ext = dot >= 0 ? name.slice(dot) : "";
+            let n = 2;
+            while (usedNames.has(`${base}-${n}${ext}`)) n++;
+            name = `${base}-${n}${ext}`;
+          }
+          usedNames.add(name);
+          zip.file(name, blob);
+        } catch {
+          failed++;
+        }
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
+
+      if (failed > 0) {
+        toast.warning(
+          t("detail.downloadPartial", { count: failed, s: failed > 1 ? "s" : "" }),
+          { id: toastId }
+        );
+      } else {
+        toast.success(t("detail.downloadReady"), { id: toastId });
+      }
+    } catch {
+      toast.error(t("detail.downloadFailed"), { id: toastId });
+    }
+  };
 
   return (
     <div
@@ -1448,31 +1611,262 @@ export function RequestDetail({
         isAdmin ? "max-w-3xl" : "max-w-2xl"
       }`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link
-          href={backHref}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-        >
-          <ArrowLeft01Icon size={16} />
-          {isAdmin ? t("detail.backToClient") : t("detail.myRequests")}
-        </Link>
-        <div className="flex items-center gap-2">
-          {priority && (
-            <span className={`text-xs font-medium ${priority.color}`}>
-              {t(priority.labelKey as PortalKey)}
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Link
+            href={backHref}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+          >
+            <ArrowLeft01Icon size={16} />
+            {isAdmin ? t("detail.backToClient") : t("detail.myRequests")}
+          </Link>
+          {isAdmin && (
+            <span
+              className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+              style={{
+                background: "var(--accent)",
+                color: "var(--accent-foreground)",
+              }}
+            >
+              {t("detail.adminView")}
             </span>
           )}
-          <Badge className={status.color}>{t(`status.${currentStatus}` as PortalKey)}</Badge>
         </div>
+        <span className="text-right text-xs text-[color:var(--vimi-muted)]">
+          {t("detail.requested")} {requestedDate} · {t("detail.updated")} {updatedDate}
+        </span>
       </div>
 
-      {/* Progress Stepper */}
-      <ProgressStepper currentStatus={currentStatus} t={t} />
+      {/* Header card (v2) — badges, serif title, description, edit pill,
+          meta, goal-gradient stepper, queue callout. Replaced by the edit
+          form while editing (queued clients only). */}
+      {!isEditing && (
+        <div className="vm-rise rounded-[20px] border border-[color:var(--vimi-border)] bg-white p-6 shadow-[0_2px_8px_rgba(28,27,31,0.05)] sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${typeColors[request.type] ?? typeColors.other}`}
+                >
+                  {typeLabels[request.type] ? t(`form.type.${request.type}` as PortalKey) : request.type}
+                </span>
+                {priority && (
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${priorityBadgeColors[request.priority] ?? priorityBadgeColors[1]}`}
+                  >
+                    {t(priority.labelKey as PortalKey)}
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-3 font-serif text-[28px] italic leading-tight text-[color:var(--vimi-ink)] sm:text-[32px]">
+                {request.title}
+              </h1>
+              {request.description ? (
+                <p className="mt-2 text-sm leading-relaxed text-[color:var(--vimi-muted)]">
+                  {request.description}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm italic text-[color:var(--vimi-faint)]">
+                  {t("detail.noDescription")}
+                </p>
+              )}
+            </div>
+            {canEdit && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="shrink-0 rounded-full border border-[color:var(--vimi-border)] px-4 py-2 text-xs font-semibold text-[color:var(--vimi-ink)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+              >
+                {t("edit.title")}
+              </button>
+            )}
+          </div>
 
-      {/* Completion Banner */}
+          {(showCreator || request.due_date || isAdmin) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--vimi-muted)]">
+              {showCreator && (
+                <span>{t("detail.createdBy", { name: firstName(creatorName)! })}</span>
+              )}
+              {request.due_date && (
+                <span className="flex items-center gap-1">
+                  <CalendarIcon size={12} />
+                  {t("detail.due")} {dueDateLong}
+                </span>
+              )}
+              {isAdmin && (
+                <span className="flex items-center gap-1.5">
+                  Assigned to
+                  <AssigneeMenu
+                    requestId={request.id}
+                    assigneeId={request.assignee_id}
+                    admins={admins}
+                    size="md"
+                    showName
+                  />
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="my-5 h-px bg-[color:var(--vimi-border)]" />
+          <ProgressStepper currentStatus={currentStatus} t={t} />
+
+          {/* Queue-position callout — client only, open requests only, and
+              only ever REAL data: rank from the server, ETA gated on a real
+              due date, designer name from the assignee (else neutral). */}
+          {!isAdmin &&
+            queuePosition != null &&
+            (currentStatus === "queued" || currentStatus === "in_progress") && (
+              <div className="mt-5 flex items-center gap-3 rounded-xl border border-[color:var(--vimi-border)] bg-[#FBFAF8] px-4 py-3">
+                <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
+                  <span
+                    aria-hidden
+                    className="vm-pulse absolute inset-0 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                  <span
+                    className="relative h-2.5 w-2.5 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                </span>
+                <p className="text-[13px] text-[color:var(--vimi-ink)]">
+                  <span className="font-semibold">
+                    {t("detail.queuePosition", { n: queuePosition })}
+                  </span>
+                  {" · "}
+                  {t("detail.queueBy", { who: designerName })}
+                  {dueDateShort && (
+                    <>
+                      {" · "}
+                      {t("detail.queueEta", { date: dueDateShort })}
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
+          {/* Per-state status note (region B) — amber while in review, green
+              once delivered. Client-only: admins get the status control below. */}
+          {!isAdmin && currentStatus === "review" && (
+            <div
+              className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background: "var(--status-review-bg)",
+                border: "1px solid rgba(201,130,27,0.3)",
+              }}
+            >
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ background: "var(--status-review)" }}
+              />
+              <p className="text-[13px] text-[color:var(--vimi-ink)]">
+                {t("detail.reviewNote")}
+              </p>
+            </div>
+          )}
+          {!isAdmin && currentStatus === "done" && (
+            <div
+              className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{ background: "#F2F7F2", border: "1px solid rgba(46,139,87,0.25)" }}
+            >
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ background: "var(--status-done)" }}
+              />
+              <p className="text-[13px] text-[color:var(--vimi-ink)]">
+                {t("detail.doneNote", {
+                  date: new Date(request.updated_at).toLocaleDateString(
+                    locale === "es" ? "es-ES" : "en-US",
+                    { month: "long", day: "numeric" }
+                  ),
+                })}
+              </p>
+            </div>
+          )}
+
+          {/* Admin status segmented control (region G) — drives the real
+              status-change handler (+ emails). "Delivered" keeps its confirm
+              dialog since it skips the client review step. */}
+          {isAdmin && (
+            <div className="mt-5">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
+                {t("detail.adminStatusLabel")}
+              </div>
+              <div className="flex gap-1 rounded-xl border border-[color:var(--vimi-border)] bg-[#FBFAF8] p-1">
+                {statusSteps.map((step) => {
+                  const active = currentStatus === step.key;
+                  const pillClass = `flex-1 rounded-lg px-2 py-2 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
+                    active
+                      ? "text-[color:var(--accent-foreground)]"
+                      : "text-[color:var(--vimi-muted)] hover:text-[color:var(--vimi-ink)]"
+                  }`;
+                  const pillStyle = active
+                    ? { background: "var(--accent)" }
+                    : undefined;
+                  if (step.key === "done") {
+                    return (
+                      <AlertDialog key={step.key}>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className={pillClass}
+                            style={pillStyle}
+                            disabled={isUpdatingStatus || active}
+                          >
+                            {t(`status.${step.key}` as PortalKey)}
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {t("detail.markDoneConfirm")}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t("detail.markDoneDesc")}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>
+                              {t("detail.cancel")}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleStatusChange("done")}
+                              className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              {t("detail.markDone")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    );
+                  }
+                  return (
+                    <button
+                      key={step.key}
+                      onClick={() => handleStatusChange(step.key)}
+                      className={pillClass}
+                      style={pillStyle}
+                      disabled={isUpdatingStatus || active}
+                    >
+                      {t(`status.${step.key}` as PortalKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Completion Banner (region A) — emerald bar, real delivered date,
+          wired to the shared download-all handler. */}
       {currentStatus === "done" && (
-        <CompletionBanner updatedAt={request.updated_at} locale={locale} t={t} />
+        <CompletionBanner
+          updatedAt={request.updated_at}
+          locale={locale}
+          t={t}
+          onDownloadAll={handleDownloadAll}
+          canDownloadAll={downloadAllUrls.length > 0}
+        />
       )}
 
       {/* Review hero moment — directions voting or standard banner */}
@@ -1521,25 +1915,8 @@ export function RequestDetail({
         </div>
       )}
 
-      {/* Queued status reassurance — hidden while editing to reduce competition */}
-      {currentStatus === "queued" && !isAdmin && !isEditing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm text-blue-800">
-            {t("detail.upNext")}
-          </p>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors underline underline-offset-2"
-            >
-              {t("edit.title")}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Title + Meta */}
-      {isEditing ? (
+      {/* Edit form (queued clients only) — replaces the header card while active */}
+      {isEditing && (
         <div className="bg-white border border-[color:var(--vimi-border)] rounded-[20px] p-6 shadow-[0_2px_8px_rgba(28,27,31,0.04)] space-y-5">
           <h2 className="font-serif italic text-2xl leading-tight text-[color:var(--vimi-ink)]">
             {t("edit.heading")}
@@ -1553,7 +1930,7 @@ export function RequestDetail({
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               placeholder={t("form.name.placeholder")}
-              className="h-12 text-base font-semibold rounded-xl bg-[#FBFAF8] border-[color:rgba(28,27,31,0.14)]"
+              className="h-14 rounded-xl bg-[#FBFAF8] border-[color:rgba(28,27,31,0.14)] font-serif text-2xl italic text-[color:var(--vimi-ink)]"
             />
           </div>
 
@@ -1582,9 +1959,17 @@ export function RequestDetail({
                     onClick={() => setEditType(typeKey)}
                     className={`text-sm font-semibold px-4 py-2 rounded-full border transition-all active:scale-[0.98] touch-manipulation ${
                       selected
-                        ? "border-primary bg-primary/5 text-primary"
+                        ? "text-[color:var(--accent)]"
                         : "border-[color:rgba(28,27,31,0.12)] bg-white text-muted-foreground hover:border-gray-300"
                     }`}
+                    style={
+                      selected
+                        ? {
+                            borderColor: "var(--accent)",
+                            background: "color-mix(in srgb, var(--accent) 6%, transparent)",
+                          }
+                        : undefined
+                    }
                   >
                     {t(`form.type.${typeKey}` as PortalKey)}
                   </button>
@@ -1610,9 +1995,17 @@ export function RequestDetail({
                     onClick={() => setEditPriority(p.value)}
                     className={`flex-1 text-sm font-semibold py-2.5 rounded-xl border transition-all active:scale-[0.98] touch-manipulation ${
                       selected
-                        ? "border-primary bg-primary/5 text-primary"
+                        ? "text-[color:var(--accent)]"
                         : "border-[color:rgba(28,27,31,0.12)] bg-white text-muted-foreground hover:border-gray-300"
                     }`}
+                    style={
+                      selected
+                        ? {
+                            borderColor: "var(--accent)",
+                            background: "color-mix(in srgb, var(--accent) 6%, transparent)",
+                          }
+                        : undefined
+                    }
                   >
                     {p.label}
                   </button>
@@ -1639,72 +2032,6 @@ export function RequestDetail({
             </Button>
           </div>
         </div>
-      ) : (
-        <>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-muted-foreground font-medium">
-                {clientName}
-              </span>
-            </div>
-            <h1 className="text-2xl font-semibold">{request.title}</h1>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge
-                variant="secondary"
-                className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
-              >
-                {typeLabels[request.type] ? t(`form.type.${request.type}` as PortalKey) : request.type}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {t("detail.requested")} {requestedDate}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                · {t("detail.updated")} {updatedDate}
-              </span>
-              {memberCount >= 2 && creatorName && (
-                <span className="text-xs text-muted-foreground">
-                  · {t("detail.createdBy", { name: creatorName.trim().split(/\s+/)[0] })}
-                </span>
-              )}
-              {request.due_date && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  · <CalendarIcon size={12} />
-                  {t("detail.due")}{" "}
-                  {new Date(request.due_date).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-            </div>
-            {isAdmin && (
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Assigned to
-                </span>
-                <AssigneeMenu
-                  requestId={request.id}
-                  assigneeId={request.assignee_id}
-                  admins={admins}
-                  size="md"
-                  showName
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          {request.description ? (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {request.description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground/60 italic">
-              {t("detail.noDescription")}
-            </p>
-          )}
-        </>
       )}
 
       {/* Social Posts (Carousels) — Story-driven directions */}
@@ -1961,60 +2288,7 @@ export function RequestDetail({
                 variant="ghost"
                 size="sm"
                 className="text-xs h-7 gap-1"
-                onClick={async () => {
-                  // Guard: warn if too many files
-                  if (downloadAllUrls.length > 20) {
-                    toast.error(t("detail.tooManyFiles"));
-                    return;
-                  }
-                  const toastId = toast.loading(t("detail.preparingFiles", { count: downloadAllUrls.length }));
-                  try {
-                    const zip = new JSZip();
-                    let failed = 0;
-                    let totalSize = 0;
-                    const MAX_SIZE = 200 * 1024 * 1024; // 200MB cap
-
-                    // Sequential fetch to avoid holding all blobs in memory at once
-                    const usedNames = new Set<string>();
-                    for (const d of downloadAllUrls) {
-                      try {
-                        const res = await fetch(d.url!);
-                        if (!res.ok) { failed++; continue; }
-                        const blob = await res.blob();
-                        totalSize += blob.size;
-                        if (totalSize > MAX_SIZE) {
-                          toast.error(t("detail.filesTooLarge"), { id: toastId });
-                          return;
-                        }
-                        // Deduplicate file names to prevent silent overwrites
-                        let name = d.file_name;
-                        if (usedNames.has(name)) {
-                          const dot = name.lastIndexOf(".");
-                          const base = dot >= 0 ? name.slice(0, dot) : name;
-                          const ext = dot >= 0 ? name.slice(dot) : "";
-                          let n = 2;
-                          while (usedNames.has(`${base}-${n}${ext}`)) n++;
-                          name = `${base}-${n}${ext}`;
-                        }
-                        usedNames.add(name);
-                        zip.file(name, blob);
-                      } catch {
-                        failed++;
-                      }
-                    }
-
-                    const content = await zip.generateAsync({ type: "blob" });
-                    saveAs(content, `${request.title.replace(/[^a-zA-Z0-9]/g, "-")}-files.zip`);
-
-                    if (failed > 0) {
-                      toast.warning(t("detail.downloadPartial", { count: failed, s: failed > 1 ? "s" : "" }), { id: toastId });
-                    } else {
-                      toast.success(t("detail.downloadReady"), { id: toastId });
-                    }
-                  } catch {
-                    toast.error(t("detail.downloadFailed"), { id: toastId });
-                  }
-                }}
+                onClick={handleDownloadAll}
               >
                 <Download01Icon size={12} />
                 {t("detail.downloadAll")}
@@ -2087,14 +2361,23 @@ export function RequestDetail({
           </div>
         </div>
       ) : currentStatus === "queued" ? null : (
-        <div className="border border-dashed border-muted-foreground/20 rounded-xl p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            {currentStatus === "in_progress"
+        <div className="flex flex-col items-center gap-2 rounded-[18px] border border-dashed border-[color:var(--vimi-border)] bg-white/60 px-6 py-10 text-center">
+          <span
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ background: "rgba(28,27,31,0.04)" }}
+          >
+            <Upload01Icon size={18} className="text-[color:var(--vimi-faint)]" />
+          </span>
+          <p className="text-sm font-semibold text-[color:var(--vimi-ink)]">
+            {currentStatus === "in_progress" || currentStatus === "review"
               ? t("detail.designsWillAppear")
-              : currentStatus === "review"
-                ? t("detail.designsWillAppear")
-                : t("detail.noDeliverables")}
+              : t("detail.noDeliverables")}
           </p>
+          {(currentStatus === "in_progress" || currentStatus === "review") && (
+            <p className="max-w-[38ch] text-[13px] text-[color:var(--vimi-muted)]">
+              {t("detail.designsWillAppearSub")}
+            </p>
+          )}
         </div>
       )}
 
@@ -2114,97 +2397,57 @@ export function RequestDetail({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 rounded-xl p-4 flex items-center justify-center gap-2 text-sm text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-[18px] border-2 border-dashed p-4 text-sm font-semibold text-[color:var(--accent)] transition-colors hover:bg-[color:rgba(28,27,31,0.02)] disabled:opacity-50"
+            style={{ borderColor: "color-mix(in srgb, var(--accent) 35%, transparent)" }}
           >
             {isUploading ? (
               <>
-                <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                Uploading...
+                <div
+                  className="h-4 w-4 animate-spin rounded-full border-2"
+                  style={{
+                    borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+                    borderTopColor: "var(--accent)",
+                  }}
+                />
+                {t("detail.uploading")}
               </>
             ) : (
               <>
                 <Upload01Icon size={16} />
-                Upload Deliverables
+                {t("detail.uploadDeliverables")}
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* Action Buttons — above comments when in review (the decision point).
-          Approve = ink pill, Request changes = outlined pill (prototype). */}
+      {/* Review action bar (region E) — the decision point. Prompt + approve
+          (accent) + request-changes (outline). Approve fires the existing
+          confetti + haptic + peak-end modal; request-changes reuses the
+          existing feedback-first handler. */}
       {currentStatus === "review" && !isAdmin && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={handleClientApprove}
-            disabled={isUpdatingStatus}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-14 rounded-full bg-[color:var(--vimi-ink)] text-[var(--vimi-page)] text-base font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.22)] transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 touch-manipulation"
-          >
-            <CheckmarkCircle01Icon size={20} color="currentColor" />
-            {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
-          </button>
-          <button
-            onClick={handleRequestChanges}
-            disabled={isUpdatingStatus || isSubmitting}
-            className="inline-flex items-center justify-center h-14 px-6 rounded-full border border-[color:var(--vimi-border)] bg-white text-[color:var(--vimi-ink)] text-sm font-semibold transition-colors hover:bg-[color:rgba(28,27,31,0.03)] disabled:opacity-50 touch-manipulation"
-          >
-            {t("detail.askForChanges")}
-          </button>
-        </div>
-      )}
-
-      {/* Admin status controls */}
-      {isAdmin && currentStatus !== "done" && (
-        <div className="flex gap-2 flex-wrap">
-          {currentStatus !== "in_progress" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleStatusChange("in_progress")}
+        <div className="rounded-2xl border border-[color:var(--vimi-border)] bg-white p-4 shadow-[0_2px_8px_rgba(28,27,31,0.05)] sm:p-5">
+          <p className="mb-3 font-serif text-[19px] italic leading-tight text-[color:var(--vimi-ink)]">
+            {t("detail.reviewPrompt")}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleClientApprove}
               disabled={isUpdatingStatus}
+              className="flex-1 inline-flex items-center justify-center gap-2 h-14 rounded-full text-[color:var(--accent-foreground)] text-base font-semibold shadow-[0_10px_26px_rgba(28,27,31,0.18)] transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 touch-manipulation"
+              style={{ background: "var(--accent)" }}
             >
-              {isUpdatingStatus ? "Updating..." : "Start Working"}
-            </Button>
-          )}
-          {currentStatus === "in_progress" && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusChange("review")}
-              disabled={isUpdatingStatus}
-              className="bg-primary hover:bg-primary/90"
+              <CheckmarkCircle01Icon size={20} color="currentColor" />
+              {isUpdatingStatus ? t("detail.approving") : t("detail.approve")}
+            </button>
+            <button
+              onClick={handleRequestChanges}
+              disabled={isUpdatingStatus || isSubmitting}
+              className="inline-flex items-center justify-center h-14 px-6 rounded-full border border-[color:var(--vimi-border)] bg-white text-[color:var(--vimi-ink)] text-sm font-semibold transition-colors hover:bg-[color:rgba(28,27,31,0.03)] disabled:opacity-50 touch-manipulation"
             >
-              {isUpdatingStatus ? "Updating..." : "Submit for Review"}
-            </Button>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isUpdatingStatus}
-              >
-                Mark Done
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Mark as done?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will skip the client review step and mark the request as
-                  complete. The client will see it as delivered.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleStatusChange("done")}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Mark Done
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              {t("detail.askForChanges")}
+            </button>
+          </div>
         </div>
       )}
 
@@ -2247,56 +2490,108 @@ export function RequestDetail({
       {/* Activity Timeline */}
       {activityLog.length > 0 && <ActivityTimeline entries={activityLog} locale={locale} />}
 
-      {/* Comments */}
-      <div className="space-y-4">
-        <h2 className="text-sm font-medium">
-          {t("detail.comments")} ({allComments.length})
-        </h2>
+      {/* Conversation — WhatsApp-style two-sided chat */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[color:var(--vimi-faint)]">
+            {t("detail.conversationEyebrow")}
+          </h2>
+          <span className="text-[11px] text-[color:var(--vimi-faint)]">
+            {t("detail.conversationWith", { designer: designerName })}
+          </span>
+        </div>
 
         {allComments.map((c) => {
           const isOwnComment = c.author_id === currentUserId;
           const isOptimistic = c.id.startsWith("optimistic-");
           const authorInitials = getInitials(c.profiles?.full_name ?? "?");
           const isAdminComment = c.profiles?.role === "admin";
+          const who = c.profiles?.full_name ?? t("detail.unknownUser");
 
           return (
             <div
               key={c.id}
-              className={`flex gap-3 ${isOptimistic ? "opacity-60" : ""}`}
+              className={`flex items-end gap-2 ${isOwnComment ? "flex-row-reverse" : ""} ${
+                isOptimistic ? "opacity-60" : ""
+              }`}
             >
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarImage src={c.profiles?.avatar_url ?? undefined} />
                 <AvatarFallback
                   className={`text-xs ${
-                    isAdminComment
-                      ? "bg-primary text-white"
-                      : isOwnComment
-                        ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-600"
+                    isOwnComment || isAdminComment ? "text-white" : "bg-gray-200 text-gray-600"
                   }`}
+                  style={
+                    isOwnComment
+                      ? { background: "var(--vimi-ink)" }
+                      : isAdminComment
+                        ? { background: "var(--accent)" }
+                        : undefined
+                  }
                 >
                   {authorInitials}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium">
-                    {c.profiles?.full_name ?? t("detail.unknownUser")}
-                  </span>
+              <div
+                className={`flex max-w-[78%] min-w-0 flex-col ${
+                  isOwnComment ? "items-end" : "items-start"
+                }`}
+              >
+                <div
+                  className="px-3.5 py-2.5"
+                  style={
+                    isOwnComment
+                      ? {
+                          background: "var(--vimi-ink)",
+                          borderRadius: "16px 16px 4px 16px",
+                        }
+                      : {
+                          background: "#fff",
+                          border: "1px solid var(--vimi-border)",
+                          borderRadius: "16px 16px 16px 4px",
+                        }
+                  }
+                >
+                  {c.body && <CommentBody body={c.body} mine={isOwnComment} />}
+                  {c.attachment_url && c.attachment_type?.startsWith("image/") && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.attachment_url}
+                      alt={c.attachment_name ?? "attachment"}
+                      className="mt-2 rounded-lg max-w-[240px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  )}
+                  {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
+                    <a
+                      href={c.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`mt-2 inline-flex items-center gap-1.5 text-xs hover:underline ${
+                        isOwnComment ? "text-[#F6F4EF]" : "text-primary"
+                      }`}
+                    >
+                      <Download01Icon size={12} />
+                      {c.attachment_name ?? t("detail.attachment")}
+                    </a>
+                  )}
+                </div>
+                <div
+                  className="mt-1 flex items-center gap-1.5 px-1 text-[11px] text-[color:var(--vimi-faint)]"
+                  title={new Date(c.created_at).toLocaleString()}
+                >
+                  <span>{who}</span>
                   {isAdminComment && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                       Vimi Studio
                     </span>
                   )}
                   {!isAdminComment && isAdmin && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                       Client
                     </span>
                   )}
-                  <span
-                    className="text-xs text-muted-foreground"
-                    title={new Date(c.created_at).toLocaleString()}
-                  >
+                  <span>
+                    ·{" "}
                     {isOptimistic
                       ? t("detail.justNow")
                       : formatDistanceToNow(new Date(c.created_at), {
@@ -2305,35 +2600,23 @@ export function RequestDetail({
                         })}
                   </span>
                 </div>
-                {c.body && <CommentBody body={c.body} />}
-                {c.attachment_url && c.attachment_type?.startsWith("image/") && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={c.attachment_url}
-                    alt={c.attachment_name ?? "attachment"}
-                    className="mt-2 rounded-lg max-w-[280px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                  />
-                )}
-                {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
-                  <a
-                    href={c.attachment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                  >
-                    <Download01Icon size={12} />
-                    {c.attachment_name ?? t("detail.attachment")}
-                  </a>
-                )}
               </div>
             </div>
           );
         })}
 
         {allComments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {t("detail.noComments")}
-          </p>
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[color:var(--vimi-border)] px-6 py-8 text-center">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-white"
+              style={{ background: "var(--accent)" }}
+            >
+              {designerName.charAt(0).toUpperCase()}
+            </div>
+            <p className="max-w-[42ch] text-sm text-[color:var(--vimi-muted)]">
+              {t("detail.emptyChat", { designer: designerName })}
+            </p>
+          </div>
         )}
 
         <div ref={commentsEndRef} />
@@ -2365,7 +2648,7 @@ export function RequestDetail({
                     setComment(chip);
                     commentInputRef.current?.focus();
                   }}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-[color:var(--vimi-border)] bg-white hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] transition-colors whitespace-nowrap"
                 >
                   {chip}
                 </button>
@@ -2403,7 +2686,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-primary/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-colors focus-within:border-[color:var(--accent)]">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -2432,7 +2715,7 @@ export function RequestDetail({
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
-              placeholder={t("detail.addComment")}
+              placeholder={t("detail.composerPlaceholder", { designer: composerPartner })}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -2470,16 +2753,27 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
+              className={`shrink-0 h-11 px-4 rounded-full inline-flex items-center justify-center gap-1.5 text-sm font-semibold transition-all ${
                 comment.trim() || commentAttachment
-                  ? "bg-primary hover:bg-primary/90 text-white"
-                  : "bg-transparent text-gray-300"
+                  ? "text-white hover:opacity-90"
+                  : "bg-[color:rgba(28,27,31,0.06)] text-[color:var(--vimi-faint)]"
               }`}
+              style={
+                comment.trim() || commentAttachment
+                  ? { background: "var(--accent)" }
+                  : undefined
+              }
             >
               {isSubmitting ? (
                 <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <SentIcon size={14} color={comment.trim() || commentAttachment ? "white" : "currentColor"} />
+                <>
+                  <SentIcon
+                    size={14}
+                    color={comment.trim() || commentAttachment ? "white" : "currentColor"}
+                  />
+                  <span>{t("detail.send")}</span>
+                </>
               )}
             </button>
           </div>
