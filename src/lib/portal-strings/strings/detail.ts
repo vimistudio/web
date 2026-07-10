@@ -68,6 +68,7 @@ export const detail = {
   // Peak-End celebration modal
   "celebrate.title": { en: "Delivered & approved.", es: "Entregado y aprobado." },
   "celebrate.count": { en: "That's request #{n} together.", es: "Esa es la solicitud n.º {n} juntos." },
+  "celebrate.first": { en: "Your first approved design. Here's to many more.", es: "Tu primer diseño aprobado. Por muchos más." },
   "celebrate.countFallback": { en: "Another one delivered together.", es: "Otra entrega más, juntos." },
   "celebrate.ratedPrompt": { en: "How did this one feel?", es: "¿Qué tal estuvo esta?" },
   "celebrate.rated": { en: "rated this delivery", es: "calificó esta entrega" },
@@ -153,4 +154,22 @@ export const detail = {
 
   // Request creator attribution
   "detail.createdBy": { en: "Created by {name}", es: "Creado por {name}" },
+
+  // Error / not-found route boundaries
+  "detail.errorTitle": { en: "Something went wrong", es: "Algo salió mal" },
+  "detail.errorBody": { en: "We couldn't load this request. This might be a temporary issue.", es: "No pudimos cargar esta solicitud. Puede ser algo temporal." },
+  "detail.errorRetry": { en: "Try again", es: "Reintentar" },
+  "detail.notFoundTitle": { en: "Request not found", es: "No encontramos esta solicitud" },
+  "detail.notFoundBody": { en: "This request doesn't exist or you don't have access to it.", es: "No existe o no tienes acceso a ella." },
+  "detail.notFoundBack": { en: "Back to Board", es: "Volver al tablero" },
+
+  // Image lightbox actions
+  "lightbox.share": { en: "Share", es: "Compartir" },
+  "lightbox.copy": { en: "Copy", es: "Copiar" },
+  "lightbox.download": { en: "Download", es: "Descargar" },
+  "lightbox.copied": { en: "Copied to clipboard", es: "Copiado al portapapeles" },
+  "lightbox.copyFail": { en: "Couldn't copy image", es: "No pudimos copiar la imagen" },
+  "lightbox.shareFail": { en: "Couldn't share image", es: "No pudimos compartir la imagen" },
+  "lightbox.clipboardUnsupported": { en: "Clipboard not supported in this browser", es: "Este navegador no permite copiar" },
+  "lightbox.downloadFail": { en: "Couldn't download file", es: "No pudimos descargar el archivo" },
 } as const;

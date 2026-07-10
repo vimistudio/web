@@ -12,19 +12,19 @@ interface LoginPanelProps {
 
 /**
  * Pre-auth locale is unknown (no profile yet), so we detect it client-side from
- * navigator.language and default to English on the server. First paint is EN;
- * on hydration we switch to ES when the browser prefers Spanish. Kept as its own
- * client component so the rest of the login page stays a static server render.
+ * navigator.language. This is a Spanish-first studio, so first paint is ES; on
+ * hydration we switch to EN only when the browser prefers English. Kept as its
+ * own client component so the rest of the login page stays a static server render.
  */
 export function LoginPanel({ error, next }: LoginPanelProps) {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>("es");
 
   useEffect(() => {
     if (
       typeof navigator !== "undefined" &&
-      navigator.language?.toLowerCase().startsWith("es")
+      navigator.language?.toLowerCase().startsWith("en")
     ) {
-      setLocale("es");
+      setLocale("en");
     }
   }, []);
 
