@@ -135,8 +135,11 @@ export default async function RequestDetailPage({
   const assigneeName = assigneeProfile?.full_name ?? null;
 
   // Queue position — REAL rank among THIS client's open (queued/in_progress)
-  // requests, ordered by priority desc then created_at asc. Only meaningful
-  // while the request itself is open; null otherwise (or if it can't be found).
+  // requests, in the SAME global order the admin drags in the queue:
+  // queue_rank asc (nulls last), then priority desc, then created_at asc. The
+  // client's position is their index within their own open requests in that
+  // order, so "Posición #N" mirrors the admin's reprioritization. Only
+  // meaningful while the request itself is open; null otherwise.
   let queuePosition: number | null = null;
   if (request.status === "queued" || request.status === "in_progress") {
     const { data: openRequests } = await supabase
@@ -145,6 +148,7 @@ export default async function RequestDetailPage({
       .eq("client_id", request.client_id)
       .eq("is_archived", false)
       .in("status", ["queued", "in_progress"])
+      .order("queue_rank", { ascending: true, nullsFirst: false })
       .order("priority", { ascending: false })
       .order("created_at", { ascending: true });
     if (openRequests) {

@@ -643,6 +643,7 @@ export type Database = {
           id: string
           is_archived: boolean
           priority: number
+          queue_rank: number | null
           reused_from_request_id: string | null
           status: Database["public"]["Enums"]["request_status"]
           title: string
@@ -660,6 +661,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           priority?: number
+          queue_rank?: number | null
           reused_from_request_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title: string
@@ -677,6 +679,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           priority?: number
+          queue_rank?: number | null
           reused_from_request_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title?: string
