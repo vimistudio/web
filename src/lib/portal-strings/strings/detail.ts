@@ -175,4 +175,82 @@ export const detail = {
     en: "Your first approved design. Here's to many more.",
     es: "Tu primer diseño aprobado. Por muchos más.",
   },
+
+  // Done banner (v2) — emerald bar at the top of a delivered request
+  "detail.doneBannerTitle": {
+    en: "Delivered & approved — {date}",
+    es: "Entregado y aprobado — {date}",
+  },
+  "detail.doneBannerSub": {
+    en: "Your final files live here. Download them anytime.",
+    es: "Los archivos finales viven aquí. Descárgalos cuando quieras.",
+  },
+
+  // Per-state status note under the stepper (v2)
+  "detail.reviewNote": {
+    en: "Ready for your review whenever you are.",
+    es: "Listo para revisar cuando quieras.",
+  },
+  "detail.doneNote": {
+    en: "Approved on {date}.",
+    es: "Aprobado el {date}.",
+  },
+
+  // Review action bar prompt (v2)
+  "detail.reviewPrompt": {
+    en: "Everything look good?",
+    es: "¿Todo bien?",
+  },
+
+  // Deliverables empty state sub-line (v2)
+  "detail.designsWillAppearSub": {
+    en: "We'll drop them here the moment they're ready — you'll get a heads-up.",
+    es: "Los dejaremos aquí en cuanto estén listos — te avisaremos.",
+  },
+
+  // Admin: view tag + status control (v2)
+  "detail.adminView": { en: "ADMIN VIEW", es: "VISTA ADMIN" },
+  "detail.adminStatusLabel": { en: "Status", es: "Estado" },
+
+  // Directions voting hero (v2 reskin)
+  "detail.pickFavoriteSub": {
+    en: "Take a look at each one and choose the direction that feels right.",
+    es: "Mira cada una y elige la dirección que más te late.",
+  },
+
+  // Loading skeleton (v2)
+  "detail.loadingRequest": {
+    en: "Loading your request…",
+    es: "Cargando tu solicitud…",
+  },
+
+  // Not-found / error (v2)
+  "notFound.title": {
+    en: "We couldn't find this request.",
+    es: "No encontramos esta solicitud.",
+  },
+  "notFound.body": {
+    en: "Your work isn't lost. The link may have changed, or this request may belong to another account.",
+    es: "Tu trabajo no se pierde. Puede que el enlace haya cambiado o que esta solicitud sea de otra cuenta.",
+  },
+  "notFound.cta": {
+    en: "Go to my requests",
+    es: "Ir a mis solicitudes",
+  },
+  "notFound.contact": {
+    en: "Message {studio}",
+    es: "Escribir a {studio}",
+  },
+  "error.title": {
+    en: "Something went wrong.",
+    es: "Algo salió mal.",
+  },
+  "error.body": {
+    en: "We couldn't load this request. This might be a temporary hiccup.",
+    es: "No pudimos cargar esta solicitud. Puede ser algo temporal.",
+  },
+  "error.retry": {
+    en: "Try again",
+    es: "Reintentar",
+  },
 } as const;
