@@ -124,6 +124,34 @@ export default async function RequestDetailPage({
   ]);
   const creatorName = creatorProfile?.full_name ?? null;
 
+  // Assigned designer name (for the conversation eyebrow + queue callout).
+  const { data: assigneeProfile } = request.assignee_id
+    ? await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", request.assignee_id)
+        .maybeSingle()
+    : { data: null };
+  const assigneeName = assigneeProfile?.full_name ?? null;
+
+  // Queue position — REAL rank among THIS client's open (queued/in_progress)
+  // requests, ordered by priority desc then created_at asc. Only meaningful
+  // while the request itself is open; null otherwise (or if it can't be found).
+  let queuePosition: number | null = null;
+  if (request.status === "queued" || request.status === "in_progress") {
+    const { data: openRequests } = await supabase
+      .from("requests")
+      .select("id")
+      .eq("client_id", request.client_id)
+      .in("status", ["queued", "in_progress"])
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: true });
+    if (openRequests) {
+      const idx = openRequests.findIndex((r) => r.id === request.id);
+      if (idx >= 0) queuePosition = idx + 1;
+    }
+  }
+
   // Admin roster for the assignee control (admins only; joined in JS, never
   // embedded on the request — keeps requests↔profiles embed-free).
   const { data: admins } =
@@ -164,6 +192,8 @@ export default async function RequestDetailPage({
       }}
       clientName={clientName}
       creatorName={creatorName}
+      assigneeName={assigneeName}
+      queuePosition={queuePosition}
       memberCount={memberCount ?? 1}
       currentUserId={user.id}
       isAdmin={profile.role === "admin" && !isImpersonating}

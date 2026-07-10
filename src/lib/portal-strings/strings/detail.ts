@@ -153,4 +153,26 @@ export const detail = {
 
   // Request creator attribution
   "detail.createdBy": { en: "Created by {name}", es: "Creado por {name}" },
+
+  // Queue-position callout (v2) — real rank among the client's open requests
+  "detail.queuePosition": { en: "#{n} in your queue", es: "Posición #{n} en tu cola" },
+  "detail.queueBy": { en: "{who} is on it", es: "{who} se encarga" },
+  "detail.queueEta": { en: "for {date}", es: "para el {date}" },
+  "detail.queueDesignerFallback": { en: "your designer", es: "tu diseñador" },
+
+  // Conversation section (v2 chat)
+  "detail.conversationEyebrow": { en: "CONVERSATION", es: "CONVERSACIÓN" },
+  "detail.conversationWith": { en: "· directly with {designer}, no middlemen", es: "· directa con {designer}, sin intermediarios" },
+  "detail.composerPlaceholder": { en: "Message {designer}…", es: "Escríbele a {designer}…" },
+  "detail.send": { en: "Send", es: "Enviar" },
+  "detail.emptyChat": {
+    en: "No messages yet. Say hi to {designer}, or we'll write here as soon as there's news.",
+    es: "Aún no hay mensajes. Saluda a {designer}, o te escribimos aquí en cuanto haya novedades.",
+  },
+
+  // Peak-End: first-approval beat
+  "celebrate.first": {
+    en: "Your first approved design. Here's to many more.",
+    es: "Tu primer diseño aprobado. Por muchos más.",
+  },
 } as const;

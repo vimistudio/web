@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -154,6 +153,8 @@ interface RequestDetailProps {
   request: Request;
   clientName: string;
   creatorName?: string | null;
+  assigneeName?: string | null;
+  queuePosition?: number | null;
   memberCount?: number;
   currentUserId: string;
   isAdmin: boolean;
@@ -212,7 +213,7 @@ function CarouselTagInput({ onAdd }: { onAdd: (tag: string) => void }) {
 const LOOM_REGEX = /https?:\/\/(?:www\.)?loom\.com\/share\/([a-zA-Z0-9]+)(?:\?[^\s]*)?/g;
 const YOUTUBE_REGEX = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s]*)?/g;
 
-function CommentBody({ body }: { body: string }) {
+function CommentBody({ body, mine = false }: { body: string; mine?: boolean }) {
   const loomMatches = Array.from(body.matchAll(LOOM_REGEX));
   const youtubeMatches = Array.from(body.matchAll(YOUTUBE_REGEX));
 
@@ -223,9 +224,14 @@ function CommentBody({ body }: { body: string }) {
   textBody = textBody.trim();
 
   return (
-    <div className="mt-1 space-y-2">
+    <div className="space-y-2">
       {textBody && (
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{textBody}</p>
+        <p
+          className="text-sm whitespace-pre-wrap"
+          style={{ color: mine ? "#F6F4EF" : "#3A3843" }}
+        >
+          {textBody}
+        </p>
       )}
       {loomMatches.map((m, i) => (
         <div key={`loom-${i}`} className="mt-2 rounded-lg overflow-hidden border bg-black/5">
@@ -282,6 +288,14 @@ const typeLabels: Record<string, string> = {
   other: "Other",
 };
 
+// Priority badge backgrounds (v2 header card) — mirror the existing priority
+// palette: whenever/gray, this-week/blue, urgent/red.
+const priorityBadgeColors: Record<number, string> = {
+  1: "bg-gray-100 text-gray-600",
+  2: "bg-[#E8EDFB] text-[#3554A8]",
+  3: "bg-red-100 text-red-600",
+};
+
 const typeColors: Record<string, string> = {
   logo: "bg-purple-100 text-purple-700",
   social: "bg-pink-100 text-pink-700",
@@ -293,6 +307,9 @@ const typeColors: Record<string, string> = {
 
 // --- Sub-components ---
 
+// Goal-gradient stepper — dots + filling bars on one centerline via CSS grid.
+// Progress is purely a function of `currentStatus`; bars fill with the
+// per-client accent (done = 100%, current = partial, future = empty).
 function ProgressStepper({
   currentStatus,
   t,
@@ -301,46 +318,87 @@ function ProgressStepper({
   t: (key: PortalKey, vars?: Record<string, string | number>) => string;
 }) {
   const currentIndex = statusSteps.findIndex((s) => s.key === currentStatus);
+  // "auto 1fr auto 1fr auto 1fr auto" — dot columns are auto, bars stretch.
+  const gridTemplateColumns = statusSteps.map(() => "auto").join(" 1fr ");
 
   return (
-    <div className="flex items-center gap-1 py-2">
-      {statusSteps.map((step, i) => (
-        <Fragment key={step.key}>
-          <div className="flex items-center gap-1.5">
+    <div
+      className="grid items-center gap-y-2 py-1"
+      style={{ gridTemplateColumns }}
+      role="list"
+      aria-label={t(`status.${currentStatus}` as PortalKey)}
+    >
+      {/* Row 1 — dots + connecting bars */}
+      {statusSteps.map((step, i) => {
+        const done = i < currentIndex;
+        const current = i === currentIndex;
+        return (
+          <Fragment key={step.key}>
             <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-all duration-300 ${
-                i < currentIndex
-                  ? "bg-primary border-primary text-white"
-                  : i === currentIndex
-                    ? "border-primary text-primary scale-110 shadow-sm shadow-primary/30"
-                    : "border-muted-foreground/30 text-muted-foreground/40"
-              }`}
+              className="relative flex h-8 w-8 items-center justify-center"
+              role="listitem"
+              aria-current={current ? "step" : undefined}
             >
-              {i < currentIndex ? (
-                <CheckmarkCircle01Icon size={14} />
-              ) : (
-                i + 1
+              {current && (
+                <span
+                  aria-hidden
+                  className="vm-pulse absolute inset-0 rounded-full"
+                  style={{ background: "var(--accent)" }}
+                />
               )}
+              <div
+                className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-semibold transition-all duration-300"
+                style={
+                  done
+                    ? { background: "var(--status-done)", color: "#fff" }
+                    : current
+                      ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+                      : {
+                          background: "#fff",
+                          color: "var(--vimi-faint)",
+                          border: "1.5px solid var(--vimi-border)",
+                        }
+                }
+              >
+                {done ? <CheckmarkCircle01Icon size={16} /> : i + 1}
+              </div>
             </div>
+            {i < statusSteps.length - 1 && (
+              <div
+                className="h-[3px] rounded-full"
+                style={{ background: "var(--vimi-border)" }}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-500 ease-out"
+                  style={{
+                    width: done ? "100%" : current ? "35%" : "0%",
+                    background: "var(--accent)",
+                  }}
+                />
+              </div>
+            )}
+          </Fragment>
+        );
+      })}
+
+      {/* Row 2 — labels aligned under each dot */}
+      {statusSteps.map((step, i) => {
+        const current = i === currentIndex;
+        return (
+          <Fragment key={`${step.key}-label`}>
             <span
-              className={`text-[10px] sm:text-xs font-medium ${
-                i <= currentIndex
-                  ? "text-foreground"
-                  : "text-muted-foreground/40"
+              className={`text-center text-[10px] leading-tight sm:text-[11px] ${
+                current
+                  ? "font-bold text-[color:var(--vimi-ink)]"
+                  : "font-medium text-[color:var(--vimi-faint)]"
               }`}
             >
               {t(`status.${step.key}` as PortalKey)}
             </span>
-          </div>
-          {i < statusSteps.length - 1 && (
-            <div
-              className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < currentIndex ? "bg-primary" : "bg-muted-foreground/20"
-              }`}
-            />
-          )}
-        </Fragment>
-      ))}
+            {i < statusSteps.length - 1 && <span aria-hidden />}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
@@ -783,6 +841,8 @@ export function RequestDetail({
   request,
   clientName,
   creatorName = null,
+  assigneeName = null,
+  queuePosition = null,
   memberCount = 1,
   currentUserId,
   isAdmin,
@@ -885,7 +945,6 @@ export function RequestDetail({
       ? `/portal/admin/clients/${request.clients?.slug ?? ""}`
       : "/portal";
 
-  const status = statusConfig[currentStatus];
   const priority = priorityLabels[request.priority];
   const requestedDate = new Date(request.created_at).toLocaleDateString(
     undefined,
@@ -896,6 +955,29 @@ export function RequestDetail({
     addSuffix: true,
     locale: dfnsLocale,
   });
+
+  const firstName = (full: string | null) =>
+    full ? full.trim().split(/\s+/)[0] : null;
+  // Designer for the conversation/queue copy: real assignee name, else neutral.
+  const designerName = firstName(assigneeName) ?? t("detail.queueDesignerFallback");
+  // Composer counterpart: admins message the client, clients message the designer.
+  const composerPartner = isAdmin
+    ? firstName(clientName) ?? clientName
+    : designerName;
+  const showCreator = memberCount >= 2 && !!creatorName;
+  const dueDateShort = request.due_date
+    ? new Date(request.due_date).toLocaleDateString(
+        locale === "es" ? "es-ES" : "en-US",
+        { month: "short", day: "numeric" }
+      )
+    : null;
+  const dueDateLong = request.due_date
+    ? new Date(request.due_date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   // Review header meta line — real delivered date + visible file count.
   const reviewMeta = (() => {
@@ -1448,8 +1530,8 @@ export function RequestDetail({
         isAdmin ? "max-w-3xl" : "max-w-2xl"
       }`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-3">
         <Link
           href={backHref}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
@@ -1457,18 +1539,119 @@ export function RequestDetail({
           <ArrowLeft01Icon size={16} />
           {isAdmin ? t("detail.backToClient") : t("detail.myRequests")}
         </Link>
-        <div className="flex items-center gap-2">
-          {priority && (
-            <span className={`text-xs font-medium ${priority.color}`}>
-              {t(priority.labelKey as PortalKey)}
-            </span>
-          )}
-          <Badge className={status.color}>{t(`status.${currentStatus}` as PortalKey)}</Badge>
-        </div>
+        <span className="text-right text-xs text-[color:var(--vimi-muted)]">
+          {t("detail.requested")} {requestedDate} · {t("detail.updated")} {updatedDate}
+        </span>
       </div>
 
-      {/* Progress Stepper */}
-      <ProgressStepper currentStatus={currentStatus} t={t} />
+      {/* Header card (v2) — badges, serif title, description, edit pill,
+          meta, goal-gradient stepper, queue callout. Replaced by the edit
+          form while editing (queued clients only). */}
+      {!isEditing && (
+        <div className="vm-rise rounded-[20px] border border-[color:var(--vimi-border)] bg-white p-6 shadow-[0_2px_8px_rgba(28,27,31,0.05)] sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${typeColors[request.type] ?? typeColors.other}`}
+                >
+                  {typeLabels[request.type] ? t(`form.type.${request.type}` as PortalKey) : request.type}
+                </span>
+                {priority && (
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em] ${priorityBadgeColors[request.priority] ?? priorityBadgeColors[1]}`}
+                  >
+                    {t(priority.labelKey as PortalKey)}
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-3 font-serif text-[28px] italic leading-tight text-[color:var(--vimi-ink)] sm:text-[32px]">
+                {request.title}
+              </h1>
+              {request.description ? (
+                <p className="mt-2 text-sm leading-relaxed text-[color:var(--vimi-muted)]">
+                  {request.description}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm italic text-[color:var(--vimi-faint)]">
+                  {t("detail.noDescription")}
+                </p>
+              )}
+            </div>
+            {canEdit && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="shrink-0 rounded-full border border-[color:var(--vimi-border)] px-4 py-2 text-xs font-semibold text-[color:var(--vimi-ink)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+              >
+                {t("edit.title")}
+              </button>
+            )}
+          </div>
+
+          {(showCreator || request.due_date || isAdmin) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--vimi-muted)]">
+              {showCreator && (
+                <span>{t("detail.createdBy", { name: firstName(creatorName)! })}</span>
+              )}
+              {request.due_date && (
+                <span className="flex items-center gap-1">
+                  <CalendarIcon size={12} />
+                  {t("detail.due")} {dueDateLong}
+                </span>
+              )}
+              {isAdmin && (
+                <span className="flex items-center gap-1.5">
+                  Assigned to
+                  <AssigneeMenu
+                    requestId={request.id}
+                    assigneeId={request.assignee_id}
+                    admins={admins}
+                    size="md"
+                    showName
+                  />
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="my-5 h-px bg-[color:var(--vimi-border)]" />
+          <ProgressStepper currentStatus={currentStatus} t={t} />
+
+          {/* Queue-position callout — client only, open requests only, and
+              only ever REAL data: rank from the server, ETA gated on a real
+              due date, designer name from the assignee (else neutral). */}
+          {!isAdmin &&
+            queuePosition != null &&
+            (currentStatus === "queued" || currentStatus === "in_progress") && (
+              <div className="mt-5 flex items-center gap-3 rounded-xl border border-[color:var(--vimi-border)] bg-[#FBFAF8] px-4 py-3">
+                <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
+                  <span
+                    aria-hidden
+                    className="vm-pulse absolute inset-0 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                  <span
+                    className="relative h-2.5 w-2.5 rounded-full"
+                    style={{ background: "var(--accent)" }}
+                  />
+                </span>
+                <p className="text-[13px] text-[color:var(--vimi-ink)]">
+                  <span className="font-semibold">
+                    {t("detail.queuePosition", { n: queuePosition })}
+                  </span>
+                  {" · "}
+                  {t("detail.queueBy", { who: designerName })}
+                  {dueDateShort && (
+                    <>
+                      {" · "}
+                      {t("detail.queueEta", { date: dueDateShort })}
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+        </div>
+      )}
 
       {/* Completion Banner */}
       {currentStatus === "done" && (
@@ -1521,25 +1704,8 @@ export function RequestDetail({
         </div>
       )}
 
-      {/* Queued status reassurance — hidden while editing to reduce competition */}
-      {currentStatus === "queued" && !isAdmin && !isEditing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm text-blue-800">
-            {t("detail.upNext")}
-          </p>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors underline underline-offset-2"
-            >
-              {t("edit.title")}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Title + Meta */}
-      {isEditing ? (
+      {/* Edit form (queued clients only) — replaces the header card while active */}
+      {isEditing && (
         <div className="bg-white border border-[color:var(--vimi-border)] rounded-[20px] p-6 shadow-[0_2px_8px_rgba(28,27,31,0.04)] space-y-5">
           <h2 className="font-serif italic text-2xl leading-tight text-[color:var(--vimi-ink)]">
             {t("edit.heading")}
@@ -1639,72 +1805,6 @@ export function RequestDetail({
             </Button>
           </div>
         </div>
-      ) : (
-        <>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-muted-foreground font-medium">
-                {clientName}
-              </span>
-            </div>
-            <h1 className="text-2xl font-semibold">{request.title}</h1>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge
-                variant="secondary"
-                className={`text-xs ${typeColors[request.type] ?? typeColors.other}`}
-              >
-                {typeLabels[request.type] ? t(`form.type.${request.type}` as PortalKey) : request.type}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {t("detail.requested")} {requestedDate}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                · {t("detail.updated")} {updatedDate}
-              </span>
-              {memberCount >= 2 && creatorName && (
-                <span className="text-xs text-muted-foreground">
-                  · {t("detail.createdBy", { name: creatorName.trim().split(/\s+/)[0] })}
-                </span>
-              )}
-              {request.due_date && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  · <CalendarIcon size={12} />
-                  {t("detail.due")}{" "}
-                  {new Date(request.due_date).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-            </div>
-            {isAdmin && (
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Assigned to
-                </span>
-                <AssigneeMenu
-                  requestId={request.id}
-                  assigneeId={request.assignee_id}
-                  admins={admins}
-                  size="md"
-                  showName
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          {request.description ? (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {request.description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground/60 italic">
-              {t("detail.noDescription")}
-            </p>
-          )}
-        </>
       )}
 
       {/* Social Posts (Carousels) — Story-driven directions */}
@@ -2247,56 +2347,108 @@ export function RequestDetail({
       {/* Activity Timeline */}
       {activityLog.length > 0 && <ActivityTimeline entries={activityLog} locale={locale} />}
 
-      {/* Comments */}
-      <div className="space-y-4">
-        <h2 className="text-sm font-medium">
-          {t("detail.comments")} ({allComments.length})
-        </h2>
+      {/* Conversation — WhatsApp-style two-sided chat */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[color:var(--vimi-faint)]">
+            {t("detail.conversationEyebrow")}
+          </h2>
+          <span className="text-[11px] text-[color:var(--vimi-faint)]">
+            {t("detail.conversationWith", { designer: designerName })}
+          </span>
+        </div>
 
         {allComments.map((c) => {
           const isOwnComment = c.author_id === currentUserId;
           const isOptimistic = c.id.startsWith("optimistic-");
           const authorInitials = getInitials(c.profiles?.full_name ?? "?");
           const isAdminComment = c.profiles?.role === "admin";
+          const who = c.profiles?.full_name ?? t("detail.unknownUser");
 
           return (
             <div
               key={c.id}
-              className={`flex gap-3 ${isOptimistic ? "opacity-60" : ""}`}
+              className={`flex items-end gap-2 ${isOwnComment ? "flex-row-reverse" : ""} ${
+                isOptimistic ? "opacity-60" : ""
+              }`}
             >
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarImage src={c.profiles?.avatar_url ?? undefined} />
                 <AvatarFallback
                   className={`text-xs ${
-                    isAdminComment
-                      ? "bg-primary text-white"
-                      : isOwnComment
-                        ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-600"
+                    isOwnComment || isAdminComment ? "text-white" : "bg-gray-200 text-gray-600"
                   }`}
+                  style={
+                    isOwnComment
+                      ? { background: "var(--vimi-ink)" }
+                      : isAdminComment
+                        ? { background: "var(--accent)" }
+                        : undefined
+                  }
                 >
                   {authorInitials}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium">
-                    {c.profiles?.full_name ?? t("detail.unknownUser")}
-                  </span>
+              <div
+                className={`flex max-w-[78%] min-w-0 flex-col ${
+                  isOwnComment ? "items-end" : "items-start"
+                }`}
+              >
+                <div
+                  className="px-3.5 py-2.5"
+                  style={
+                    isOwnComment
+                      ? {
+                          background: "var(--vimi-ink)",
+                          borderRadius: "16px 16px 4px 16px",
+                        }
+                      : {
+                          background: "#fff",
+                          border: "1px solid var(--vimi-border)",
+                          borderRadius: "16px 16px 16px 4px",
+                        }
+                  }
+                >
+                  {c.body && <CommentBody body={c.body} mine={isOwnComment} />}
+                  {c.attachment_url && c.attachment_type?.startsWith("image/") && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.attachment_url}
+                      alt={c.attachment_name ?? "attachment"}
+                      className="mt-2 rounded-lg max-w-[240px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  )}
+                  {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
+                    <a
+                      href={c.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`mt-2 inline-flex items-center gap-1.5 text-xs hover:underline ${
+                        isOwnComment ? "text-[#F6F4EF]" : "text-primary"
+                      }`}
+                    >
+                      <Download01Icon size={12} />
+                      {c.attachment_name ?? t("detail.attachment")}
+                    </a>
+                  )}
+                </div>
+                <div
+                  className="mt-1 flex items-center gap-1.5 px-1 text-[11px] text-[color:var(--vimi-faint)]"
+                  title={new Date(c.created_at).toLocaleString()}
+                >
+                  <span>{who}</span>
                   {isAdminComment && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                       Vimi Studio
                     </span>
                   )}
                   {!isAdminComment && isAdmin && !isOwnComment && (
-                    <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                       Client
                     </span>
                   )}
-                  <span
-                    className="text-xs text-muted-foreground"
-                    title={new Date(c.created_at).toLocaleString()}
-                  >
+                  <span>
+                    ·{" "}
                     {isOptimistic
                       ? t("detail.justNow")
                       : formatDistanceToNow(new Date(c.created_at), {
@@ -2305,35 +2457,23 @@ export function RequestDetail({
                         })}
                   </span>
                 </div>
-                {c.body && <CommentBody body={c.body} />}
-                {c.attachment_url && c.attachment_type?.startsWith("image/") && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={c.attachment_url}
-                    alt={c.attachment_name ?? "attachment"}
-                    className="mt-2 rounded-lg max-w-[280px] max-h-[200px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                  />
-                )}
-                {c.attachment_url && !c.attachment_type?.startsWith("image/") && (
-                  <a
-                    href={c.attachment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                  >
-                    <Download01Icon size={12} />
-                    {c.attachment_name ?? t("detail.attachment")}
-                  </a>
-                )}
               </div>
             </div>
           );
         })}
 
         {allComments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {t("detail.noComments")}
-          </p>
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[color:var(--vimi-border)] px-6 py-8 text-center">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-white"
+              style={{ background: "var(--accent)" }}
+            >
+              {designerName.charAt(0).toUpperCase()}
+            </div>
+            <p className="max-w-[42ch] text-sm text-[color:var(--vimi-muted)]">
+              {t("detail.emptyChat", { designer: designerName })}
+            </p>
+          </div>
         )}
 
         <div ref={commentsEndRef} />
@@ -2365,7 +2505,7 @@ export function RequestDetail({
                     setComment(chip);
                     commentInputRef.current?.focus();
                   }}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-[color:var(--vimi-border)] bg-white hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] transition-colors whitespace-nowrap"
                 >
                   {chip}
                 </button>
@@ -2403,7 +2543,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-gray-200 bg-white px-2 py-1.5 focus-within:border-primary/50 transition-colors">
+          <div className="flex items-end gap-1.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-colors focus-within:border-[color:var(--accent)]">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
@@ -2432,7 +2572,7 @@ export function RequestDetail({
             <Textarea
               ref={commentInputRef}
               aria-label="Add a comment"
-              placeholder={t("detail.addComment")}
+              placeholder={t("detail.composerPlaceholder", { designer: composerPartner })}
               value={comment}
               onChange={(e) => {
                 setComment(e.target.value);
@@ -2470,16 +2610,27 @@ export function RequestDetail({
               aria-label="Send comment"
               onClick={handleSubmitComment}
               disabled={(!comment.trim() && !commentAttachment) || isSubmitting}
-              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
+              className={`shrink-0 h-11 px-4 rounded-full inline-flex items-center justify-center gap-1.5 text-sm font-semibold transition-all ${
                 comment.trim() || commentAttachment
-                  ? "bg-primary hover:bg-primary/90 text-white"
-                  : "bg-transparent text-gray-300"
+                  ? "text-white hover:opacity-90"
+                  : "bg-[color:rgba(28,27,31,0.06)] text-[color:var(--vimi-faint)]"
               }`}
+              style={
+                comment.trim() || commentAttachment
+                  ? { background: "var(--accent)" }
+                  : undefined
+              }
             >
               {isSubmitting ? (
                 <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <SentIcon size={14} color={comment.trim() || commentAttachment ? "white" : "currentColor"} />
+                <>
+                  <SentIcon
+                    size={14}
+                    color={comment.trim() || commentAttachment ? "white" : "currentColor"}
+                  />
+                  <span>{t("detail.send")}</span>
+                </>
               )}
             </button>
           </div>
@@ -2522,9 +2673,11 @@ export function RequestDetail({
               {t("celebrate.title")}
             </div>
             <p className="mb-7 text-[color:var(--vimi-muted)] leading-relaxed">
-              {doneCount
-                ? t("celebrate.count", { n: doneCount })
-                : t("celebrate.countFallback")}
+              {doneCount === 1
+                ? t("celebrate.first")
+                : doneCount
+                  ? t("celebrate.count", { n: doneCount })
+                  : t("celebrate.countFallback")}
             </p>
             <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--vimi-faint)]">
               {t("celebrate.ratedPrompt")}
