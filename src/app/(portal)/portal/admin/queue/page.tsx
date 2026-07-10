@@ -19,15 +19,19 @@ export default async function QueuePage() {
   if (profile?.role !== "admin") redirect("/portal");
 
   // Fetch ALL non-done requests across all clients (is_active drives the
-  // default active-only view; paused clients are togglable client-side)
+  // default active-only view; paused clients are togglable client-side).
+  // Order mirrors the admin work order: queue_rank asc (nulls last), then
+  // priority desc, then created_at asc — the same order the client's queue
+  // position is derived from.
   const { data: requests } = await supabase
     .from("requests")
     .select(
-      "*, clients(name, slug, is_active, designer_id), deliverables(id), comments(id, created_at, author_id)"
+      "*, clients(name, slug, is_active, designer_id, accent_color), deliverables(id), comments(id, created_at, author_id)"
     )
     .neq("status", "done")
+    .order("queue_rank", { ascending: true, nullsFirst: false })
     .order("priority", { ascending: false })
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: true });
 
   // Admin roster for the read-only assignee avatars (joined in JS, no embed).
   const { data: admins } = await supabase

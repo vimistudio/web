@@ -1,17 +1,27 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
+import { useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
-  FireIcon,
-  CalendarIcon,
-  LeafIcon,
-  Comment01Icon,
-  Download01Icon,
-} from "@/components/ui/icons";
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import { createClient } from "@/lib/supabase/client";
 import { AssigneeAvatar, type Admin } from "./assignee-control";
 import { useWorkScope } from "@/hooks/use-work-scope";
 
@@ -27,7 +37,15 @@ interface QueueRequest {
   created_at: string;
   updated_at: string;
   due_date: string | null;
-  clients: { name: string; slug: string; is_active: boolean; designer_id: string | null } | null;
+  is_archived: boolean;
+  queue_rank: number | null;
+  clients: {
+    name: string;
+    slug: string;
+    is_active: boolean;
+    designer_id: string | null;
+    accent_color: string | null;
+  } | null;
   deliverables: { id: string }[];
   comments: { id: string; created_at: string; author_id: string }[];
 }
@@ -43,31 +61,36 @@ interface AdminQueueViewProps {
 type StatusTab = "all" | "queued" | "in_progress" | "review";
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "queued", label: "Up Next" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Ready for Review" },
+  { key: "all", label: "Todas" },
+  { key: "queued", label: "En cola" },
+  { key: "in_progress", label: "En proceso" },
+  { key: "review", label: "Revisión" },
 ];
 
-type SortOption = "priority" | "newest" | "oldest" | "due_date";
-
-const SORT_OPTIONS: { key: SortOption; label: string }[] = [
-  { key: "priority", label: "Priority" },
-  { key: "newest", label: "Newest" },
-  { key: "oldest", label: "Oldest" },
-  { key: "due_date", label: "Due Date" },
-];
+const DEFAULT_ACCENT = "#5B4BD6";
+const ROSEWOOD = "#B03A5B";
+const STALE_DAYS = 6; // in review longer than this → "se está enfriando"
+const RANK_STEP = 1000;
 
 const statusDotColor: Record<string, string> = {
-  queued: "bg-gray-400",
-  in_progress: "bg-blue-500",
-  review: "bg-amber-500",
+  queued: "#9A96A3",
+  in_progress: "#4064C9",
+  review: "#C9821B",
 };
 
 const statusLabel: Record<string, string> = {
-  queued: "Up Next",
-  in_progress: "In Progress",
-  review: "Ready for Review",
+  queued: "En cola",
+  in_progress: "En proceso",
+  review: "Revisión",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  logo: "LOGO",
+  social: "SOCIAL",
+  web: "WEB",
+  brand: "MARCA",
+  presentation: "DECK",
+  other: "OTRO",
 };
 
 const typeColors: Record<string, string> = {
@@ -78,6 +101,10 @@ const typeColors: Record<string, string> = {
   presentation: "bg-emerald-100 text-emerald-700",
   other: "bg-gray-100 text-gray-700",
 };
+
+function typeLabel(type: string): string {
+  return TYPE_LABELS[type] ?? type.toUpperCase();
+}
 
 // --- Helpers ---
 
@@ -93,45 +120,68 @@ function isPaused(request: QueueRequest): boolean {
   return request.clients?.is_active === false;
 }
 
-function isDueSoon(dueDate: string): boolean {
-  const due = new Date(dueDate);
-  const now = new Date();
-  const diff = due.getTime() - now.getTime();
-  const twoDays = 2 * 24 * 60 * 60 * 1000;
-  return diff >= 0 && diff <= twoDays;
+function isOverdue(dueDate: string | null): boolean {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date();
 }
 
-function isOverdue(dueDate: string): boolean {
-  return new Date(dueDate) < new Date();
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
+function isStale(request: QueueRequest): boolean {
+  return request.status === "review" && daysSince(request.updated_at) > STALE_DAYS;
+}
+
+function needsAttention(request: QueueRequest): boolean {
+  return isOverdue(request.due_date) || isStale(request);
+}
+
+function accentOf(request: QueueRequest): string {
+  return request.clients?.accent_color || DEFAULT_ACCENT;
+}
+
+function ageLabel(iso: string): string {
+  return formatDistanceToNow(new Date(iso), { addSuffix: false, locale: es });
+}
+
+function dueDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+
+// Admin work order: queue_rank asc (nulls last), then priority desc, created_at asc.
+function adminSort(a: QueueRequest, b: QueueRequest): number {
+  const ar = a.queue_rank;
+  const br = b.queue_rank;
+  if (ar != null && br != null && ar !== br) return ar - br;
+  if (ar != null && br == null) return -1;
+  if (ar == null && br != null) return 1;
+  if (b.priority !== a.priority) return b.priority - a.priority;
+  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 }
 
 // --- Component ---
 
 export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
-  const [sortBy, setSortBy] = useState<SortOption>("priority");
   const [showPaused, setShowPaused] = useState(false);
   const [clientFilter, setClientFilter] = useState<string>("all");
+  const [showArchived, setShowArchived] = useState(false);
   const { scope, setScope } = useWorkScope();
-  // Solo-admin mode: one-person studio → no "mine vs everyone" distinction.
-  // Hide the scope pills and show everything. Reappears at admin #2.
   const solo = admins.length <= 1;
 
-  // Requests belonging to paused clients — hidden from the default view
-  const pausedCount = useMemo(
-    () => requests.filter(isPaused).length,
-    [requests]
-  );
+  // Local mirror of the server data so archive/restore/reorder can be
+  // optimistic. Re-syncs whenever the server re-fetches (router.refresh()).
+  const [rows, setRows] = useState<QueueRequest[]>(requests);
+  useEffect(() => {
+    setRows(requests);
+  }, [requests]);
+  const rowsRef = useRef(rows);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
-  // Inclusion set: active clients only unless paused clients are shown
-  const baseRequests = useMemo(
-    () => (showPaused ? requests : requests.filter((r) => !isPaused(r))),
-    [requests, showPaused]
-  );
-
-  // "Mine" = assigned to me, OR unassigned when the client's designer is me or
-  // the client has no designer (so an ownerless request never goes dark for
-  // anyone). Kept identical to the dashboard predicate.
   const isMine = useCallback(
     (r: QueueRequest) => {
       if (r.assignee_id) return r.assignee_id === adminId;
@@ -140,21 +190,38 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     },
     [adminId]
   );
+
+  // Archived are OUT of every count and the queue (the #121 fix).
+  const archived = useMemo(() => rows.filter((r) => r.is_archived), [rows]);
+  const nonArchived = useMemo(() => rows.filter((r) => !r.is_archived), [rows]);
+
+  const pausedCount = useMemo(
+    () => nonArchived.filter(isPaused).length,
+    [nonArchived]
+  );
+
+  const baseRequests = useMemo(
+    () => (showPaused ? nonArchived : nonArchived.filter((r) => !isPaused(r))),
+    [nonArchived, showPaused]
+  );
+
   const mineCount = useMemo(
     () => baseRequests.filter(isMine).length,
     [baseRequests, isMine]
   );
   const everyoneCount = baseRequests.length;
 
-  // Work-scope layer sits above every other filter (ignored when solo).
   const scopedRequests = useMemo(
     () => (scope === "mine" && !solo ? baseRequests.filter(isMine) : baseRequests),
     [baseRequests, scope, isMine, solo]
   );
 
-  // Clients with open requests in the current inclusion set (for filter chips)
+  // Client chips (with accent dot) over the current inclusion set.
   const clientChips = useMemo(() => {
-    const map = new Map<string, { slug: string; name: string; count: number }>();
+    const map = new Map<
+      string,
+      { slug: string; name: string; accent: string; count: number }
+    >();
     for (const r of scopedRequests) {
       if (!r.clients) continue;
       const existing = map.get(r.clients.slug);
@@ -163,6 +230,7 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
         map.set(r.clients.slug, {
           slug: r.clients.slug,
           name: r.clients.name,
+          accent: accentOf(r),
           count: 1,
         });
     }
@@ -171,7 +239,6 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     );
   }, [scopedRequests]);
 
-  // Narrow to the selected client (drives both list and status-tab counts)
   const clientScoped = useMemo(
     () =>
       clientFilter === "all"
@@ -180,261 +247,618 @@ export function AdminQueueView({ requests, adminId, admins }: AdminQueueViewProp
     [scopedRequests, clientFilter]
   );
 
-  // Count per status (reflects inclusion set + selected client)
+  // Status-tab counts (reflect inclusion set + client filter; not the tab).
   const counts = useMemo(() => {
     const c = { all: clientScoped.length, queued: 0, in_progress: 0, review: 0 };
     for (const r of clientScoped) {
-      if (r.status in c) {
-        c[r.status as keyof typeof c]++;
-      }
+      if (r.status in c) c[r.status as keyof typeof c]++;
     }
     return c;
   }, [clientScoped]);
 
-  const filtersActive = activeTab !== "all" || clientFilter !== "all";
+  // Apply the status tab, then split into the two labelled groups.
+  const statusFiltered = useMemo(
+    () =>
+      activeTab === "all"
+        ? clientScoped
+        : clientScoped.filter((r) => r.status === activeTab),
+    [clientScoped, activeTab]
+  );
 
+  const attention = useMemo(
+    () => statusFiltered.filter(needsAttention).sort(adminSort),
+    [statusFiltered]
+  );
+
+  const workOrder = useMemo(
+    () =>
+      statusFiltered
+        .filter((r) => !needsAttention(r))
+        .slice()
+        .sort(adminSort),
+    [statusFiltered]
+  );
+
+  // Hero counts (Pareto): honest, over the visible inclusion set.
+  const overdueCount = useMemo(
+    () => scopedRequests.filter((r) => isOverdue(r.due_date)).length,
+    [scopedRequests]
+  );
+  const openCount = scopedRequests.length;
+  const clientCount = useMemo(
+    () => new Set(scopedRequests.map((r) => r.clients?.slug).filter(Boolean)).size,
+    [scopedRequests]
+  );
+
+  // Reorder is only offered in the unfiltered global view, so the visible EN
+  // ORDEN list matches the global order and rank math can't collide with
+  // hidden rows. Numbers still show under a filter — just not draggable.
+  const canReorder =
+    activeTab === "all" &&
+    clientFilter === "all" &&
+    (solo || scope === "everyone");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  // --- Archive / restore (existing behavior, optimistic) ---
+
+  const handleArchive = useCallback(
+    async (id: string) => {
+      const snapshot = rowsRef.current;
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, is_archived: true } : r))
+      );
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("requests")
+        .update({ is_archived: true })
+        .eq("id", id);
+      if (error) {
+        setRows(snapshot);
+        toast.error("No se pudo archivar. Intenta de nuevo.");
+      } else {
+        toast.success("Solicitud archivada");
+        router.refresh();
+      }
+    },
+    [router]
+  );
+
+  const handleRestore = useCallback(
+    async (id: string) => {
+      const snapshot = rowsRef.current;
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, is_archived: false } : r))
+      );
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("requests")
+        .update({ is_archived: false })
+        .eq("id", id);
+      if (error) {
+        setRows(snapshot);
+        toast.error("No se pudo restaurar. Intenta de nuevo.");
+      } else {
+        toast.success("Solicitud restaurada");
+        router.refresh();
+      }
+    },
+    [router]
+  );
+
+  // --- Drag to reprioritize ---
+
+  async function persistReorder(updates: { id: string; queue_rank: number }[]) {
+    const snapshot = rowsRef.current;
+    // Optimistic: fold the new ranks into local state.
+    const rankById = new Map(updates.map((u) => [u.id, u.queue_rank]));
+    setRows((prev) =>
+      prev.map((r) =>
+        rankById.has(r.id) ? { ...r, queue_rank: rankById.get(r.id)! } : r
+      )
+    );
+    try {
+      const res = await fetch("/api/portal/queue/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Error");
+      }
+      router.refresh();
+    } catch {
+      setRows(snapshot);
+      toast.error("No se pudo reordenar. Intenta de nuevo.");
+    }
+  }
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const list = workOrder;
+    const oldI = list.findIndex((r) => r.id === active.id);
+    const newI = list.findIndex((r) => r.id === over.id);
+    if (oldI < 0 || newI < 0) return;
+
+    const reordered = arrayMove(list, oldI, newI);
+    const moved = reordered[newI];
+    const prev = reordered[newI - 1];
+    const next = reordered[newI + 1];
+    const prevRank = prev?.queue_rank ?? null;
+    const nextRank = next?.queue_rank ?? null;
+
+    // Fast path: place the moved row at the midpoint of its new neighbors.
+    let midpoint: number | null = null;
+    const neighborsSeeded =
+      (!prev || prevRank != null) && (!next || nextRank != null);
+    if (neighborsSeeded) {
+      if (prev && next) midpoint = (prevRank! + nextRank!) / 2;
+      else if (prev) midpoint = prevRank! + RANK_STEP;
+      else if (next) midpoint = nextRank! - RANK_STEP;
+      else midpoint = RANK_STEP;
+      // Guard against float collapse (no room between neighbors).
+      if (
+        (prev && midpoint <= prevRank!) ||
+        (next && midpoint >= nextRank!)
+      ) {
+        midpoint = null;
+      }
+    }
+
+    if (midpoint != null) {
+      void persistReorder([{ id: moved.id, queue_rank: midpoint }]);
+      return;
+    }
+
+    // Fallback: reseed the whole global open order with the moved row in its
+    // new slot, so ranks stay globally consistent (incl. attention rows).
+    const enOrderIds = reordered.map((r) => r.id);
+    const attentionIds = new Set(attention.map((r) => r.id));
+    const queue = [...enOrderIds];
+    const allOpenSorted = nonArchived.slice().sort(adminSort);
+    const newGlobalIds = allOpenSorted.map((r) =>
+      attentionIds.has(r.id) ? r.id : (queue.shift() as string)
+    );
+    const updates = newGlobalIds.map((id, i) => ({
+      id,
+      queue_rank: (i + 1) * RANK_STEP,
+    }));
+    void persistReorder(updates);
+  }
+
+  // --- Render ---
+
+  const filtersActive = activeTab !== "all" || clientFilter !== "all";
   const clearFilters = () => {
     setActiveTab("all");
     setClientFilter("all");
   };
-
-  // Filter + sort
-  const filteredRequests = useMemo(() => {
-    let filtered =
-      activeTab === "all"
-        ? clientScoped
-        : clientScoped.filter((r) => r.status === activeTab);
-
-    const sorted = [...filtered];
-
-    switch (sortBy) {
-      case "priority":
-        sorted.sort((a, b) => {
-          if (b.priority !== a.priority) return b.priority - a.priority;
-          return (
-            new Date(b.updated_at).getTime() -
-            new Date(a.updated_at).getTime()
-          );
-        });
-        break;
-      case "newest":
-        sorted.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
-        );
-        break;
-      case "oldest":
-        sorted.sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() -
-            new Date(b.created_at).getTime()
-        );
-        break;
-      case "due_date":
-        sorted.sort((a, b) => {
-          if (!a.due_date && !b.due_date) return 0;
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return (
-            new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-          );
-        });
-        break;
-    }
-
-    return sorted;
-  }, [clientScoped, activeTab, sortBy]);
+  const hasVisible = attention.length > 0 || workOrder.length > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Queue</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Open requests across {showPaused ? "all" : "active"} clients, sorted by
-            what needs attention first.
+    <div className="space-y-7">
+      {/* HERO */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="font-serif italic text-[30px] md:text-[38px] leading-tight tracking-tight text-[color:var(--vimi-ink)]">
+            La cola
+          </h1>
+          <p className="text-sm text-[color:var(--vimi-muted)] mt-2 leading-relaxed">
+            {overdueCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-medium text-[color:var(--vimi-ink)]">
+                <PulseDot color={ROSEWOOD} />
+                {overdueCount} vencida{overdueCount === 1 ? "" : "s"}
+                <span className="mx-1 text-[color:var(--vimi-faint)]">·</span>
+              </span>
+            )}
+            {openCount} abierta{openCount === 1 ? "" : "s"} en {clientCount}{" "}
+            cliente{clientCount === 1 ? "" : "s"} · ordenadas por lo que necesita
+            atención primero
           </p>
         </div>
 
-        {/* Work scope: Mine (assigned to me + unassigned) vs Everyone */}
-        {!solo && (
-        <div
-          className="inline-flex items-center rounded-full bg-gray-100 p-0.5 shrink-0 self-start"
-          role="tablist"
-          aria-label="Work scope"
-        >
-          <button
-            role="tab"
-            aria-selected={scope === "mine"}
-            onClick={() => setScope("mine")}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              scope === "mine"
-                ? "bg-white text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Mine{" "}
-            <span className={scope === "mine" ? "text-muted-foreground" : "text-gray-400"}>
-              ({mineCount})
-            </span>
-          </button>
-          <button
-            role="tab"
-            aria-selected={scope === "everyone"}
-            onClick={() => setScope("everyone")}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              scope === "everyone"
-                ? "bg-white text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Everyone{" "}
-            <span className={scope === "everyone" ? "text-muted-foreground" : "text-gray-400"}>
-              ({everyoneCount})
-            </span>
-          </button>
-        </div>
-        )}
-      </div>
-
-      {/* Tabs + Sort */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Status tabs */}
-        <div className="flex gap-1.5 flex-wrap" role="tablist" aria-label="Filter by status">
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              role="tab"
-              aria-selected={activeTab === tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`
-                px-3 py-1.5 rounded-full text-sm font-medium transition-colors
-                ${
-                  activeTab === tab.key
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }
-              `}
+        <div className="flex flex-col items-start gap-2 md:items-end shrink-0">
+          {!solo && (
+            <div
+              className="inline-flex items-center rounded-full bg-[color:rgba(28,27,31,0.06)] p-0.5"
+              role="tablist"
+              aria-label="Alcance"
             >
-              {tab.label}{" "}
-              <span
-                className={
-                  activeTab === tab.key
-                    ? "text-white/80"
-                    : "text-gray-400"
-                }
-              >
-                ({counts[tab.key]})
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Paused toggle + Sort */}
-        <div className="flex items-center gap-3">
+              <ScopePill
+                active={scope === "mine"}
+                onClick={() => setScope("mine")}
+                label="Míos"
+                count={mineCount}
+              />
+              <ScopePill
+                active={scope === "everyone"}
+                onClick={() => setScope("everyone")}
+                label="Todos"
+                count={everyoneCount}
+              />
+            </div>
+          )}
           {pausedCount > 0 && (
             <button
               onClick={() => setShowPaused((v) => !v)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              className="text-xs text-[color:var(--vimi-muted)] hover:text-[color:var(--vimi-ink)] transition-colors underline-offset-2 hover:underline"
             >
               {showPaused
-                ? "Hide paused clients"
-                : `Show paused clients (${pausedCount})`}
+                ? "Ocultar clientes pausados"
+                : `Ver ${pausedCount} cliente${pausedCount === 1 ? "" : "s"} pausado${pausedCount === 1 ? "" : "s"}`}
             </button>
           )}
-          <span className="text-xs text-muted-foreground">Sort:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.key} value={opt.key}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
-      {/* Client filter chips */}
-      {clientChips.length > 0 && (
-        <div
-          className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide"
-          role="tablist"
-          aria-label="Filter by client"
-        >
-          <button
-            role="tab"
-            aria-selected={clientFilter === "all"}
-            onClick={() => setClientFilter("all")}
-            className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
-              clientFilter === "all"
-                ? "bg-foreground text-white"
-                : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
-            }`}
-          >
-            All clients
-          </button>
-          {clientChips.map((chip) => {
-            const selected = clientFilter === chip.slug;
-            return (
-              <button
-                key={chip.slug}
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setClientFilter(chip.slug)}
-                className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm whitespace-nowrap shrink-0 transition-colors min-h-[44px] md:min-h-0 ${
-                  selected
-                    ? "bg-foreground text-white"
-                    : "bg-[#f0eeec] text-muted-foreground hover:bg-gray-200"
-                }`}
+      {/* FILTERS */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {STATUS_TABS.map((tab) => (
+            <Chip
+              key={tab.key}
+              active={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.key !== "all" && (
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ background: statusDotColor[tab.key] }}
+                />
+              )}
+              {tab.label}
+              <span
+                className={
+                  activeTab === tab.key
+                    ? "text-[var(--vimi-page)]/70"
+                    : "text-[color:var(--vimi-faint)]"
+                }
               >
-                {chip.name}{" "}
-                <span className={selected ? "text-white/70" : "text-gray-400"}>
-                  &middot; {chip.count}
-                </span>
-              </button>
-            );
-          })}
+                {counts[tab.key]}
+              </span>
+            </Chip>
+          ))}
         </div>
-      )}
 
-      {/* Request list */}
-      {filteredRequests.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg font-medium">All clear</p>
-          <p className="text-sm mt-1">No requests match this filter.</p>
+        {clientChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="h-4 w-px bg-[color:var(--vimi-border)] mr-0.5 hidden sm:block" />
+            <Chip
+              active={clientFilter === "all"}
+              onClick={() => setClientFilter("all")}
+            >
+              Todos
+            </Chip>
+            {clientChips.map((chip) => (
+              <Chip
+                key={chip.slug}
+                active={clientFilter === chip.slug}
+                onClick={() => setClientFilter(chip.slug)}
+              >
+                <span
+                  className="w-2 h-2 rounded-[3px] shrink-0"
+                  style={{ background: chip.accent }}
+                />
+                {chip.name}
+                <span
+                  className={
+                    clientFilter === chip.slug
+                      ? "text-[var(--vimi-page)]/70"
+                      : "text-[color:var(--vimi-faint)]"
+                  }
+                >
+                  {chip.count}
+                </span>
+              </Chip>
+            ))}
+            {canReorder && workOrder.length > 1 && (
+              <span className="ml-auto text-xs text-[color:var(--vimi-faint)] hidden md:block">
+                Arrastra ⠿ para repriorizar — el cliente lo ve al instante
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* EMPTY */}
+      {!hasVisible ? (
+        <div className="text-center py-20">
+          <h2 className="font-serif italic text-2xl text-[color:var(--vimi-ink)]">
+            Cola limpia. Respira.
+          </h2>
+          <p className="text-sm text-[color:var(--vimi-muted)] mt-2">
+            {filtersActive
+              ? "Ninguna solicitud coincide con estos filtros."
+              : "No hay solicitudes abiertas ahora mismo."}
+          </p>
           {filtersActive && (
             <button
               onClick={clearFilters}
-              className="mt-4 text-sm text-primary hover:underline underline-offset-2"
+              className="mt-4 text-sm text-[color:var(--accent)] hover:underline underline-offset-2"
             >
-              Clear filters
+              Limpiar filtros
             </button>
           )}
         </div>
       ) : (
-        <div className="border border-gray-200 rounded-xl bg-white overflow-hidden divide-y divide-gray-100">
-          {filteredRequests.map((request) => (
-            <QueueRow
-              key={request.id}
-              request={request}
-              adminId={adminId}
-              admins={admins}
-            />
-          ))}
+        <div className="space-y-7">
+          {/* NECESITA ATENCIÓN (Von Restorff) */}
+          {attention.length > 0 && (
+            <section className="space-y-3">
+              <GroupHeader
+                label="Necesita atención"
+                count={attention.length}
+                color={ROSEWOOD}
+              />
+              <div
+                className="rounded-[16px] overflow-hidden border"
+                style={{
+                  borderColor: "rgba(176,58,91,0.25)",
+                  background: "rgba(176,58,91,0.04)",
+                }}
+              >
+                <div className="divide-y divide-[rgba(176,58,91,0.12)]">
+                  {attention.map((request) => (
+                    <AttentionRow
+                      key={request.id}
+                      request={request}
+                      adminId={adminId}
+                      admins={admins}
+                    />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* EN ORDEN DE TRABAJO (draggable) */}
+          {workOrder.length > 0 && (
+            <section className="space-y-3">
+              <GroupHeader
+                label="En orden de trabajo"
+                count={workOrder.length}
+                color="var(--vimi-faint)"
+              />
+              <div className="rounded-[16px] border border-[color:var(--vimi-border)] bg-[var(--vimi-card)] overflow-hidden">
+                {canReorder ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={workOrder.map((r) => r.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="divide-y divide-[color:var(--vimi-border)]">
+                        {workOrder.map((request, i) => (
+                          <SortableWorkRow key={request.id} id={request.id}>
+                            {(handle) => (
+                              <WorkRow
+                                request={request}
+                                position={i + 1}
+                                adminId={adminId}
+                                admins={admins}
+                                onArchive={handleArchive}
+                                dragHandle={handle}
+                              />
+                            )}
+                          </SortableWorkRow>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <div className="divide-y divide-[color:var(--vimi-border)]">
+                    {workOrder.map((request, i) => (
+                      <WorkRow
+                        key={request.id}
+                        request={request}
+                        position={i + 1}
+                        adminId={adminId}
+                        admins={admins}
+                        onArchive={handleArchive}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </div>
+      )}
+
+      {/* ARCHIVED (out of all counts + the queue) */}
+      {archived.length > 0 && (
+        <section className="pt-2">
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className="text-xs text-[color:var(--vimi-muted)] hover:text-[color:var(--vimi-ink)] transition-colors"
+          >
+            {showArchived ? "▾ " : "▸ "}
+            {archived.length} solicitud{archived.length === 1 ? "" : "es"} archivada
+            {archived.length === 1 ? "" : "s"} — no cuentan ni aparecen para el
+            cliente
+          </button>
+          {showArchived && (
+            <div className="mt-3 rounded-[16px] border border-[color:var(--vimi-border)] bg-[color:rgba(28,27,31,0.02)] overflow-hidden divide-y divide-[color:var(--vimi-border)]">
+              {archived.map((request) => (
+                <ArchivedRow
+                  key={request.id}
+                  request={request}
+                  onRestore={handleRestore}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
 }
 
-// --- Row ---
+// --- Sortable wrapper ---
 
-function QueueRow({
+function SortableWorkRow({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handle: {
+    attributes: Record<string, unknown>;
+    listeners: Record<string, unknown> | undefined;
+  }) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: "relative",
+    background: isDragging ? "var(--vimi-card)" : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({
+        attributes: attributes as unknown as Record<string, unknown>,
+        listeners,
+      })}
+    </div>
+  );
+}
+
+// --- Rows ---
+
+function WorkRow({
+  request,
+  position,
+  adminId,
+  admins,
+  onArchive,
+  dragHandle,
+}: {
+  request: QueueRequest;
+  position: number;
+  adminId: string;
+  admins: Admin[];
+  onArchive: (id: string) => void;
+  dragHandle?: {
+    attributes: Record<string, unknown>;
+    listeners: Record<string, unknown> | undefined;
+  };
+}) {
+  const newComment = hasNewComment(request, adminId);
+  const paused = isPaused(request);
+  const overdue = isOverdue(request.due_date);
+
+  return (
+    <div className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-[color:rgba(28,27,31,0.02)] transition-colors group">
+      {/* Drag handle */}
+      {dragHandle ? (
+        <span
+          {...dragHandle.attributes}
+          {...dragHandle.listeners}
+          title="Arrastra para repriorizar"
+          className="shrink-0 text-[color:var(--vimi-faint)] cursor-grab text-sm px-0.5 select-none"
+          style={{ touchAction: "none" }}
+        >
+          ⠿
+        </span>
+      ) : (
+        <span className="shrink-0 w-[15px]" />
+      )}
+
+      {/* Position number (Serial Position) */}
+      <span className="shrink-0 w-5 text-right text-xs font-semibold tabular-nums text-[color:var(--vimi-faint)]">
+        {position}
+      </span>
+
+      {/* Status dot (pulses for En proceso) */}
+      <span className="shrink-0 relative flex items-center justify-center w-2.5 h-2.5">
+        {request.status === "in_progress" && (
+          <span
+            className="vm-pulse absolute inset-0 rounded-full"
+            style={{ background: statusDotColor.in_progress }}
+          />
+        )}
+        <span
+          className="w-2.5 h-2.5 rounded-full relative"
+          style={{ background: statusDotColor[request.status] }}
+          title={statusLabel[request.status]}
+        />
+      </span>
+
+      {/* Title + meta */}
+      <Link
+        href={`/portal/requests/${request.id}`}
+        className="flex-1 min-w-0 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3"
+      >
+        <span className="font-medium text-sm truncate text-[color:var(--vimi-ink)] group-hover:text-[color:var(--accent)] transition-colors">
+          {request.title}
+        </span>
+        <span className="flex items-center gap-2 min-w-0">
+          <TypeTag type={request.type} />
+          {request.due_date && (
+            <DueBadge dueDate={request.due_date} overdue={overdue} />
+          )}
+          {paused && <PausedChip />}
+        </span>
+
+        <span className="flex-1 hidden sm:block" />
+
+        <span className="flex items-center gap-3 shrink-0 text-xs text-[color:var(--vimi-muted)]">
+          {request.clients && (
+            <span className="inline-flex items-center gap-1.5 min-w-0">
+              <span
+                className="w-2 h-2 rounded-[3px] shrink-0"
+                style={{ background: accentOf(request) }}
+              />
+              <span className="truncate max-w-[120px]">
+                {request.clients.name}
+              </span>
+            </span>
+          )}
+          {newComment && (
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"
+              title="Comentario sin leer"
+            />
+          )}
+          <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
+          <span className="tabular-nums whitespace-nowrap">
+            {ageLabel(request.updated_at)}
+          </span>
+        </span>
+      </Link>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={() => onArchive(request.id)}
+          title="Archivar"
+          aria-label="Archivar"
+          className="text-[color:var(--vimi-faint)] hover:text-[color:var(--vimi-ink)] transition-colors p-1.5 rounded-md hover:bg-[color:rgba(28,27,31,0.05)]"
+        >
+          ⌫
+        </button>
+        <Link
+          href={`/portal/requests/${request.id}`}
+          className="text-xs font-medium text-[color:var(--vimi-ink)] hover:text-[color:var(--accent)] transition-colors px-2 py-1.5 whitespace-nowrap"
+        >
+          Abrir →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function AttentionRow({
   request,
   adminId,
   admins,
@@ -443,213 +867,232 @@ function QueueRow({
   adminId: string;
   admins: Admin[];
 }) {
-  const router = useRouter();
+  const overdue = isOverdue(request.due_date);
   const newComment = hasNewComment(request, adminId);
-  const deliverableCount = request.deliverables.length;
-  const commentCount = request.comments.length;
-  const paused = isPaused(request);
+  const staleDays = daysSince(request.updated_at);
+
+  const problem = overdue
+    ? `Vencida desde ${dueDateShort(request.due_date!)}`
+    : `En revisión hace ${staleDays} días — se está enfriando`;
+
+  // Overdue → resolve; a cooling review → nudge the client (falls back to open).
+  const ctaLabel = overdue ? "Resolver ahora" : "Recordar al cliente";
 
   return (
-    <div
-      onClick={() => router.push(`/portal/requests/${request.id}`)}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors group cursor-pointer"
-    >
-      {/* Status dot */}
-      <span
-        className={`shrink-0 w-2.5 h-2.5 rounded-full ${statusDotColor[request.status]}`}
-        title={statusLabel[request.status]}
-      />
+    <div className="flex items-start gap-3 px-3 sm:px-4 py-3.5">
+      <span className="shrink-0 relative flex items-center justify-center w-2.5 h-2.5 mt-1.5">
+        <span
+          className="vm-pulse absolute inset-0 rounded-full"
+          style={{ background: ROSEWOOD }}
+        />
+        <span
+          className="w-2.5 h-2.5 rounded-full relative"
+          style={{ background: ROSEWOOD }}
+        />
+      </span>
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0">
-        {/* Desktop row */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Title */}
-          <span className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-            {request.title}
-          </span>
-
-          {/* Type badge */}
-          <Badge
-            variant="secondary"
-            className={`shrink-0 text-[10px] px-1.5 py-0 ${typeColors[request.type] ?? typeColors.other}`}
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={`/portal/requests/${request.id}`}
+            className="font-medium text-sm text-[color:var(--vimi-ink)] hover:underline underline-offset-2 truncate"
           >
-            {request.type.toUpperCase()}
-          </Badge>
-
-          {/* Priority indicator */}
-          <PriorityIndicator priority={request.priority} />
-
-          {/* Spacer */}
-          <span className="flex-1" />
-
-          {/* Client */}
+            {request.title}
+          </Link>
+          <TypeTag type={request.type} />
           {request.clients && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-[color:var(--vimi-muted)]">
+              <span
+                className="w-2 h-2 rounded-[3px] shrink-0"
+                style={{ background: accentOf(request) }}
+              />
+              {request.clients.name}
+            </span>
+          )}
+          {newComment && (
             <span
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="shrink-0"
-            >
-              <Link
-                href={`/portal/admin/clients/${request.clients.slug}`}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                {request.clients.name}
-              </Link>
-            </span>
+              className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"
+              title="Comentario sin leer"
+            />
           )}
-
-          {paused && <PausedChip />}
-
-          {/* Deliverables */}
-          {deliverableCount > 0 && (
-            <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
-              <Download01Icon size={13} />
-              {deliverableCount}
-            </span>
-          )}
-
-          {/* Comments */}
-          {commentCount > 0 && (
-            <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
-              <Comment01Icon size={13} />
-              {commentCount}
-              {newComment && (
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
-              )}
-            </span>
-          )}
-
-          {/* Due date */}
-          <DueDateLabel dueDate={request.due_date} />
-
-          {/* Assignee (read-only here; reassign on the board or detail page) */}
-          <span className="shrink-0">
-            <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
-          </span>
-
-          {/* Time since update */}
-          <span className="shrink-0 text-xs text-muted-foreground w-20 text-right">
-            {formatDistanceToNow(new Date(request.updated_at), {
-              addSuffix: false,
-            })}{" "}
-            ago
-          </span>
         </div>
-
-        {/* Mobile card layout */}
-        <div className="sm:hidden space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-              {request.title}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="secondary"
-              className={`text-[10px] px-1.5 py-0 ${typeColors[request.type] ?? typeColors.other}`}
-            >
-              {request.type.toUpperCase()}
-            </Badge>
-
-            <PriorityIndicator priority={request.priority} />
-
-            {request.clients && (
-              <span className="text-xs text-muted-foreground">
-                {request.clients.name}
-              </span>
-            )}
-
-            {paused && <PausedChip />}
-
-            <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
-          </div>
-
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {deliverableCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Download01Icon size={12} />
-                {deliverableCount}
-              </span>
-            )}
-            {commentCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Comment01Icon size={12} />
-                {commentCount}
-                {newComment && (
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
-                )}
-              </span>
-            )}
-            <DueDateLabel dueDate={request.due_date} />
-            <span>
-              {formatDistanceToNow(new Date(request.updated_at), {
-                addSuffix: false,
-              })}{" "}
-              ago
-            </span>
-          </div>
+        <p className="text-xs font-medium" style={{ color: ROSEWOOD }}>
+          {problem}
+        </p>
+        <div className="flex items-center gap-3 text-xs text-[color:var(--vimi-faint)]">
+          <AssigneeAvatar assigneeId={request.assignee_id} admins={admins} />
+          <span className="tabular-nums">
+            {ageLabel(request.updated_at)}
+          </span>
         </div>
       </div>
+
+      <Link
+        href={`/portal/requests/${request.id}`}
+        className="shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
+        style={{ background: ROSEWOOD }}
+      >
+        {ctaLabel}
+      </Link>
+    </div>
+  );
+}
+
+function ArchivedRow({
+  request,
+  onRestore,
+}: {
+  request: QueueRequest;
+  onRestore: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
+      <Link
+        href={`/portal/requests/${request.id}`}
+        className="flex-1 min-w-0 flex items-center gap-2"
+      >
+        <span className="text-sm line-through text-[color:var(--vimi-muted)] truncate">
+          {request.title}
+        </span>
+        {request.clients && (
+          <span className="text-xs text-[color:var(--vimi-faint)] truncate">
+            {request.clients.name}
+          </span>
+        )}
+      </Link>
+      <span className="shrink-0 text-xs text-[color:var(--vimi-faint)] tabular-nums">
+        archivada hace {ageLabel(request.updated_at)}
+      </span>
+      <button
+        onClick={() => onRestore(request.id)}
+        className="shrink-0 text-xs font-medium text-[color:var(--accent)] hover:underline underline-offset-2"
+      >
+        Restaurar
+      </button>
     </div>
   );
 }
 
 // --- Sub-components ---
 
+function GroupHeader({
+  label,
+  count,
+  color,
+}: {
+  label: string;
+  count: number;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span
+        className="text-[11px] font-bold uppercase tracking-[0.14em]"
+        style={{ color }}
+      >
+        {label}
+      </span>
+      <span className="text-[11px] font-semibold text-[color:var(--vimi-faint)] tabular-nums">
+        {count}
+      </span>
+      <span className="flex-1 h-px bg-[color:var(--vimi-border)]" />
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+        active
+          ? "bg-[color:var(--vimi-ink)] text-[var(--vimi-page)]"
+          : "bg-[color:rgba(28,27,31,0.05)] text-[color:var(--vimi-muted)] hover:bg-[color:rgba(28,27,31,0.09)]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ScopePill({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+        active
+          ? "bg-[var(--vimi-card)] text-[color:var(--vimi-ink)] shadow-sm"
+          : "text-[color:var(--vimi-muted)] hover:text-[color:var(--vimi-ink)]"
+      }`}
+    >
+      {label}{" "}
+      <span className="text-[color:var(--vimi-faint)]">({count})</span>
+    </button>
+  );
+}
+
+function TypeTag({ type }: { type: string }) {
+  return (
+    <span
+      className={`shrink-0 text-[10px] font-bold tracking-[0.06em] rounded-md px-1.5 py-0.5 ${typeColors[type] ?? typeColors.other}`}
+    >
+      {typeLabel(type)}
+    </span>
+  );
+}
+
+function DueBadge({ dueDate, overdue }: { dueDate: string; overdue: boolean }) {
+  return (
+    <span
+      className={`shrink-0 text-[11px] font-medium whitespace-nowrap ${
+        overdue ? "text-red-600" : "text-[color:var(--vimi-muted)]"
+      }`}
+    >
+      {overdue ? "Vencida " : "Entrega "}
+      {dueDateShort(dueDate)}
+    </span>
+  );
+}
+
 function PausedChip() {
   return (
-    <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 text-gray-500 text-[10px] font-medium px-1.5 py-0.5">
-      Paused
+    <span className="shrink-0 inline-flex items-center rounded-full bg-[color:rgba(28,27,31,0.06)] text-[color:var(--vimi-muted)] text-[10px] font-medium px-1.5 py-0.5">
+      Pausado
     </span>
   );
 }
 
-function PriorityIndicator({ priority }: { priority: number }) {
-  if (priority >= 3) {
-    return (
-      <span className="shrink-0 flex items-center gap-0.5 text-red-500" title="Urgent">
-        <FireIcon size={14} />
-      </span>
-    );
-  }
-  if (priority === 2) {
-    return (
-      <span className="shrink-0 flex items-center gap-0.5 text-amber-500" title="This week">
-        <CalendarIcon size={14} />
-      </span>
-    );
-  }
+function PulseDot({ color }: { color: string }) {
   return (
-    <span className="shrink-0 flex items-center gap-0.5 text-emerald-500" title="Whenever">
-      <LeafIcon size={14} />
-    </span>
-  );
-}
-
-function DueDateLabel({ dueDate }: { dueDate: string | null }) {
-  if (!dueDate) return null;
-
-  const overdue = isOverdue(dueDate);
-  const soon = !overdue && isDueSoon(dueDate);
-
-  const colorClass = overdue
-    ? "text-red-600 font-medium"
-    : soon
-      ? "text-amber-600 font-medium"
-      : "text-muted-foreground";
-
-  const formatted = new Date(dueDate).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-
-  return (
-    <span className={`shrink-0 text-xs ${colorClass}`}>
-      {overdue ? "Overdue: " : "Due "}
-      {formatted}
+    <span className="relative inline-flex items-center justify-center w-2 h-2">
+      <span
+        className="vm-pulse absolute inset-0 rounded-full"
+        style={{ background: color }}
+      />
+      <span
+        className="w-2 h-2 rounded-full relative"
+        style={{ background: color }}
+      />
     </span>
   );
 }
