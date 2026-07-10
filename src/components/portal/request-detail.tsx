@@ -2712,7 +2712,7 @@ export function RequestDetail({
                 e.target.value = "";
               }}
             />
-            <Textarea
+            <textarea
               ref={commentInputRef}
               aria-label="Add a comment"
               placeholder={t("detail.composerPlaceholder", { designer: composerPartner })}
@@ -2725,7 +2725,8 @@ export function RequestDetail({
               }}
               maxLength={2000}
               rows={1}
-              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto border-0 bg-transparent rounded-none p-0 focus-visible:ring-0 text-base md:text-sm placeholder:text-muted-foreground/60"
+              className="flex-1 min-h-[24px] max-h-[200px] resize-none overflow-y-auto bg-transparent text-base md:text-sm placeholder:text-muted-foreground/60 leading-relaxed"
+              style={{ border: 0, outline: "none", padding: 0, background: "transparent", boxShadow: "none" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
