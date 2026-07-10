@@ -253,7 +253,7 @@ export function DirectionsVoting({
     });
 
     if (error) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("detail.couldntUpdate"));
       setSaving(false);
       return;
     }

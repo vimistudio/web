@@ -68,6 +68,7 @@ export const detail = {
   // Peak-End celebration modal
   "celebrate.title": { en: "Delivered & approved.", es: "Entregado y aprobado." },
   "celebrate.count": { en: "That's request #{n} together.", es: "Esa es la solicitud n.º {n} juntos." },
+  "celebrate.first": { en: "Your first approved design. Here's to many more.", es: "Tu primer diseño aprobado. Por muchos más." },
   "celebrate.countFallback": { en: "Another one delivered together.", es: "Otra entrega más, juntos." },
   "celebrate.ratedPrompt": { en: "How did this one feel?", es: "¿Qué tal estuvo esta?" },
   "celebrate.rated": { en: "rated this delivery", es: "calificó esta entrega" },
@@ -170,12 +171,6 @@ export const detail = {
     es: "Aún no hay mensajes. Saluda a {designer}, o te escribimos aquí en cuanto haya novedades.",
   },
 
-  // Peak-End: first-approval beat
-  "celebrate.first": {
-    en: "Your first approved design. Here's to many more.",
-    es: "Tu primer diseño aprobado. Por muchos más.",
-  },
-
   // Done banner (v2) — emerald bar at the top of a delivered request
   "detail.doneBannerTitle": {
     en: "Delivered & approved — {date}",
@@ -253,4 +248,14 @@ export const detail = {
     en: "Try again",
     es: "Reintentar",
   },
+
+  // Image lightbox actions
+  "lightbox.share": { en: "Share", es: "Compartir" },
+  "lightbox.copy": { en: "Copy", es: "Copiar" },
+  "lightbox.download": { en: "Download", es: "Descargar" },
+  "lightbox.copied": { en: "Copied to clipboard", es: "Copiado al portapapeles" },
+  "lightbox.copyFail": { en: "Couldn't copy image", es: "No pudimos copiar la imagen" },
+  "lightbox.shareFail": { en: "Couldn't share image", es: "No pudimos compartir la imagen" },
+  "lightbox.clipboardUnsupported": { en: "Clipboard not supported in this browser", es: "Este navegador no permite copiar" },
+  "lightbox.downloadFail": { en: "Couldn't download file", es: "No pudimos descargar el archivo" },
 } as const;
