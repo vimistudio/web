@@ -643,6 +643,7 @@ export type Database = {
           id: string
           is_archived: boolean
           priority: number
+          reused_from_request_id: string | null
           status: Database["public"]["Enums"]["request_status"]
           title: string
           type: Database["public"]["Enums"]["request_type"]
@@ -659,6 +660,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           priority?: number
+          reused_from_request_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title: string
           type?: Database["public"]["Enums"]["request_type"]
@@ -675,6 +677,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           priority?: number
+          reused_from_request_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title?: string
           type?: Database["public"]["Enums"]["request_type"]
@@ -687,6 +690,13 @@ export type Database = {
             columns: ["assignee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_reused_from_request_id_fkey"
+            columns: ["reused_from_request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
             referencedColumns: ["id"]
           },
           {

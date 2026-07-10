@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import {
+  PlaybookView,
+  type PlaybookPiece,
+  type PlaybookStats,
+  type PlaybookClient,
+} from "@/components/portal/playbook-view";
 
 export default async function AdminPlaybookPage() {
   const supabase = createClient();
@@ -20,92 +23,131 @@ export default async function AdminPlaybookPage() {
 
   if (profile?.role !== "admin") redirect("/portal");
 
-  // Fetch all completed requests across clients
+  // All delivered work across every client — the studio's shared memory.
   const { data: completed } = await supabase
     .from("requests")
-    .select("*, clients(name, slug), deliverables(id, file_name, file_path)")
+    .select(
+      "id, title, type, description, updated_at, assignee_id, clients(name, slug, accent_color), deliverables(id, file_name, file_path, file_size, mime_type)"
+    )
     .eq("status", "done")
+    .eq("is_archived", false)
     .order("updated_at", { ascending: false });
 
-  const typeColors: Record<string, string> = {
-    logo: "bg-purple-100 text-purple-700",
-    social: "bg-pink-100 text-pink-700",
-    web: "bg-blue-100 text-blue-700",
-    brand: "bg-amber-100 text-amber-700",
-    presentation: "bg-emerald-100 text-emerald-700",
-    other: "bg-gray-100 text-gray-700",
+  const done = completed ?? [];
+
+  // Resolve assignee names in one query (no N+1).
+  const assigneeIds = Array.from(
+    new Set(done.map((r) => r.assignee_id).filter((v): v is string => !!v))
+  );
+  const assigneeNames = new Map<string, string>();
+  if (assigneeIds.length > 0) {
+    const { data: assignees } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", assigneeIds);
+    (assignees ?? []).forEach((a) => {
+      if (a.full_name) assigneeNames.set(a.id, a.full_name);
+    });
+  }
+
+  // Reuse lineage in ONE grouped query: every request that was spawned from a
+  // source piece. Build count + "reusado en" list keyed by source id.
+  const { data: reuseRows } = await supabase
+    .from("requests")
+    .select("id, title, created_at, reused_from_request_id, clients(name)")
+    .not("reused_from_request_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  const reusedIn = new Map<
+    string,
+    { id: string; title: string; client: string; createdAt: string }[]
+  >();
+  (reuseRows ?? []).forEach((row) => {
+    const sourceId = row.reused_from_request_id;
+    if (!sourceId) return;
+    const client = row.clients as { name: string } | null;
+    const list = reusedIn.get(sourceId) ?? [];
+    list.push({
+      id: row.id,
+      title: row.title,
+      client: client?.name ?? "—",
+      createdAt: row.created_at,
+    });
+    reusedIn.set(sourceId, list);
+  });
+
+  // Signed URLs for the first image deliverable of each piece.
+  const pieces: PlaybookPiece[] = await Promise.all(
+    done.map(async (r) => {
+      const client = r.clients as {
+        name: string;
+        slug: string;
+        accent_color: string | null;
+      } | null;
+      const deliverables = (r.deliverables ?? []) as {
+        id: string;
+        file_name: string;
+        file_path: string;
+        file_size: number | null;
+        mime_type: string | null;
+      }[];
+
+      const firstImage = deliverables.find((d) =>
+        d.mime_type?.startsWith("image/")
+      );
+      let previewUrl: string | null = null;
+      if (firstImage) {
+        const { data } = await supabase.storage
+          .from("deliverables")
+          .createSignedUrl(firstImage.file_path, 3600);
+        previewUrl = data?.signedUrl ?? null;
+      }
+
+      const list = reusedIn.get(r.id) ?? [];
+
+      return {
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        description: r.description,
+        clientName: client?.name ?? "—",
+        clientSlug: client?.slug ?? null,
+        clientAccent: client?.accent_color || "#5B4BD6",
+        approvedAt: r.updated_at,
+        previewUrl,
+        assignee: r.assignee_id ? assigneeNames.get(r.assignee_id) ?? null : null,
+        fileCount: deliverables.length,
+        totalSize: deliverables.reduce((sum, d) => sum + (d.file_size ?? 0), 0),
+        reuseCount: list.length,
+        reusedIn: list,
+      };
+    })
+  );
+
+  const stats: PlaybookStats = {
+    deliveries: pieces.length,
+    clients: new Set(
+      done
+        .map((r) => (r.clients as { name: string } | null)?.name)
+        .filter(Boolean)
+    ).size,
+    reuses: (reuseRows ?? []).length,
   };
 
-  const gradients: Record<string, string> = {
-    logo: "from-purple-200 to-purple-100",
-    social: "from-pink-200 to-pink-100",
-    web: "from-blue-200 to-blue-100",
-    brand: "from-amber-200 to-amber-100",
-    presentation: "from-emerald-200 to-emerald-100",
-    other: "from-gray-200 to-gray-100",
-  };
+  // Active clients power the "reuse as brief" target picker.
+  const { data: activeClientsData } = await supabase
+    .from("clients")
+    .select("id, name, accent_color")
+    .eq("is_active", true)
+    .order("name");
+
+  const activeClients: PlaybookClient[] = (activeClientsData ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    accent: c.accent_color || "#5B4BD6",
+  }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-serif italic text-[28px] md:text-[34px] leading-tight tracking-tight text-[color:var(--vimi-ink)]">
-          Playbook
-        </h1>
-        <p className="text-sm text-[color:var(--vimi-muted)] mt-1">
-          All completed work across your clients.
-        </p>
-      </div>
-
-      {(completed ?? []).length > 0 ? (
-        <div className="columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-          {(completed ?? []).map((request, i) => {
-            const heights = ["h-40", "h-52", "h-44", "h-56", "h-48"];
-            const height = heights[i % heights.length];
-            const gradient = gradients[request.type] ?? gradients.other;
-            const client = request.clients as { name: string; slug: string } | null;
-
-            return (
-              <Card
-                key={request.id}
-                className="break-inside-avoid overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div
-                  className={`${height} bg-gradient-to-b ${gradient} relative flex items-center justify-center`}
-                >
-                  <Image
-                    src="/vimi-logo-dark.svg"
-                    alt=""
-                    width={100}
-                    height={32}
-                    className="h-6 w-auto opacity-20"
-                  />
-                </div>
-                <CardContent className="p-3 space-y-1">
-                  <p className="text-sm font-medium">{request.title}</p>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="secondary"
-                      className={`text-[10px] px-1.5 py-0 ${typeColors[request.type] ?? typeColors.other}`}
-                    >
-                      {request.type.toUpperCase()}
-                    </Badge>
-                    {client && (
-                      <span className="text-xs text-muted-foreground">
-                        {client.name}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-16 text-[color:var(--vimi-muted)]">
-          No completed work yet. Deliverables will appear here as you finish
-          requests.
-        </div>
-      )}
-    </div>
+    <PlaybookView pieces={pieces} stats={stats} activeClients={activeClients} />
   );
 }
