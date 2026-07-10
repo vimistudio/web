@@ -12,11 +12,14 @@ export default async function QueuePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, is_owner")
     .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/portal");
+  // Fail OPEN (only explicit false = staff) so the sole owner keeps the
+  // owner-only purge action during the pre-migration deploy window.
+  const isOwner = profile.is_owner !== false;
 
   // Fetch ALL non-done requests across all clients (is_active drives the
   // default active-only view; paused clients are togglable client-side).
@@ -44,6 +47,7 @@ export default async function QueuePage() {
       requests={requests ?? []}
       adminId={user.id}
       admins={admins ?? []}
+      isOwner={isOwner}
     />
   );
 }
