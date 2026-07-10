@@ -2683,7 +2683,7 @@ export function RequestDetail({
               </button>
             </div>
           )}
-          <div className="flex items-end gap-1.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-colors focus-within:border-[color:var(--accent)]">
+          <div className="flex items-center gap-1.5 rounded-2xl border border-[color:var(--vimi-border)] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(28,27,31,0.05)] transition-colors focus-within:border-[color:var(--accent)]">
             <button
               type="button"
               onClick={() => commentFileRef.current?.click()}
